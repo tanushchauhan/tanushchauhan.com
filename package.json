@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "bun --watch server/src/index.ts",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "bun server/src/index.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

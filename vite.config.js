@@ -5,6 +5,16 @@ import { fileURLToPath, URL } from "url";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // in dev the frontend runs on Vite and the API on Bun; in production a single
+  // container serves both from the same origin, so app code always calls /api/*
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:3000",
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       "#components": fileURLToPath(new URL("./src/components", import.meta.url)),

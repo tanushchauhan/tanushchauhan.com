@@ -1,0 +1,11 @@
+node_modules
+server/node_modules
+dist
+.git
+.gitignore
+.DS_Store
+.env
+.env.*
+.pgdata
+README.md
+*.local
