@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { logger } from "hono/logger";
+import { runMigrations } from "./db/index.ts";
+import { guestbookRoutes } from "./routes/guestbook.ts";
 
-const PORT = Number(Bun.env.PORT ?? 3000);
+const PORT = Number(Bun.env.PORT ?? 3001);
 
 // Vite's build output, resolved from the process cwd (the repo root locally,
 // /app in the container). The API and the frontend are deliberately the same
@@ -25,6 +27,8 @@ api.get("/health", (c) =>
   })
 );
 
+api.route("/guestbook", guestbookRoutes);
+
 app.route("/api", api);
 
 // unmatched API routes must 404 as JSON, never fall through to the SPA shell
@@ -45,6 +49,9 @@ app.get("*", async (c, next) => {
   return next();
 });
 app.get("*", serveStatic({ path: `${DIST}/index.html` }));
+
+// migrations complete before the first request is served
+await runMigrations();
 
 console.log(`server listening on http://localhost:${PORT}`);
 

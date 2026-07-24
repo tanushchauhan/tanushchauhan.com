@@ -24,7 +24,7 @@ FROM oven/bun:1-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3001
 
 COPY --from=server-deps /build/server/node_modules ./server/node_modules
 COPY server ./server
@@ -33,9 +33,9 @@ COPY --from=web /build/dist ./dist
 # oven/bun images ship a non-root `bun` user
 USER bun
 
-EXPOSE 3000
+EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
+  CMD wget -qO- http://127.0.0.1:3001/api/health || exit 1
 
 CMD ["bun", "server/src/index.ts"]

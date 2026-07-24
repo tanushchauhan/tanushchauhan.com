@@ -16,6 +16,7 @@ export const dockApps = [
   { id: "photos", name: "Gallery", icon: "photos.png", canOpen: true },
   { id: "terminal", name: "Terminal", icon: "terminal.png", canOpen: true },
   { id: "contact", name: "Contact", icon: "contact.png", canOpen: true },
+  { id: "guestbook", name: "Guestbook", icon: "guestbook.svg", canOpen: true },
   { id: "trash", name: "Trash", icon: "trash.png", canOpen: true },
 ];
 

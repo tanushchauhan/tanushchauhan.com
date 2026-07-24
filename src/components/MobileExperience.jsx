@@ -17,6 +17,7 @@ import {
 import clsx from "clsx";
 import { locations, highlights, gallery, techStack, socials } from "#constants";
 import { TerminalBody } from "#windows/Terminal.jsx";
+import { GuestbookBody } from "#windows/Guestbook.jsx";
 import useWindowStore from "#store/window.js";
 
 // same lazy module as the desktop Resume window: the PDF worker is only
@@ -31,6 +32,7 @@ const APPS = [
   { id: "gallery", name: "Gallery", icon: "/images/photos.png" },
   { id: "terminal", name: "Terminal", icon: "/images/terminal.png" },
   { id: "contact", name: "Contact", icon: "/images/contact.png" },
+  { id: "guestbook", name: "Guestbook", icon: "/images/guestbook.svg" },
   { id: "resume", name: "Résumé", icon: "/images/pdf.png" },
   { id: "about", name: "About Me", icon: "/images/avatar-tanush.svg" },
   { id: "settings", name: "Settings", icon: null },
@@ -288,6 +290,7 @@ const APP_SCREENS = {
   gallery: GalleryApp,
   terminal: TerminalBody,
   contact: ContactApp,
+  guestbook: GuestbookBody,
   resume: ResumeApp,
   about: AboutApp,
   settings: SettingsApp,

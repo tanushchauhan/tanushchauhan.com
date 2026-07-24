@@ -30,13 +30,13 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: 3000
+      PORT: 3001
       DATABASE_URL: postgres://tanush:localdev@db:5432/tanushchauhan
       # WebAuthn is origin-bound; localhost is a valid secure origin for testing
       RP_ID: localhost
-      ORIGIN: http://localhost:3000
+      ORIGIN: http://localhost:3001
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3001:3001"
     depends_on:
       db:
         condition: service_healthy

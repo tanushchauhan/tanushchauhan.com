@@ -430,6 +430,77 @@ nav time {
 }
 
 /* ---------------- contact ---------------- */
+/* ---------------- guestbook ---------------- */
+#guestbook {
+  @apply w-[440px];
+  top: 14vh;
+  left: 30vw;
+  /* fixed height so .gb-list is the part that scrolls, like #terminal */
+  height: 520px;
+}
+
+.guestbook-body {
+  @apply flex min-h-0 flex-1 flex-col bg-white dark:bg-neutral-800;
+}
+
+.gb-form {
+  @apply space-y-2 border-b border-black/10 p-4 dark:border-white/10;
+}
+
+.gb-name,
+.gb-row textarea {
+  @apply w-full rounded-lg border border-black/10 bg-neutral-100 px-3 py-2 text-sm
+    outline-none placeholder:text-neutral-400 focus:border-blue-500
+    dark:border-white/10 dark:bg-neutral-900 dark:text-white;
+}
+
+.gb-row {
+  @apply flex items-end gap-2;
+}
+
+.gb-row textarea {
+  @apply resize-none;
+}
+
+.gb-row button {
+  @apply grid size-9 shrink-0 cursor-pointer place-items-center rounded-full bg-blue-500
+    text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed
+    disabled:opacity-40;
+}
+
+.gb-meta {
+  @apply flex justify-between text-[11px] text-neutral-500 dark:text-neutral-400;
+}
+
+.gb-list {
+  @apply min-h-0 flex-1 space-y-3 overflow-y-auto p-4;
+}
+
+.gb-empty {
+  @apply py-8 text-center text-sm text-neutral-500 dark:text-neutral-400;
+}
+
+.gb-entry {
+  @apply rounded-xl bg-neutral-100 px-3.5 py-2.5 dark:bg-neutral-900;
+}
+
+.gb-entry header {
+  @apply flex items-baseline justify-between gap-3;
+}
+
+.gb-entry strong {
+  @apply text-sm font-semibold;
+}
+
+.gb-entry time {
+  @apply shrink-0 text-[11px] text-neutral-500 dark:text-neutral-400;
+}
+
+.gb-entry p {
+  /* long unbroken strings must wrap rather than widen the window */
+  @apply mt-1 text-sm break-words whitespace-pre-wrap text-neutral-700 dark:text-neutral-300;
+}
+
 #contact {
   @apply w-[420px];
   top: 16vh;

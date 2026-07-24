@@ -7,5 +7,17 @@ import Photos from "./Photos.jsx";
 import Text from "./Text.jsx";
 import ImageViewer from "./ImageViewer.jsx";
 import AboutMac from "./AboutMac.jsx";
+import Guestbook from "./Guestbook.jsx";
 
-export { Terminal, Safari, Resume, FinderWindows, Contact, Photos, Text, ImageViewer, AboutMac };
+export {
+  Terminal,
+  Safari,
+  Resume,
+  FinderWindows,
+  Contact,
+  Photos,
+  Text,
+  ImageViewer,
+  AboutMac,
+  Guestbook,
+};

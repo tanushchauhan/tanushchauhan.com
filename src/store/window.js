@@ -12,6 +12,7 @@ const WINDOW_KEYS = [
   "safari",
   "photos",
   "contact",
+  "guestbook",
   "terminal",
   "resume",
   "txtFile",
@@ -193,6 +194,20 @@ const useWindowStore = create(
       // v0 had a light/dark toggle; "auto" (follow the system) is the new default
       migrate: (persisted, version) =>
         version < 1 ? { ...persisted, theme: "auto" } : persisted,
+      // Saved state replaces defaults wholesale, so a browser holding an older
+      // `windows` object would be missing any window added since. Rebuilding
+      // from the current defaults backfills both new window keys and new
+      // per-window fields, and drops any that no longer exist.
+      merge: (persisted, current) => ({
+        ...current,
+        ...persisted,
+        windows: Object.fromEntries(
+          Object.entries(current.windows).map(([key, defaults]) => [
+            key,
+            { ...defaults, ...(persisted?.windows?.[key] ?? {}) },
+          ])
+        ),
+      }),
       partialize: (state) => ({
         windows: state.windows,
         nextZIndex: state.nextZIndex,

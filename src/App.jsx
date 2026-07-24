@@ -19,6 +19,7 @@ import {
   Text,
   ImageViewer,
   AboutMac,
+  Guestbook,
 } from "#windows";
 import useWindowStore from "#store/window.js";
 import { setSoundEnabled } from "./utils/sound.js";
@@ -78,6 +79,7 @@ const App = () => {
         <Photos />
         <Terminal />
         <Contact />
+        <Guestbook />
         <Resume />
         <Text />
         <ImageViewer />
