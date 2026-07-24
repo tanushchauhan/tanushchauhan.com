@@ -352,6 +352,11 @@ nav time {
   @apply mx-auto w-fit shadow-lg;
 }
 
+/* shown while the lazily loaded PDF viewer and its worker are fetched */
+.pdf-status {
+  @apply py-10 text-center text-sm text-neutral-500 dark:text-neutral-400;
+}
+
 /* ---------------- finder ---------------- */
 [id^="finder"] {
   @apply flex w-[760px] flex-col;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import dayjs from "dayjs";
 import {
   Wifi,
@@ -15,13 +15,14 @@ import {
   Mail,
 } from "lucide-react";
 import clsx from "clsx";
-import { Document, Page, pdfjs } from "react-pdf";
-import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
 import { locations, highlights, gallery, techStack, socials } from "#constants";
 import { TerminalBody } from "#windows/Terminal.jsx";
 import useWindowStore from "#store/window.js";
+
+// same lazy module as the desktop Resume window: the PDF worker is only
+// fetched once someone actually opens the résumé. Nothing may be imported
+// from it statically, or it lands back in the main chunk.
+const PdfView = lazy(() => import("#windows/PdfView.jsx"));
 
 /* ---------------- app registry ---------------- */
 const APPS = [
@@ -223,14 +224,9 @@ const ResumeApp = () => (
       <Download className="size-4" /> Download PDF
     </a>
     <div className="mt-3 overflow-hidden rounded-lg shadow-lg">
-      <Document file="/files/resume.pdf">
-        <Page
-          pageNumber={1}
-          width={Math.min(window.innerWidth - 24, 560)}
-          renderTextLayer={false}
-          renderAnnotationLayer={false}
-        />
-      </Document>
+      <Suspense fallback={<p className="pdf-status">Loading résumé…</p>}>
+        <PdfView width={Math.min(window.innerWidth - 24, 560)} />
+      </Suspense>
     </div>
   </div>
 );
