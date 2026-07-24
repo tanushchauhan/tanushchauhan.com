@@ -1,0 +1,914 @@
+@import url("https://fonts.googleapis.com/css2?family=Georama:ital,wght@0,100..900;1,100..900&display=swap");
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-georama: "Georama", sans-serif;
+  --color-burnt: #bf5700;
+  --color-burnt-light: #ff8a3d;
+}
+
+html,
+body {
+  overscroll-behavior: none;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+    "Helvetica Neue", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  @apply overflow-hidden bg-white select-none;
+}
+
+.dark body {
+  @apply bg-[#0b0c1e];
+}
+
+#root {
+  @apply flex h-dvh w-dvw flex-col;
+}
+
+main {
+  @apply relative w-full flex-1 overflow-hidden bg-cover bg-center;
+  background-image: url("/images/wallpaper-austin.svg");
+}
+
+.dark main {
+  background-image: url("/images/wallpaper-austin-night.svg");
+}
+
+/* ---------------- navbar ---------------- */
+nav {
+  @apply relative z-[5000] flex items-center justify-between bg-white/40 px-5 py-1.5 shadow-sm backdrop-blur-2xl dark:bg-[#1c1c20]/80;
+}
+
+nav .nav-left {
+  @apply flex items-center gap-6;
+}
+
+nav .nav-left ul {
+  @apply flex items-center gap-5;
+}
+
+nav .nav-left ul li {
+  @apply cursor-pointer text-sm font-medium text-black/80 transition-colors hover:text-black dark:text-white/80 dark:hover:text-white;
+}
+
+nav .nav-right {
+  @apply flex items-center gap-4;
+}
+
+nav .nav-right ul {
+  @apply flex items-center gap-4;
+}
+
+nav time {
+  @apply text-sm font-medium text-black/80 tabular-nums dark:text-white/80;
+}
+
+.icon-hover {
+  @apply size-4 cursor-pointer opacity-70 transition-opacity hover:opacity-100 dark:invert;
+}
+
+/* appearance dropdown under the control-center icon */
+.theme-menu {
+  @apply absolute top-7 right-0 z-[7000] w-40 rounded-xl border border-black/10 bg-white/85 p-1 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-800/90;
+}
+
+.theme-menu .menu-title {
+  @apply px-2 pt-1 pb-1.5 text-[11px] font-semibold tracking-wide text-neutral-400 uppercase;
+}
+
+.theme-menu button {
+  @apply flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-neutral-700 hover:bg-black/5 dark:text-neutral-200 dark:hover:bg-white/10;
+}
+
+.theme-menu button.active {
+  @apply bg-burnt text-white hover:bg-burnt;
+}
+
+/* ---------------- welcome hero ---------------- */
+#welcome {
+  @apply pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-40 text-center;
+}
+
+#welcome p,
+#welcome h1 {
+  @apply pointer-events-auto cursor-default;
+}
+
+#welcome h1 span,
+#welcome p span {
+  @apply inline-block;
+}
+
+#welcome .hint {
+  @apply pointer-events-none mt-10 text-sm font-medium tracking-wide text-white/70;
+}
+
+/* ---------------- dock ---------------- */
+#dock {
+  @apply absolute bottom-3 left-1/2 z-[6000] -translate-x-1/2;
+}
+
+.dock-container {
+  @apply flex items-end gap-3 rounded-2xl border border-white/20 bg-white/30 px-3 py-2 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-black/30;
+}
+
+.dock-icon {
+  @apply block size-12 cursor-pointer;
+  transform-origin: bottom center;
+}
+
+.dock-icon img {
+  @apply size-full object-contain;
+}
+
+.dock-divider {
+  @apply mx-1 h-10 w-px self-center bg-black/20 dark:bg-white/20;
+}
+
+.running-dot {
+  @apply absolute -bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-black/60 dark:bg-white/70;
+}
+
+/* minimized-window tiles: tiny window mockups on the right side of the dock */
+.dock-icon.min-tile {
+  @apply flex flex-col items-stretch overflow-hidden rounded-lg bg-white shadow-md ring-1 ring-black/15 dark:bg-neutral-700 dark:ring-white/15;
+}
+
+.min-tile .mini-bar {
+  @apply flex shrink-0 items-center gap-[3px] bg-neutral-200 px-1.5 py-[3px] dark:bg-neutral-600;
+}
+
+.min-tile .mini-bar i {
+  @apply block size-[4px] rounded-full;
+}
+
+.min-tile .mini-bar i:nth-child(1) {
+  @apply bg-[#ff5f57];
+}
+
+.min-tile .mini-bar i:nth-child(2) {
+  @apply bg-[#febc2e];
+}
+
+.min-tile .mini-bar i:nth-child(3) {
+  @apply bg-[#28c840];
+}
+
+.min-tile img {
+  @apply m-auto size-7 object-contain;
+}
+
+.tooltip {
+  @apply !rounded-md !bg-black/75 !px-2 !py-1 !text-xs !text-white;
+}
+
+/* ---------------- windows (generic) ---------------- */
+.window {
+  @apply absolute flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/10 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-white/10;
+  display: none;
+  transition:
+    width 0.25s ease,
+    height 0.25s ease,
+    top 0.25s ease,
+    left 0.25s ease,
+    border-radius 0.25s ease;
+}
+
+.window.maximized {
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  border-radius: 0;
+}
+
+#window-header {
+  @apply relative flex h-11 shrink-0 cursor-grab items-center gap-3 border-b border-black/10 bg-neutral-100 px-4 active:cursor-grabbing dark:border-white/10 dark:bg-neutral-800;
+}
+
+#window-header h2 {
+  @apply pointer-events-none absolute left-1/2 max-w-[60%] -translate-x-1/2 truncate text-sm font-semibold text-neutral-700 dark:text-neutral-300;
+}
+
+#window-controls {
+  @apply flex items-center gap-2;
+}
+
+#window-controls div {
+  @apply size-3 cursor-pointer rounded-full;
+}
+
+#window-controls .close {
+  @apply bg-[#ff5f57] hover:brightness-90;
+}
+
+#window-controls .minimize {
+  @apply bg-[#febc2e];
+}
+
+#window-controls .maximize {
+  @apply bg-[#28c840];
+}
+
+.icon {
+  @apply size-4 cursor-pointer text-neutral-500 dark:text-neutral-400;
+}
+
+/* ---------------- terminal ---------------- */
+#terminal {
+  @apply flex w-[620px] flex-col;
+  top: 12vh;
+  left: 8vw;
+  height: 460px;
+}
+
+#terminal #window-header {
+  @apply bg-neutral-800 text-neutral-200;
+  border-color: rgb(255 255 255 / 0.08);
+}
+
+#terminal #window-header h2 {
+  @apply text-neutral-300;
+}
+
+.term-body {
+  @apply relative flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.term-body .prompt {
+  @apply font-bold text-[#ff8a3d];
+}
+
+.term-body .out {
+  @apply whitespace-pre-wrap text-neutral-200;
+}
+
+.term-body .accent {
+  @apply text-[#ffb26b];
+}
+
+.term-input {
+  @apply min-w-1 flex-1 text-neutral-100 caret-[#ff8a3d] outline-none;
+  font: inherit;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.term-overlay {
+  @apply absolute inset-0 z-10;
+}
+
+/* ---------------- desktop context menu ---------------- */
+.desktop-menu {
+  @apply fixed z-[9000] w-52 rounded-xl border border-black/10 bg-white/85 p-1 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-800/90;
+}
+
+.desktop-menu button {
+  @apply flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-neutral-700 hover:bg-burnt hover:text-white dark:text-neutral-200;
+}
+
+.desktop-menu hr {
+  @apply my-1 border-black/10 dark:border-white/10;
+}
+
+/* ---------------- safari ---------------- */
+#safari {
+  @apply flex w-[720px] flex-col;
+  top: 8vh;
+  left: 24vw;
+  max-height: 78vh;
+}
+
+#safari .search {
+  @apply flex flex-1 items-center gap-2 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10;
+}
+
+#safari .search input {
+  @apply flex-1 border-none bg-transparent text-sm outline-none dark:text-neutral-100 dark:placeholder:text-neutral-500;
+}
+
+#safari .blog {
+  @apply overflow-y-auto bg-white p-6 dark:bg-neutral-900;
+}
+
+#safari .blog h2 {
+  @apply mb-1 text-xl font-bold;
+}
+
+#safari .blog .sub {
+  @apply mb-5 text-sm text-neutral-500 dark:text-neutral-400;
+}
+
+.blog-post {
+  @apply grid cursor-default grid-cols-5 items-center gap-4 rounded-xl p-3 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800;
+}
+
+.blog-post img {
+  @apply col-span-2 aspect-video w-full rounded-lg object-cover ring-1 ring-black/10;
+}
+
+.blog-post .content {
+  @apply col-span-3 space-y-1;
+}
+
+.blog-post .content p:first-child {
+  @apply text-xs font-semibold tracking-wide text-burnt uppercase;
+}
+
+.blog-post .content h3 {
+  @apply font-semibold text-neutral-900 dark:text-neutral-100;
+}
+
+.blog-post .content .desc {
+  @apply text-sm text-neutral-500 dark:text-neutral-400;
+}
+
+.blog-post .content a {
+  @apply mt-1 inline-flex items-center gap-1 text-sm font-medium text-burnt hover:underline;
+}
+
+/* ---------------- resume ---------------- */
+#resume {
+  @apply flex w-[640px] flex-col;
+  top: 6vh;
+  left: 30vw;
+  max-height: 84vh;
+}
+
+#resume .pdf-scroll {
+  @apply flex-1 overflow-y-auto bg-neutral-200 p-4 dark:bg-neutral-900;
+}
+
+#resume .react-pdf__Document {
+  @apply mx-auto w-fit shadow-lg;
+}
+
+/* ---------------- finder ---------------- */
+[id^="finder"] {
+  @apply flex w-[760px] flex-col;
+  top: 14vh;
+  left: 18vw;
+  height: 480px;
+}
+
+/* extra Finder instances cascade down-right like real macOS */
+#finder2 {
+  top: 19vh;
+  left: 22vw;
+}
+
+#finder3 {
+  top: 24vh;
+  left: 26vw;
+}
+
+[id^="finder"] .finder-body {
+  @apply flex h-full flex-1 overflow-hidden bg-white dark:bg-neutral-800;
+}
+
+.sidebar {
+  @apply w-48 shrink-0 space-y-5 overflow-y-auto border-r border-black/10 bg-neutral-100/80 p-3 backdrop-blur dark:border-white/5 dark:bg-neutral-900/70;
+}
+
+.sidebar h3 {
+  @apply mb-1 px-2 text-[11px] font-semibold tracking-wide text-neutral-400 uppercase;
+}
+
+.sidebar ul {
+  @apply space-y-0.5;
+}
+
+.sidebar li {
+  @apply flex cursor-pointer items-center gap-2 rounded-md px-2 py-1;
+}
+
+.sidebar li.active {
+  @apply bg-black/10 dark:bg-white/15;
+}
+
+.sidebar li.not-active {
+  @apply hover:bg-black/5 dark:hover:bg-white/10;
+}
+
+.sidebar li p {
+  @apply truncate text-sm font-medium text-neutral-700 dark:text-neutral-300;
+}
+
+[id^="finder"] ul.content {
+  @apply relative flex-1 overflow-y-auto p-4;
+}
+
+[id^="finder"] ul.content li {
+  @apply absolute flex w-24 cursor-pointer flex-col items-center gap-1 rounded-lg p-2 text-center hover:bg-black/5 dark:hover:bg-white/10;
+}
+
+[id^="finder"] ul.content li img {
+  @apply size-14 object-contain;
+}
+
+/* white SVG icons (e.g. GitHub) need a dark chip to be visible on white */
+[id^="finder"] ul.content li img.link-chip {
+  @apply rounded-2xl bg-neutral-800 p-3 shadow-sm;
+}
+
+[id^="finder"] ul.content li p {
+  @apply w-full text-xs leading-tight font-medium break-words text-neutral-700 dark:text-neutral-300;
+}
+
+/* ---------------- contact ---------------- */
+#contact {
+  @apply w-[420px];
+  top: 16vh;
+  left: 38vw;
+}
+
+#contact .body {
+  @apply space-y-5 p-6;
+}
+
+#contact h3 {
+  @apply text-xl font-bold;
+}
+
+#contact .body > p {
+  @apply text-sm text-neutral-600 dark:text-neutral-400;
+}
+
+#contact ul {
+  @apply grid grid-cols-2 gap-3;
+}
+
+#contact ul li {
+  @apply rounded-xl text-white transition-transform hover:scale-[1.03];
+}
+
+#contact ul li a {
+  @apply flex items-center gap-2 px-4 py-3 text-sm font-semibold;
+}
+
+#contact .email {
+  @apply text-sm text-neutral-500 dark:text-neutral-400;
+}
+
+#contact .email a {
+  @apply font-medium text-burnt hover:underline;
+}
+
+/* ---------------- photos ---------------- */
+#photos {
+  @apply flex w-[720px] flex-col;
+  top: 10vh;
+  left: 26vw;
+  height: 500px;
+}
+
+#photos .photos-body {
+  @apply flex-1 space-y-7 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
+}
+
+#photos .photos-body h3 {
+  @apply mb-3 text-sm font-semibold text-neutral-800 dark:text-neutral-200;
+}
+
+#photos .photos-body h3 span {
+  @apply font-normal text-neutral-400;
+}
+
+#photos .gallery {
+  @apply grid grid-cols-4 gap-4;
+  grid-auto-rows: 138px;
+}
+
+#photos .gallery button {
+  @apply h-full w-full cursor-pointer overflow-hidden rounded-lg ring-1 ring-black/10 transition hover:brightness-105 hover:ring-black/20 dark:ring-white/10 dark:hover:ring-white/25;
+}
+
+#photos .gallery img {
+  @apply size-full object-cover;
+}
+
+/* ---------------- txt / image viewers ---------------- */
+#txtFile {
+  @apply flex w-[560px] flex-col;
+  top: 12vh;
+  left: 32vw;
+  max-height: 76vh;
+}
+
+#txtFile .txt-body {
+  @apply space-y-4 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
+}
+
+#txtFile .txt-body h3 {
+  @apply text-lg font-bold;
+}
+
+#txtFile .txt-body .subtitle {
+  @apply text-sm font-medium text-burnt;
+}
+
+#txtFile .txt-body p {
+  @apply text-sm leading-relaxed text-neutral-700 dark:text-neutral-300;
+}
+
+#txtFile .txt-body img {
+  @apply w-full rounded-lg;
+}
+
+#imgFile {
+  @apply flex w-[600px] flex-col;
+  top: 14vh;
+  left: 34vw;
+}
+
+#imgFile .img-body {
+  @apply bg-neutral-100 p-4 dark:bg-neutral-900;
+}
+
+#imgFile .img-body img {
+  @apply mx-auto max-h-[60vh] w-full rounded-lg object-contain;
+}
+
+/* ---------------- about this mac ---------------- */
+#about {
+  @apply w-[320px];
+  top: 20vh;
+  left: 40vw;
+}
+
+#about #window-header {
+  @apply border-none bg-white dark:bg-neutral-800;
+}
+
+#about .about-body {
+  @apply flex flex-col items-center px-8 pt-2 pb-6 text-center;
+}
+
+#about .about-body img {
+  @apply size-20;
+}
+
+#about .about-body h3 {
+  @apply mt-4 text-lg font-bold;
+}
+
+#about .about-body .version {
+  @apply text-xs text-neutral-500 dark:text-neutral-400;
+}
+
+#about dl {
+  @apply mt-5 w-full space-y-1 text-sm;
+}
+
+#about dl div {
+  @apply flex justify-between gap-4;
+}
+
+#about dt {
+  @apply font-semibold text-neutral-700 dark:text-neutral-300;
+}
+
+#about dd {
+  @apply text-neutral-500 dark:text-neutral-400;
+}
+
+#about .about-body button {
+  @apply mt-5 cursor-pointer rounded-lg bg-neutral-200 px-4 py-1 text-sm font-medium transition-colors hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600;
+}
+
+#about .fine-print {
+  @apply mt-4 text-[10px] text-neutral-400 dark:text-neutral-500;
+}
+
+/* ---------------- spotlight ---------------- */
+#spotlight {
+  @apply fixed inset-0 z-[8000] flex justify-center bg-black/10 pt-[24vh];
+}
+
+#spotlight .panel {
+  @apply h-fit w-[560px] max-w-[90vw] overflow-hidden rounded-2xl border border-white/40 bg-white/80 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-900/80 dark:text-neutral-100;
+}
+
+#spotlight .bar {
+  @apply flex items-center gap-3 px-4 py-3;
+}
+
+#spotlight .bar input {
+  @apply flex-1 border-none bg-transparent text-xl outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500;
+}
+
+#spotlight .bar kbd {
+  @apply rounded bg-black/10 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-white/10 dark:text-neutral-400;
+}
+
+#spotlight ul {
+  @apply border-t border-black/10 py-1 dark:border-white/10;
+}
+
+#spotlight li {
+  @apply mx-1 grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-x-3 rounded-lg px-3 py-1.5;
+}
+
+#spotlight li.selected {
+  @apply bg-burnt text-white;
+}
+
+#spotlight li img {
+  @apply row-span-2 size-8 object-contain;
+}
+
+#spotlight li img.chip {
+  @apply rounded-lg bg-neutral-800 p-1.5;
+}
+
+#spotlight li .title {
+  @apply col-start-2 truncate text-sm font-medium;
+}
+
+#spotlight li .sub {
+  @apply col-start-2 truncate text-xs opacity-60;
+}
+
+#spotlight li .kind {
+  @apply col-start-3 row-span-2 text-[10px] tracking-wide uppercase opacity-50;
+}
+
+#spotlight .empty {
+  @apply border-t border-black/10 px-4 py-3 text-sm text-neutral-500 dark:border-white/10 dark:text-neutral-400;
+}
+
+/* ---------------- desktop folders ---------------- */
+#home {
+  @apply pointer-events-none absolute inset-x-0 top-8 bottom-24;
+}
+
+#home li.folder {
+  @apply pointer-events-auto absolute flex w-28 cursor-pointer flex-col items-center gap-1 rounded-lg p-2 text-center;
+}
+
+#home li.folder img {
+  @apply size-16 object-contain drop-shadow-md transition-transform group-hover:scale-105;
+}
+
+#home li.folder p {
+  @apply w-full rounded text-xs leading-tight font-medium break-words text-white;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.6);
+}
+
+/* ---------------- boot screen ---------------- */
+#boot {
+  @apply fixed inset-0 z-[10000] flex flex-col items-center justify-center gap-10 bg-black;
+}
+
+#boot .logo {
+  @apply text-6xl font-bold text-white;
+  font-family: var(--font-georama);
+}
+
+#boot .bar {
+  @apply h-1.5 w-56 overflow-hidden rounded-full bg-white/20;
+}
+
+#boot .bar div {
+  @apply h-full w-0 rounded-full bg-white;
+}
+
+/* ---------------- mobile (iOS springboard) ---------------- */
+#mobile {
+  @apply relative flex h-dvh w-dvw flex-col overflow-hidden bg-cover bg-center;
+  background-image: url("/images/wallpaper-austin.svg");
+  padding-top: env(safe-area-inset-top);
+}
+
+.dark #mobile {
+  background-image: url("/images/wallpaper-austin-night.svg");
+  background-position: 72% center; /* keep the moon in frame on narrow screens */
+}
+
+#mobile .status-bar {
+  @apply flex shrink-0 items-center justify-between px-7 pt-3 pb-1 text-white;
+}
+
+#mobile .status-bar .time {
+  @apply text-sm font-semibold tabular-nums;
+}
+
+#mobile .status-bar .tray {
+  @apply flex items-center gap-1.5;
+}
+
+#mobile .springboard {
+  @apply flex flex-1 flex-col overflow-y-auto px-5 pt-3;
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+}
+
+.m-widget {
+  @apply mb-6 rounded-3xl border border-white/20 bg-white/15 p-5 text-white shadow-lg backdrop-blur-xl;
+}
+
+.m-widget .hello {
+  @apply text-sm font-medium text-white/80;
+}
+
+.m-widget h1 {
+  @apply font-georama text-2xl font-bold italic;
+}
+
+.m-widget .tagline {
+  @apply mt-1.5 text-xs leading-relaxed text-white/70;
+}
+
+.m-grid {
+  @apply grid grid-cols-4 gap-x-2 gap-y-5;
+}
+
+.m-app {
+  @apply flex cursor-pointer flex-col items-center gap-1.5;
+}
+
+.m-app img,
+.m-app .settings-tile {
+  @apply size-15 rounded-2xl object-contain shadow-md;
+}
+
+.m-app .settings-tile {
+  @apply flex items-center justify-center bg-gradient-to-b from-neutral-500 to-neutral-700;
+}
+
+.m-app p {
+  @apply max-w-full truncate text-[11px] font-medium text-white;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
+}
+
+.m-dock {
+  @apply mx-auto mt-auto flex w-full max-w-sm items-start justify-around rounded-[2rem] border border-white/20 bg-white/20 px-2 pt-3 pb-2 backdrop-blur-2xl;
+}
+
+.m-dock .m-app p {
+  @apply hidden;
+}
+
+/* ---------------- full-screen app sheet ---------------- */
+.m-sheet {
+  @apply absolute inset-0 z-50 flex flex-col bg-white dark:bg-neutral-900 dark:text-neutral-200;
+  padding-top: env(safe-area-inset-top);
+  animation: m-zoom-in 0.28s ease-out;
+}
+
+@keyframes m-zoom-in {
+  from {
+    transform: scale(0.88);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.m-sheet-header {
+  @apply flex shrink-0 items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10;
+}
+
+.m-sheet-header h2 {
+  @apply text-lg font-bold;
+}
+
+.m-sheet-header button {
+  @apply cursor-pointer text-base font-semibold text-burnt;
+}
+
+.m-sheet.is-terminal {
+  @apply bg-neutral-900;
+}
+
+.m-sheet.is-terminal .m-sheet-header {
+  @apply border-white/10 bg-neutral-800 text-neutral-200;
+}
+
+.m-sheet .term-body {
+  @apply text-[12px];
+}
+
+.home-indicator {
+  @apply mx-auto mb-2 h-1.5 w-32 shrink-0 cursor-pointer rounded-full bg-black/30 dark:bg-white/40;
+  margin-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+}
+
+.m-sheet.is-terminal .home-indicator {
+  @apply bg-white/40;
+}
+
+/* mobile app content */
+.m-scroll {
+  @apply flex-1 overflow-y-auto;
+}
+
+.m-back {
+  @apply mx-4 mt-3 flex cursor-pointer items-center gap-0.5 text-sm font-semibold text-burnt;
+}
+
+.m-list {
+  @apply mx-4 my-3 divide-y divide-black/5 overflow-hidden rounded-2xl bg-neutral-100 dark:divide-white/5 dark:bg-neutral-800;
+}
+
+.m-list li {
+  @apply flex cursor-pointer items-center gap-3 px-4 py-3 active:bg-black/5 dark:active:bg-white/10;
+}
+
+.m-list li img {
+  @apply size-9 object-contain;
+}
+
+.m-list li img.link-chip {
+  @apply rounded-lg bg-neutral-800 p-1.5;
+}
+
+.m-list li .title {
+  @apply text-sm font-medium;
+}
+
+.m-list li .sub {
+  @apply text-xs text-neutral-500 capitalize dark:text-neutral-400;
+}
+
+.m-list li .chev {
+  @apply ml-auto size-4 rotate-180 text-neutral-400;
+}
+
+.m-txt {
+  @apply space-y-3 p-5 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300;
+}
+
+.m-txt .subtitle {
+  @apply text-sm font-semibold text-burnt;
+}
+
+.m-txt img {
+  @apply w-full rounded-2xl;
+}
+
+.m-card {
+  @apply overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-800;
+}
+
+.m-card > img {
+  @apply aspect-video w-full object-cover;
+}
+
+.m-card .body {
+  @apply space-y-1.5 p-4;
+}
+
+.m-card .tag {
+  @apply text-[11px] font-semibold tracking-wide text-burnt uppercase;
+}
+
+.m-card h3 {
+  @apply text-base leading-snug font-bold;
+}
+
+.m-card .desc {
+  @apply text-sm text-neutral-600 dark:text-neutral-400;
+}
+
+.m-card a {
+  @apply inline-flex items-center gap-1 pt-1 text-sm font-semibold text-burnt;
+}
+
+.m-social {
+  @apply flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white;
+}
+
+.m-download {
+  @apply flex w-full items-center justify-center gap-2 rounded-xl bg-burnt px-4 py-2.5 text-sm font-semibold text-white;
+}
+
+.m-section-label {
+  @apply mb-2 px-2 text-xs font-semibold tracking-wide text-neutral-400 uppercase;
+}
+
+.m-settings {
+  @apply divide-y divide-black/5 overflow-hidden rounded-2xl bg-neutral-100 dark:divide-white/5 dark:bg-neutral-800;
+}
+
+.m-settings li {
+  @apply flex cursor-pointer items-center gap-3 px-4 py-3;
+}
+
+.m-settings li .title {
+  @apply text-sm font-medium;
+}
+
+.m-settings li .sub {
+  @apply text-xs text-neutral-500 dark:text-neutral-400;
+}

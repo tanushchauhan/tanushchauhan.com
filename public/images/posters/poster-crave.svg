@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8a3d"/>
+      <stop offset="1" stop-color="#bf5700"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#g)"/>
+  <circle cx="660" cy="120" r="220" fill="#ffffff" opacity="0.08"/>
+  <circle cx="120" cy="700" r="260" fill="#000000" opacity="0.10"/>
+  <text x="80" y="330" font-size="170">🍜</text>
+  <text x="80" y="500" font-family="Georama, -apple-system, sans-serif" font-size="76" font-weight="800" fill="#ffffff">Crave</text>
+  <text x="80" y="565" font-family="Georama, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#ffffff" opacity="0.92">AI dining concierge</text>
+  <rect x="80" y="630" width="640" height="70" rx="35" fill="#ffffff" opacity="0.16"/>
+  <text x="110" y="676" font-family="Georama, -apple-system, sans-serif" font-size="27" font-weight="600" fill="#ffffff">Best Use of Supabase · Hook 'Em Hacks 2026</text>
+</svg>
