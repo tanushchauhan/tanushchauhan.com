@@ -504,7 +504,7 @@ export const TerminalBody = () => {
           "Tokens are minted inside the container, which is the point: this is",
           "the one way in that does not require an existing passkey.",
           "",
-          "  docker exec -it <container> bun run admin:token",
+          "  docker exec -it <container> bun server/src/admin/token.ts",
         ]);
       }
       print(["waiting for passkey…"]);

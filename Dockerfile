@@ -30,6 +30,11 @@ COPY --from=server-deps /build/server/node_modules ./server/node_modules
 COPY server ./server
 COPY --from=web /build/dist ./dist
 
+# Scripts only, so `bun run admin:token` works from this WORKDIR. Without it
+# /app has no package.json and `bun run` reports the script as missing, which
+# is a confusing thing to hit while recovering access.
+COPY package.json ./
+
 # oven/bun images ship a non-root `bun` user
 USER bun
 
