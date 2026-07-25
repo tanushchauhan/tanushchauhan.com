@@ -598,21 +598,28 @@ nav time {
 }
 
 #txtFile .txt-body img {
-  @apply w-full rounded-lg;
+  @apply mx-auto size-28 rounded-full object-cover;
 }
 
 #imgFile {
   @apply flex w-[600px] flex-col;
-  top: 14vh;
+  top: 12vh;
   left: 34vw;
+  max-height: 74vh;
 }
 
+/* the body scrolls rather than the image shrinking, so a tall document-shaped
+   image (the get-to-know-me poster) stays readable instead of being squeezed */
 #imgFile .img-body {
-  @apply bg-neutral-100 p-4 dark:bg-neutral-900;
+  @apply overflow-y-auto bg-neutral-100 p-4 dark:bg-neutral-900;
 }
 
 #imgFile .img-body img {
-  @apply mx-auto max-h-[60vh] w-full rounded-lg object-contain;
+  @apply mx-auto w-full rounded-lg;
+}
+
+#imgFile #window-header a {
+  @apply ml-auto text-xs font-medium text-burnt hover:underline;
 }
 
 /* ---------------- about this mac ---------------- */
@@ -932,6 +939,12 @@ nav time {
 
 .m-txt img {
   @apply w-full rounded-2xl;
+}
+
+/* the About header portrait is an avatar, not a full-bleed figure, so it needs
+   to win over the rule above (unlayered CSS outranks Tailwind utilities here) */
+.m-txt img.m-avatar {
+  @apply mx-auto size-24 rounded-full object-cover;
 }
 
 .m-card {

@@ -179,7 +179,14 @@ const GalleryApp = () => {
             className="overflow-hidden rounded-xl ring-1 ring-black/10 dark:ring-white/10"
             onClick={() => setPhoto(g)}
           >
-            <img src={g.image} alt={g.name} className="aspect-square w-full object-cover" />
+            <img
+              src={g.image}
+              alt={g.name}
+              className={clsx(
+                "aspect-square w-full object-cover",
+                g.focus === "top" && "object-top"
+              )}
+            />
           </button>
         ))}
       </div>
@@ -239,6 +246,7 @@ const AboutApp = () => {
   return (
     <div className="m-scroll p-5">
       <div className="m-txt">
+        <img src={about.image} alt="Tanush Chauhan" className="m-avatar mb-4" />
         <p className="subtitle">{about.subtitle}</p>
         {about.description.map((p, i) => (
           <p key={i}>{p}</p>

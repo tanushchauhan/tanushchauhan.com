@@ -117,6 +117,17 @@ export const gallery = [
   { id: 6, name: "memeqa-acl2025.png", group: "Research & Awards", image: "/images/posters/poster-acl.svg" },
   { id: 7, name: "amrl-research.png", group: "Research & Awards", image: "/images/posters/poster-robot.svg" },
   { id: 8, name: "eye-tracker.png", group: "Research & Awards", image: "/images/posters/poster-eye.svg" },
+  // `focus: "top"` anchors the thumbnail crop to the top of the source, so the
+  // portrait keeps the face and the poster keeps its header instead of showing
+  // a band of body text. Everything else is already 16:9 and crops centred.
+  { id: 9, name: "me.png", group: "Off the Clock", image: "/images/me.jpg", focus: "top" },
+  {
+    id: 10,
+    name: "get-to-know-me.png",
+    group: "Off the Clock",
+    image: "/images/poster-tanush.jpg",
+    focus: "top",
+  },
 ];
 
 const project = (id, name, windowPosition, position, about, links = []) => ({
@@ -321,7 +332,7 @@ export const locations = {
         data: {
           name: "about-me.txt",
           subtitle: "Hey, I'm Tanush",
-          image: "/images/avatar-tanush.svg",
+          image: "/images/me.jpg",
           description: [
             "I'm a CS Honors + Math double major at UT Austin ('29, Dean's Scholars), minoring in Robotics, and I like building things that live where software meets the physical world.",
             "Right now I'm an undergraduate researcher at the Autonomous Mobile Robotics Lab, teaching robots to track and follow humans by fusing LiDAR and RGB streams in ROS2. Before that, I co-authored MemeQA (yes, a peer-reviewed paper about memes), published at ACL 2025.",
@@ -341,11 +352,12 @@ export const locations = {
           name: "fun-facts.txt",
           subtitle: "Things my résumé doesn't say",
           description: [
-            "🤖 I've taught a robot to follow a specific human through a crowd. It's less creepy than it sounds. Mostly.",
-            "📄 My first academic publication is about memes. My parents are still deciding how to feel about it.",
-            "👁️ I helped build an eye tracker that controls a robotic arm, and it won Best Overall Project at ECLAIR Robotics.",
-            "📱 An app I built is quietly doing GPA math for 900+ students so they don't have to.",
-            "🧮 I added the Math half of my degree because linear algebra kept showing up in the robotics code anyway.",
+            "🚶 I love exploring Austin. Most of my good ideas have come from random walks near campus with no destination in mind.",
+            "📺 I watch a lot of anime and I'm always open to recommendations. All time favorites are Attack on Titan and Jujutsu Kaisen.",
+            "🍳 I really like cooking. A few recipes I've iterated on for years, but most nights I'm still getting my inspiration from YouTube and Instagram.",
+            "🎂 Born March 31, 2007 in McKinney, TX. Yes, I'm younger than the JavaScript framework you're probably using.",
+            "🧑‍🤝‍🧑 On campus I'm in Texas Convergent, ECLAIR, and DiRP, which is where most of my favorite people came from.",
+            "💡 Best advice I've got: college is for figuring out who you are, not just what you're good at. Try as many new things as you can.",
           ],
         },
       },
@@ -356,7 +368,16 @@ export const locations = {
         kind: "file",
         fileType: "img",
         position: "top-4 left-60",
-        data: { name: "me.png", imageUrl: "/images/avatar-tanush.svg" },
+        data: { name: "me.png", imageUrl: "/images/me.jpg" },
+      },
+      {
+        id: "poster",
+        name: "get-to-know-me.png",
+        icon: "/images/image.png",
+        kind: "file",
+        fileType: "img",
+        position: "top-32 left-4",
+        data: { name: "get-to-know-me.png", imageUrl: "/images/poster-tanush.jpg" },
       },
     ],
   },

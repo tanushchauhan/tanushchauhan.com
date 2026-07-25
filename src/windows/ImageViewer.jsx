@@ -13,6 +13,9 @@ const ImageViewer = () => {
       <div id="window-header">
         <WindowControls target="imgFile" />
         <h2>{data.name}</h2>
+        <a href={data.imageUrl} target="_blank" rel="noopener noreferrer">
+          Open full size ↗
+        </a>
       </div>
 
       <div className="img-body">

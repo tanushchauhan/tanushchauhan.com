@@ -25,14 +25,19 @@ const Photos = () => {
                 {group} <span>· {items.length}</span>
               </h3>
               <div className="gallery">
-                {items.map(({ id, name, image }) => (
+                {items.map(({ id, name, image, focus }) => (
                   <button
                     key={id}
                     type="button"
                     title={name}
                     onClick={() => openWindow("imgFile", { name, imageUrl: image })}
                   >
-                    <img src={image} alt={name} loading="lazy" />
+                    <img
+                      src={image}
+                      alt={name}
+                      loading="lazy"
+                      className={focus === "top" ? "object-top" : undefined}
+                    />
                   </button>
                 ))}
               </div>

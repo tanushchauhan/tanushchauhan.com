@@ -116,7 +116,9 @@ const FS_ROOT = {
         "you found the hidden file.",
         "fun fact: this entire OS exists because I refused to build",
         "a portfolio that starts with \"Hi, I'm ___\" and a photo on the right.",
-        "run 'open contact', let's build something.",
+        "",
+        "so obviously I hid one in here instead. run 'poster'.",
+        "then run 'open contact', let's build something.",
       ],
     },
   ],
@@ -439,6 +441,16 @@ export const TerminalBody = () => {
     snake: () => {
       inputRef.current?.blur();
       setOverlay("snake");
+    },
+
+    // deliberately absent from help and from tab completion: the payoff for
+    // reading ~/.secret. Same file also sits in ~/about for anyone who browses.
+    poster: () => {
+      const item = locations.about.children.find((c) => c.id === "poster");
+      openWindow("imgFile", item.data);
+      print([
+        "The version of me that fits on one page, before the résumé sanded it down.",
+      ]);
     },
   };
 
