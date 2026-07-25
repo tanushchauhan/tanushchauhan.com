@@ -8,7 +8,8 @@
 
 services:
   db:
-    image: postgres:17-alpine
+    # kept in step with the Coolify Postgres resource in production
+    image: postgres:18-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: tanush
