@@ -37,20 +37,35 @@ export const rateLimit = ({ limit, windowMs }: { limit: number; windowMs: number
 /**
  * Client address, most trustworthy source first.
  *
- * Behind Coolify the socket address is the proxy, so x-forwarded-for is what
- * identifies the caller, but it is trivially spoofed and is only honoured when
- * TRUST_PROXY says we are actually behind a proxy we control.
+ * Requests arrive as Cloudflare -> Traefik -> app, so the socket address is
+ * only ever the proxy and a header has to identify the caller. Which header
+ * matters: proxies *append* to x-forwarded-for, so a client that sends its own
+ * `X-Forwarded-For: 1.2.3.4` produces `1.2.3.4, <real ip>` and the leftmost
+ * entry is attacker-controlled. Reading it would let anyone mint a fresh
+ * rate-limit bucket per request.
  *
- * The socket address is the last resort rather than a constant: falling back to
- * a fixed string would put every caller in one shared rate-limit bucket, so a
- * handful of posts would lock out the whole internet until the next restart.
+ * cf-connecting-ip and x-real-ip are both *set* by the proxy rather than
+ * appended to, so they cannot be forged upstream, and the rightmost
+ * x-forwarded-for entry is the address the nearest proxy actually observed.
+ *
+ * All of this is gated on TRUST_PROXY, since off a proxy these headers are
+ * pure client input. The final fallback is the socket rather than a constant:
+ * a fixed string would put every caller in one shared bucket.
  */
 export const clientIp = (c: Context) => {
   if (Bun.env.TRUST_PROXY === "true") {
-    const fwd = c.req.header("x-forwarded-for");
-    if (fwd) return fwd.split(",")[0]!.trim();
+    const cf = c.req.header("cf-connecting-ip");
+    if (cf) return cf.trim();
+
     const real = c.req.header("x-real-ip");
     if (real) return real.trim();
+
+    const fwd = c.req.header("x-forwarded-for");
+    if (fwd) {
+      const hops = fwd.split(",").map((h) => h.trim()).filter(Boolean);
+      const nearest = hops.at(-1);
+      if (nearest) return nearest;
+    }
   }
 
   try {

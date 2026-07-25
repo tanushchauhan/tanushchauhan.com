@@ -37,8 +37,18 @@ app.all("/api/*", (c) => c.json({ error: "not found" }, 404));
 /* ---------- static frontend ---------- */
 app.use("/*", serveStatic({ root: DIST }));
 
-// SPA fallback: every non-asset path renders the desktop
+// A request for a file that does not exist must 404 rather than fall through
+// to the SPA shell. Without this a missing image returns 200 with a page of
+// HTML, so broken assets look fine to monitoring and to crawlers.
+const ASSET_PATH = /^\/(assets|images|icons|files)\//;
+const HAS_EXTENSION = /\.[a-z0-9]{2,5}$/i;
+
 app.get("*", async (c, next) => {
+  const path = c.req.path;
+  if (ASSET_PATH.test(path) || HAS_EXTENSION.test(path)) {
+    return c.text("Not found", 404);
+  }
+
   const index = Bun.file(`${DIST}/index.html`);
   if (!(await index.exists())) {
     return c.text(
@@ -48,6 +58,8 @@ app.get("*", async (c, next) => {
   }
   return next();
 });
+
+// SPA fallback: every remaining path renders the desktop
 app.get("*", serveStatic({ path: `${DIST}/index.html` }));
 
 // migrations complete before the first request is served
