@@ -23,7 +23,15 @@ export const dockApps = [
 export const techStack = [
   {
     category: "Languages",
-    items: ["Java", "Python", "C/C++", "SQL", "JavaScript", "TypeScript", "Swift"],
+    items: [
+      "Java",
+      "Python",
+      "C/C++",
+      "SQL",
+      "JavaScript",
+      "TypeScript",
+      "Swift",
+    ],
   },
   {
     category: "Web",
@@ -109,18 +117,64 @@ export const socials = [
 ];
 
 export const gallery = [
-  { id: 1, name: "crave.jpg", group: "Projects", image: "/images/projects/crave.jpg" },
-  { id: 2, name: "shoo.jpg", group: "Projects", image: "/images/projects/shoo.jpg" },
-  { id: 3, name: "kindred.jpg", group: "Projects", image: "/images/projects/kindred.jpg" },
-  { id: 4, name: "prism.jpg", group: "Projects", image: "/images/projects/prism.jpg" },
-  { id: 5, name: "grademate.jpg", group: "Projects", image: "/images/projects/grademate.jpg" },
-  { id: 6, name: "memeqa-acl2025.png", group: "Research & Awards", image: "/images/posters/poster-acl.svg" },
-  { id: 7, name: "amrl-research.png", group: "Research & Awards", image: "/images/posters/poster-robot.svg" },
-  { id: 8, name: "eye-tracker.png", group: "Research & Awards", image: "/images/posters/poster-eye.svg" },
+  {
+    id: 1,
+    name: "crave.jpg",
+    group: "Projects",
+    image: "/images/projects/crave.jpg",
+  },
+  {
+    id: 2,
+    name: "shoo.jpg",
+    group: "Projects",
+    image: "/images/projects/shoo.jpg",
+  },
+  {
+    id: 3,
+    name: "kindred.jpg",
+    group: "Projects",
+    image: "/images/projects/kindred.jpg",
+  },
+  {
+    id: 4,
+    name: "prism.jpg",
+    group: "Projects",
+    image: "/images/projects/prism.jpg",
+  },
+  {
+    id: 5,
+    name: "grademate.jpg",
+    group: "Projects",
+    image: "/images/projects/grademate.jpg",
+  },
+  {
+    id: 6,
+    name: "memeqa-acl2025.png",
+    group: "Research & Awards",
+    image: "/images/posters/poster-acl.svg",
+  },
+  {
+    id: 7,
+    name: "amrl-research.png",
+    group: "Research & Awards",
+    image: "/images/posters/poster-robot.svg",
+  },
+  {
+    id: 8,
+    name: "eye-tracker.png",
+    group: "Research & Awards",
+    image: "/images/posters/poster-eye.svg",
+  },
   // `focus: "top"` anchors the thumbnail crop to the top of the source, so the
   // portrait keeps the face and the poster keeps its header instead of showing
   // a band of body text. Everything else is already 16:9 and crops centred.
-  { id: 9, name: "me.png", group: "Off the Clock", image: "/images/me.jpg", focus: "top" },
+  {
+    id: 9,
+    name: "me.png",
+    group: "Off the Clock",
+    image: "/images/me.jpg",
+    focus: "top",
+  },
   {
     id: 10,
     name: "get-to-know-me.png",
@@ -193,9 +247,12 @@ export const locations = {
             kind: "file",
             fileType: "img",
             position: "top-4 left-60",
-            data: { name: "crave · preview.jpg", imageUrl: "/images/projects/crave.jpg" },
+            data: {
+              name: "crave · preview.jpg",
+              imageUrl: "/images/projects/crave.jpg",
+            },
           },
-        ]
+        ],
       ),
       project(
         "shoo",
@@ -229,9 +286,12 @@ export const locations = {
             kind: "file",
             fileType: "img",
             position: "top-4 left-60",
-            data: { name: "shoo · preview.jpg", imageUrl: "/images/projects/shoo.jpg" },
+            data: {
+              name: "shoo · preview.jpg",
+              imageUrl: "/images/projects/shoo.jpg",
+            },
           },
-        ]
+        ],
       ),
       project(
         "kindred",
@@ -258,7 +318,7 @@ export const locations = {
             href: "https://github.com/tanushchauhan/kindred",
             position: "top-4 left-32",
           },
-        ]
+        ],
       ),
       project(
         "prism",
@@ -284,7 +344,7 @@ export const locations = {
             href: "https://devpost.com/software/prism-l2nb54",
             position: "top-4 left-32",
           },
-        ]
+        ],
       ),
       project(
         "grademate",
@@ -311,7 +371,7 @@ export const locations = {
             href: "https://github.com/tanushchauhan",
             position: "top-4 left-32",
           },
-        ]
+        ],
       ),
     ],
   },
@@ -352,12 +412,9 @@ export const locations = {
           name: "fun-facts.txt",
           subtitle: "Things my résumé doesn't say",
           description: [
-            "🚶 I love exploring Austin. Most of my good ideas have come from random walks near campus with no destination in mind.",
-            "📺 I watch a lot of anime and I'm always open to recommendations. All time favorites are Attack on Titan and Jujutsu Kaisen.",
-            "🍳 I really like cooking. A few recipes I've iterated on for years, but most nights I'm still getting my inspiration from YouTube and Instagram.",
-            "🎂 Born March 31, 2007 in McKinney, TX. Yes, I'm younger than the JavaScript framework you're probably using.",
-            "🧑‍🤝‍🧑 On campus I'm in Texas Convergent, ECLAIR, and DiRP, which is where most of my favorite people came from.",
-            "💡 Best advice I've got: college is for figuring out who you are, not just what you're good at. Try as many new things as you can.",
+            "I love exploring Austin. Most of my good ideas have come from random walks near campus with no destination in mind.",
+            "I watch a lot of anime and I am always open to recommendations. All time favorites are Attack on Titan and Jujutsu Kaisen.",
+            "I really like cooking. A few recipes I have iterated on for years, but most nights I am still getting my inspiration from YouTube and Instagram.",
           ],
         },
       },
@@ -377,7 +434,10 @@ export const locations = {
         kind: "file",
         fileType: "img",
         position: "top-32 left-4",
-        data: { name: "get-to-know-me.png", imageUrl: "/images/poster-tanush.jpg" },
+        data: {
+          name: "get-to-know-me.png",
+          imageUrl: "/images/poster-tanush.jpg",
+        },
       },
     ],
   },
@@ -418,7 +478,7 @@ export const locations = {
           description: [
             "<html>",
             "  <h1>Hi, I'm Tanush.</h1>",
-            "  <img src=\"me.jpg\" align=\"right\" />",
+            '  <img src="me.jpg" align="right" />',
             "  <p>Here are my projects. Please consider me.</p>",
             "</html>",
             "…yeah. We don't do that anymore.",
@@ -435,7 +495,12 @@ export const locations = {
         data: {
           name: "how_to_center_a_div.txt",
           subtitle: "Kept for emergencies",
-          description: ["display: flex;", "justify-content: center;", "align-items: center;", "You never know when you'll need it again."],
+          description: [
+            "display: flex;",
+            "justify-content: center;",
+            "align-items: center;",
+            "You never know when you'll need it again.",
+          ],
         },
       },
     ],
