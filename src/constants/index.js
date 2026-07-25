@@ -65,9 +65,9 @@ export const highlights = [
     title: "Crave · Best Use of Supabase & Most Startup Ready",
     description:
       "An AI dining concierge with a voice agent, group-preference reconciliation via pgvector, and receipt-OCR bill splitting. Hook 'Em Hacks 2026 @ UT Austin.",
-    image: "/images/posters/poster-crave.svg",
-    link: "https://github.com/tanushchauhan",
-    cta: "See it on GitHub",
+    image: "/images/projects/crave.jpg",
+    link: "https://devpost.com/software/crave-onrtlb",
+    cta: "See it on Devpost",
   },
   {
     id: 3,
@@ -85,7 +85,7 @@ export const highlights = [
     title: "GradeMate · 900+ students and counting",
     description:
       "A cross-platform grade tracker and GPA predictor, live on the App Store and running on Oracle Cloud.",
-    image: "/images/posters/poster-grademate.svg",
+    image: "/images/projects/grademate.jpg",
     link: "https://github.com/tanushchauhan",
     cta: "See it on GitHub",
   },
@@ -109,11 +109,11 @@ export const socials = [
 ];
 
 export const gallery = [
-  { id: 1, name: "crave.png", group: "Projects", image: "/images/posters/poster-crave.svg" },
-  { id: 2, name: "shoo.png", group: "Projects", image: "/images/posters/poster-shoo.svg" },
-  { id: 3, name: "kindred.png", group: "Projects", image: "/images/posters/poster-kindred.svg" },
-  { id: 4, name: "prism.png", group: "Projects", image: "/images/posters/poster-prism.svg" },
-  { id: 5, name: "grademate.png", group: "Projects", image: "/images/posters/poster-grademate.svg" },
+  { id: 1, name: "crave.jpg", group: "Projects", image: "/images/projects/crave.jpg" },
+  { id: 2, name: "shoo.jpg", group: "Projects", image: "/images/projects/shoo.jpg" },
+  { id: 3, name: "kindred.jpg", group: "Projects", image: "/images/projects/kindred.jpg" },
+  { id: 4, name: "prism.jpg", group: "Projects", image: "/images/projects/prism.jpg" },
+  { id: 5, name: "grademate.jpg", group: "Projects", image: "/images/projects/grademate.jpg" },
   { id: 6, name: "memeqa-acl2025.png", group: "Research & Awards", image: "/images/posters/poster-acl.svg" },
   { id: 7, name: "amrl-research.png", group: "Research & Awards", image: "/images/posters/poster-robot.svg" },
   { id: 8, name: "eye-tracker.png", group: "Research & Awards", image: "/images/posters/poster-eye.svg" },
@@ -157,7 +157,7 @@ export const locations = {
         {
           name: "Crave · about.txt",
           subtitle: "AI dining concierge · Hook 'Em Hacks 2026 winner",
-          image: "/images/posters/poster-crave.svg",
+          image: "/images/projects/crave.jpg",
           description: [
             "Crave is an AI dining concierge. A voice agent (ElevenLabs) calls custom Supabase Edge Function tools to query the database and reconcile group food preferences using Titan embeddings + pgvector HNSW search.",
             "It also does receipt-OCR bill splitting and ships a B2B analytics chatbot for restaurants.",
@@ -168,21 +168,21 @@ export const locations = {
         [
           {
             id: "crave-gh",
-            name: "github.com",
-            icon: "/icons/github.svg",
+            name: "devpost.com",
+            icon: "/icons/file.svg",
             kind: "link",
             fileType: "url",
-            href: "https://github.com/tanushchauhan",
+            href: "https://devpost.com/software/crave-onrtlb",
             position: "top-4 left-32",
           },
           {
             id: "crave-img",
-            name: "poster.png",
+            name: "preview.jpg",
             icon: "/images/image.png",
             kind: "file",
             fileType: "img",
             position: "top-4 left-60",
-            data: { name: "crave · poster.png", imageUrl: "/images/posters/poster-crave.svg" },
+            data: { name: "crave · preview.jpg", imageUrl: "/images/projects/crave.jpg" },
           },
         ]
       ),
@@ -194,7 +194,7 @@ export const locations = {
         {
           name: "Shoo! · about.txt",
           subtitle: "Edge-AI wildlife detection · Texas Convergent IoT Case",
-          image: "/images/posters/poster-shoo.svg",
+          image: "/images/projects/shoo.jpg",
           description: [
             "Shoo! is an edge-AI wildlife detection product. Ultrasonic + GPS-triggered ESP32-CAM captures stream to an on-prem Python server running Qwen2.5-VL locally for species identification, then sync to a community mobile app via Supabase Realtime.",
             "🏆 Awarded Best Presentation by Texas Convergent (Spring 2026, IoT Case).",
@@ -208,17 +208,17 @@ export const locations = {
             icon: "/icons/github.svg",
             kind: "link",
             fileType: "url",
-            href: "https://github.com/tanushchauhan",
+            href: "https://github.com/tanushchauhan/Shoo",
             position: "top-4 left-32",
           },
           {
             id: "shoo-img",
-            name: "poster.png",
+            name: "preview.jpg",
             icon: "/images/image.png",
             kind: "file",
             fileType: "img",
             position: "top-4 left-60",
-            data: { name: "shoo · poster.png", imageUrl: "/images/posters/poster-shoo.svg" },
+            data: { name: "shoo · preview.jpg", imageUrl: "/images/projects/shoo.jpg" },
           },
         ]
       ),
@@ -230,7 +230,7 @@ export const locations = {
         {
           name: "Kindred · about.txt",
           subtitle: "AI marketplace · Texas Convergent Health Tech Case",
-          image: "/images/posters/poster-kindred.svg",
+          image: "/images/projects/kindred.jpg",
           description: [
             "Kindred is an AI-driven marketplace that matches trainers and nutritionists with clients. A matching pipeline uses Supabase vector search and Llama 3.1 (through NVIDIA NIM) to analyze user profiles and automate personalized matches.",
             "🏆 Awarded Best Presentation by Texas Convergent (Fall 2025, Health Tech Case).",
@@ -244,7 +244,7 @@ export const locations = {
             icon: "/icons/github.svg",
             kind: "link",
             fileType: "url",
-            href: "https://github.com/tanushchauhan",
+            href: "https://github.com/tanushchauhan/kindred",
             position: "top-4 left-32",
           },
         ]
@@ -257,7 +257,7 @@ export const locations = {
         {
           name: "Prism · about.txt",
           subtitle: "Multi-agent product strategy platform",
-          image: "/images/posters/poster-prism.svg",
+          image: "/images/projects/prism.jpg",
           description: [
             "Prism is an AI-driven, multi-agent product strategy platform. FastAPI orchestrates parallel NVIDIA Nemotron LLM workflows, and React Flow + Jira/Auth0 integrations convert AI outputs into authenticated epics and tickets.",
             "Stack: React 18 · FastAPI · React Flow · NVIDIA Nemotron · Auth0 · Jira",
@@ -266,11 +266,11 @@ export const locations = {
         [
           {
             id: "prism-gh",
-            name: "github.com",
-            icon: "/icons/github.svg",
+            name: "devpost.com",
+            icon: "/icons/file.svg",
             kind: "link",
             fileType: "url",
-            href: "https://github.com/tanushchauhan",
+            href: "https://devpost.com/software/prism-l2nb54",
             position: "top-4 left-32",
           },
         ]
@@ -283,7 +283,7 @@ export const locations = {
         {
           name: "GradeMate · about.txt",
           subtitle: "900+ students · live on the App Store",
-          image: "/images/posters/poster-grademate.svg",
+          image: "/images/projects/grademate.jpg",
           description: [
             "GradeMate is a cross-platform application used by 900+ students to track grades, calculate GPA, and predict grades.",
             "Built with Next.js and Flutter, deployed on Oracle Cloud, and shipped to the App Store.",

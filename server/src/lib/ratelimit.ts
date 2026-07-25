@@ -1,4 +1,5 @@
 import type { Context } from "hono";
+import { getConnInfo } from "hono/bun";
 
 type Bucket = { count: number; resetAt: number };
 
@@ -34,16 +35,31 @@ export const rateLimit = ({ limit, windowMs }: { limit: number; windowMs: number
 };
 
 /**
- * Client address. Behind Coolify's proxy the socket address is the proxy, so
- * x-forwarded-for is what identifies the caller. Only trust it when the app is
- * actually running behind a proxy we control.
+ * Client address, most trustworthy source first.
+ *
+ * Behind Coolify the socket address is the proxy, so x-forwarded-for is what
+ * identifies the caller, but it is trivially spoofed and is only honoured when
+ * TRUST_PROXY says we are actually behind a proxy we control.
+ *
+ * The socket address is the last resort rather than a constant: falling back to
+ * a fixed string would put every caller in one shared rate-limit bucket, so a
+ * handful of posts would lock out the whole internet until the next restart.
  */
 export const clientIp = (c: Context) => {
   if (Bun.env.TRUST_PROXY === "true") {
     const fwd = c.req.header("x-forwarded-for");
     if (fwd) return fwd.split(",")[0]!.trim();
+    const real = c.req.header("x-real-ip");
+    if (real) return real.trim();
   }
-  return c.req.header("x-real-ip") ?? "unknown";
+
+  try {
+    const address = getConnInfo(c).remote.address;
+    if (address) return address;
+  } catch {
+    /* no connection info available (non-Bun runtime or test harness) */
+  }
+  return "unknown";
 };
 
 /** Stable pseudonymous id for an address. The raw IP is never stored. */

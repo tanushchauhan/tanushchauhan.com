@@ -559,13 +559,14 @@ nav time {
   @apply font-normal text-neutral-400;
 }
 
+/* three across in 16:9, matching the shape of the project cards themselves so
+   nothing important gets cropped out of a screenshot or wordmark */
 #photos .gallery {
-  @apply grid grid-cols-4 gap-4;
-  grid-auto-rows: 138px;
+  @apply grid grid-cols-3 gap-4;
 }
 
 #photos .gallery button {
-  @apply h-full w-full cursor-pointer overflow-hidden rounded-lg ring-1 ring-black/10 transition hover:brightness-105 hover:ring-black/20 dark:ring-white/10 dark:hover:ring-white/25;
+  @apply aspect-video w-full cursor-pointer overflow-hidden rounded-lg ring-1 ring-black/10 transition hover:brightness-105 hover:ring-black/20 dark:ring-white/10 dark:hover:ring-white/25;
 }
 
 #photos .gallery img {
