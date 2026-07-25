@@ -8,10 +8,12 @@
     "dev:api": "bun --watch server/src/index.ts",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "bun server/src/index.ts"
+    "start": "bun server/src/index.ts",
+    "admin:token": "bun server/src/admin/token.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@simplewebauthn/browser": "^13.3.0",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.13",
     "gsap": "^3.12.7",

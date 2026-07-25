@@ -4,14 +4,17 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/index.ts",
-    "start": "bun src/index.ts"
+    "start": "bun src/index.ts",
+    "admin:token": "bun src/admin/token.ts"
   },
   "dependencies": {
+    "@simplewebauthn/server": "^13.3.2",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.6.14",
     "postgres": "^3.4.9"
   },
   "devDependencies": {
+    "@types/bun": "^1.3.14",
     "drizzle-kit": "^0.31.10"
   }
 }

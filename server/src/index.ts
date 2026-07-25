@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { logger } from "hono/logger";
 import { runMigrations } from "./db/index.ts";
+import { authRoutes } from "./routes/auth.ts";
 import { guestbookRoutes } from "./routes/guestbook.ts";
 
 const PORT = Number(Bun.env.PORT ?? 3001);
@@ -27,6 +28,7 @@ api.get("/health", (c) =>
   })
 );
 
+api.route("/auth", authRoutes);
 api.route("/guestbook", guestbookRoutes);
 
 app.route("/api", api);
@@ -64,6 +66,16 @@ app.get("*", serveStatic({ path: `${DIST}/index.html` }));
 
 // migrations complete before the first request is served
 await runMigrations();
+
+// Warn rather than throw: a missing secret breaks logging in, but the public
+// portfolio is fine without it, and taking the whole site down over an auth
+// misconfiguration would be the worse failure. Sessions refuse to sign
+// themselves at the point of use, so this cannot fail silently either.
+if (!Bun.env.SESSION_SECRET) {
+  console.warn(
+    "SESSION_SECRET is not set: passkey login is disabled. Generate one with `openssl rand -base64 32`."
+  );
+}
 
 console.log(`server listening on http://localhost:${PORT}`);
 

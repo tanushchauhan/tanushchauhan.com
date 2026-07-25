@@ -4,6 +4,7 @@ import WindowWrapper from "#hoc/WindowWrapper.jsx";
 import { WindowControls } from "#components";
 import { techStack, locations } from "#constants";
 import useWindowStore from "#store/window.js";
+import useAuthStore from "#store/auth.js";
 import { MatrixOverlay, SnakeOverlay } from "./TermOverlay.jsx";
 
 const USER = "tanush@tanushchauhan.com";
@@ -167,7 +168,34 @@ const COMMAND_NAMES = [
   "help", "ls", "cd", "cat", "open", "pwd", "whoami", "skills", "projects",
   "contact", "neofetch", "echo", "date", "history", "cite", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
+  "login", "logout", "enroll", "passkeys",
 ];
+
+/** A default nickname for a newly enrolled passkey, so it is identifiable later. */
+const deviceName = () => {
+  const ua = navigator.userAgent;
+  const platform = /iPhone/.test(ua)
+    ? "iPhone"
+    : /iPad/.test(ua)
+      ? "iPad"
+      : /Mac/.test(ua)
+        ? "Mac"
+        : /Android/.test(ua)
+          ? "Android"
+          : /Windows/.test(ua)
+            ? "Windows"
+            : "device";
+  const browser = /Firefox/.test(ua)
+    ? "Firefox"
+    : /Edg\//.test(ua)
+      ? "Edge"
+      : /Chrome/.test(ua)
+        ? "Chrome"
+        : /Safari/.test(ua)
+          ? "Safari"
+          : "browser";
+  return `${platform} (${browser})`;
+};
 
 const WELCOME_LINES = [
   { type: "out", text: "tanushchauhan.com, last login: just now, from somewhere great" },
@@ -190,6 +218,7 @@ const loadSession = () => {
 // the shell itself, reused by the desktop window and the mobile app
 export const TerminalBody = () => {
   const { openWindow, openFinderWindow, setTheme, windows } = useWindowStore();
+  const auth = useAuthStore();
   const isOpen = windows.terminal.isOpen;
   const [overlay, setOverlay] = useState(null); // "matrix" | "snake" | null
 
@@ -292,6 +321,10 @@ export const TerminalBody = () => {
         "  matrix           follow the white rabbit",
         "  snake            arrows to move, esc to quit",
         "  clear            clear terminal",
+        "",
+        "  login            sign in with a passkey (Touch ID / Face ID)",
+        "  logout           end the session",
+        "  passkeys         list registered passkeys",
       ]),
 
     ls: (args) => {
@@ -360,6 +393,10 @@ export const TerminalBody = () => {
         "Tanush Chauhan, CS Honors + Math @ UT Austin ('29), Robotics minor.",
         "Undergrad researcher at the Autonomous Mobile Robotics Lab,",
         "hackathon regular, and co-author of a peer-reviewed paper about memes (ACL 2025).",
+        "",
+        auth.status === "authed"
+          ? `session: authenticated via passkey '${auth.passkey}'.`
+          : "session: guest (read-only).",
       ]),
 
     skills: () =>
@@ -443,6 +480,58 @@ export const TerminalBody = () => {
       setOverlay("snake");
     },
 
+    /* ---------- auth ----------
+     * These print asynchronously: the WebAuthn call blocks on a real Touch ID
+     * prompt, so the command returns immediately and the result lands when the
+     * user has answered it. */
+    login: async () => {
+      if (auth.status === "authed") return print(["already signed in."]);
+      print(["waiting for passkey…"]);
+      print([await auth.login()]);
+    },
+
+    logout: async () => {
+      if (auth.status !== "authed") return print(["not signed in."]);
+      print([await auth.logout()]);
+    },
+
+    enroll: async (args) => {
+      const token = args[0];
+      if (!token && auth.status !== "authed") {
+        return print([
+          "usage: enroll <token>",
+          "",
+          "Tokens are minted inside the container, which is the point: this is",
+          "the one way in that does not require an existing passkey.",
+          "",
+          "  docker exec -it <container> bun run admin:token",
+        ]);
+      }
+      print(["waiting for passkey…"]);
+      print([await auth.enroll(token, args[1] ?? deviceName())]);
+    },
+
+    passkeys: async () => {
+      if (auth.status !== "authed") return print(["passkeys: not signed in."]);
+      try {
+        const res = await fetch("/api/auth/passkeys", { credentials: "same-origin" });
+        const { passkeys = [] } = await res.json();
+        print(
+          passkeys.length
+            ? passkeys.map((k) => {
+                const added = dayjs(k.createdAt).format("MMM D YYYY");
+                const used = k.lastUsedAt
+                  ? dayjs(k.lastUsedAt).format("MMM D YYYY")
+                  : "never";
+                return `  ${k.nickname.padEnd(22)} added ${added}, last used ${used}`;
+              })
+            : ["  (none)"]
+        );
+      } catch {
+        print(["passkeys: could not reach the server."]);
+      }
+    },
+
     // deliberately absent from help and from tab completion: the payoff for
     // reading ~/.secret. Same file also sits in ~/about for anyone who browses.
     poster: () => {
@@ -470,9 +559,21 @@ export const TerminalBody = () => {
     if (name === "sudo") {
       if (cmd.includes("rm -rf"))
         return print(["nice try, this OS is load-bearing."]);
-      return print([
-        "tanush is not in the sudoers file. This incident will be reported.",
-      ]);
+
+      // the front door to the private half of the site. Nothing here is
+      // guessable-secret: the obscurity is flavour, the passkey is the lock.
+      if (auth.status === "authed") {
+        return print([`already elevated. signed in with '${auth.passkey}'.`]);
+      }
+      if (auth.needsEnrollment) {
+        return print([
+          "no passkeys are registered on this deployment yet.",
+          "run 'enroll' to see how to mint an enrollment token.",
+        ]);
+      }
+      print(["verifying identity…"]);
+      auth.login().then((message) => print([message]));
+      return;
     }
 
     print([`zsh: command not found: ${name}, type 'help'`]);

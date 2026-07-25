@@ -22,6 +22,7 @@ import {
   Guestbook,
 } from "#windows";
 import useWindowStore from "#store/window.js";
+import useAuthStore from "#store/auth.js";
 import { setSoundEnabled } from "./utils/sound.js";
 
 const MOBILE_QUERY = "(max-width: 767px)";
@@ -33,6 +34,12 @@ const App = () => {
   useEffect(() => {
     setSoundEnabled(soundOn);
   }, [soundOn]);
+
+  // asked once per load, because the session lives in an httpOnly cookie that
+  // the page cannot inspect for itself
+  useEffect(() => {
+    useAuthStore.getState().refresh();
+  }, []);
   const [isMobile, setIsMobile] = useState(
     () => window.matchMedia(MOBILE_QUERY).matches
   );
