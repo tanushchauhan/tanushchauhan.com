@@ -18,6 +18,7 @@ import clsx from "clsx";
 import { locations, highlights, gallery, techStack, socials } from "#constants";
 import { TerminalBody } from "#windows/Terminal.jsx";
 import { GuestbookBody } from "#windows/Guestbook.jsx";
+import { MobileWidgets } from "./widgets/Widgets.jsx";
 import useWindowStore from "#store/window.js";
 
 // same lazy module as the desktop Resume window: the PDF worker is only
@@ -336,6 +337,8 @@ const MobileExperience = () => {
             CS Honors + Math @ UT Austin · robotics researcher · hackathon regular
           </p>
         </div>
+
+        <MobileWidgets />
 
         <div className="m-grid">
           {APPS.filter((a) => !DOCK_APPS.includes(a.id)).map((a) => (

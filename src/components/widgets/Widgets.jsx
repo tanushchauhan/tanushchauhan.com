@@ -51,13 +51,17 @@ const AustinClock = () => {
       <header>
         <span>{asleep ? "🌙" : "☀️"}</span> Austin, TX
       </header>
-      <p className="big">
-        {get("hour")}:{get("minute")}
-        <span className="unit">{get("dayPeriod")}</span>
-      </p>
-      <p className="sub">
-        {weekday} · {asleep ? "probably asleep" : "probably around"}
-      </p>
+      {/* centred, because the grid stretches every card to the tallest in the
+          row and a clock has less to say than a heatmap */}
+      <div className="body">
+        <p className="big">
+          {get("hour")}:{get("minute")}
+          <span className="unit">{get("dayPeriod")}</span>
+        </p>
+        <p className="sub">
+          {weekday} · {asleep ? "probably asleep" : "probably around"}
+        </p>
+      </div>
     </article>
   );
 };
@@ -102,11 +106,22 @@ const LatestCommit = ({ data }) => (
         <p className="repo">{data.repo}</p>
         <p className="msg">{data.message}</p>
         <p className="sub">
-          {data.sha} · {dayjs(data.at).format("MMM D, h:mm A")}
+          {data.url ? (
+            <a href={data.url} target="_blank" rel="noopener noreferrer">
+              {data.sha}
+            </a>
+          ) : (
+            data.sha
+          )}{" "}
+          · {dayjs(data.at).format("MMM D, YYYY")}
         </p>
       </>
     ) : (
-      <p className="empty">No recent pushes.</p>
+      <p className="empty">
+        {data?.reason === "no public repos"
+          ? "No public repos yet."
+          : "Nothing public to show."}
+      </p>
     )}
   </article>
 );
@@ -130,11 +145,10 @@ const NowBuilding = ({ data }) => (
   </article>
 );
 
-const Widgets = () => {
-  const { widgetPos, setWidgetPos } = useWindowStore();
+/** Shared by the desktop grid and the mobile row, so they cannot drift apart. */
+const useWidgetData = () => {
   const [github, setGithub] = useState(null);
   const [building, setBuilding] = useState(null);
-  const rootRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -164,6 +178,36 @@ const Widgets = () => {
       document.removeEventListener("visibilitychange", load);
     };
   }, []);
+
+  return { github, building };
+};
+
+/** The four cards, in order, so both layouts render the same set. */
+const cards = ({ github, building }) => [
+  { id: "clock", node: <AustinClock /> },
+  { id: "contrib", node: <Contributions data={github?.contributions} /> },
+  { id: "commit", node: <LatestCommit data={github?.latest} /> },
+  { id: "building", node: <NowBuilding data={building} /> },
+];
+
+/** Mobile: a horizontally snapping row above the app grid, no dragging. */
+export const MobileWidgets = () => {
+  const data = useWidgetData();
+  return (
+    <div className="m-widgets">
+      {cards(data).map(({ id, node }) => (
+        <div key={id} className="widget-slot">
+          {node}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const Widgets = () => {
+  const { widgetPos, setWidgetPos } = useWindowStore();
+  const data = useWidgetData();
+  const rootRef = useRef(null);
 
   // same drag-and-persist contract as the desktop folders in Home.jsx
   useGSAP(
@@ -204,18 +248,11 @@ const Widgets = () => {
 
   return (
     <section id="widgets" ref={rootRef}>
-      <div className="widget-slot" data-id="clock">
-        <AustinClock />
-      </div>
-      <div className="widget-slot" data-id="contrib">
-        <Contributions data={github?.contributions} />
-      </div>
-      <div className="widget-slot" data-id="commit">
-        <LatestCommit data={github?.latest} />
-      </div>
-      <div className="widget-slot" data-id="building">
-        <NowBuilding data={building} />
-      </div>
+      {cards(data).map(({ id, node }) => (
+        <div key={id} className="widget-slot" data-id={id}>
+          {node}
+        </div>
+      ))}
     </section>
   );
 };

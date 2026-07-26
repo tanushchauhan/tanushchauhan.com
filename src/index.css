@@ -1006,11 +1006,10 @@ nav time {
 }
 
 /* ---------------- desktop widgets ----------------
-   A left-hand column, mirroring where the project folders sit on the right.
-   Cards are draggable and their offsets persist, the same contract as the
-   folders in Home.jsx. */
+   A 2x2 block on the left, balancing the project folders on the right. Sized
+   so the pair of columns still clears the centre of the wallpaper. */
 #widgets {
-  @apply pointer-events-none absolute top-44 left-8 z-[5] flex w-64 flex-col gap-3;
+  @apply pointer-events-none absolute top-56 left-8 z-[5] grid w-[34rem] grid-cols-2 gap-4;
 }
 
 .widget-slot {
@@ -1018,40 +1017,52 @@ nav time {
 }
 
 .widget {
-  @apply rounded-2xl border border-white/15 bg-black/25 p-4 text-white shadow-lg backdrop-blur-xl;
+  @apply flex h-full flex-col rounded-3xl border border-white/15 bg-black/30 p-5 text-white shadow-xl backdrop-blur-xl;
 }
 
 .widget header {
-  @apply flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white/60 uppercase;
+  @apply flex items-center gap-2 text-xs font-semibold tracking-wide text-white/55 uppercase;
+}
+
+.widget .body {
+  @apply flex flex-1 flex-col justify-center;
 }
 
 .widget .big {
-  @apply mt-2 text-3xl leading-none font-semibold tabular-nums;
+  @apply mt-3 text-5xl leading-none font-semibold tabular-nums;
+}
+
+.widget .body .big {
+  @apply mt-0;
+}
+
+.widget .sub a {
+  @apply text-white/70 underline decoration-white/25 underline-offset-2 hover:text-white;
 }
 
 .widget .big .unit {
-  @apply ml-1.5 text-xs font-medium tracking-wide text-white/50 uppercase;
+  @apply ml-2 text-xs font-medium tracking-wide text-white/50 uppercase;
 }
 
 .widget .sub {
-  @apply mt-1.5 text-[11px] text-white/50;
+  @apply mt-2 text-xs text-white/50;
 }
 
 .widget .repo {
-  @apply mt-2 text-sm font-semibold text-white;
+  @apply mt-3 text-lg font-semibold text-white;
 }
 
 .widget .msg {
-  @apply mt-1 text-xs leading-snug text-white/80;
+  @apply mt-1.5 text-sm leading-snug text-white/85;
 }
 
 .widget .empty {
-  @apply mt-2 text-xs leading-snug text-white/45;
+  @apply mt-3 text-sm leading-snug text-white/45;
 }
 
 /* contribution grid: burnt orange rather than GitHub green, to match the site */
 .widget .heatmap {
-  @apply mt-3 block;
+  @apply mt-4 block;
 }
 
 .heatmap rect {
@@ -1070,10 +1081,38 @@ nav time {
   fill: rgb(255 168 79 / 1);
 }
 
-/* the widget column would collide with the hero and folders on a narrow
-   desktop viewport, and mobile has its own springboard entirely */
-@media (max-width: 1100px) {
+/* the block would collide with the folders on a narrow desktop viewport, and
+   mobile renders its own swipeable row instead */
+@media (max-width: 1280px) {
   #widgets {
     @apply hidden;
   }
+}
+
+/* ---------------- mobile widgets ----------------
+   A horizontally snapping row above the app grid, the way iOS puts widgets on
+   the home screen. Pure CSS scroll-snap, so it swipes without any JS. */
+.m-widgets {
+  @apply flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2;
+  scrollbar-width: none;
+}
+
+.m-widgets::-webkit-scrollbar {
+  display: none;
+}
+
+.m-widgets .widget-slot {
+  @apply w-[78%] shrink-0 snap-center cursor-auto;
+}
+
+.m-widgets .widget {
+  @apply min-h-40;
+}
+
+.m-widgets .widget .big {
+  @apply mt-2 text-4xl;
+}
+
+.m-widgets .widget .heatmap {
+  @apply mt-2;
 }

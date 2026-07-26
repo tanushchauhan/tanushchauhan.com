@@ -115,31 +115,47 @@ const loadContributions = async () => {
 };
 
 /* ---------- latest commit ----------
- * Public events, so this works with or without a token. */
+ * Deliberately not the events API. /users/{user}/events/public only retains
+ * roughly 90 days, so someone whose recent work is private reads as "no recent
+ * pushes" while their public repos still have perfectly good commits sitting
+ * there. Asking for repositories sorted by push date has no such window.
+ *
+ * Forks are skipped (the newest commit there is usually upstream's, not mine)
+ * and commits are filtered by author, so a merged PR from someone else does not
+ * get reported as my latest work. Both calls are public: no token required.
+ */
 const loadLatestCommit = async () => {
-  const res = await fetch(
-    `https://api.github.com/users/${GITHUB_USER}/events/public?per_page=100`,
+  const repoRes = await fetch(
+    `https://api.github.com/users/${GITHUB_USER}/repos?sort=pushed&direction=desc&per_page=10&type=owner`,
     { headers: ghHeaders() }
   );
-  if (!res.ok) throw new Error(`github events ${res.status}`);
+  if (!repoRes.ok) throw new Error(`github repos ${repoRes.status}`);
 
-  const events = await res.json();
-  if (!Array.isArray(events)) throw new Error("unexpected events shape");
+  const repos = await repoRes.json();
+  if (!Array.isArray(repos)) throw new Error("unexpected repos shape");
 
-  const push = events.find(
-    (e) => e?.type === "PushEvent" && e?.payload?.commits?.length
+  const target = repos.find((r) => !r?.fork && !r?.archived);
+  if (!target) return { available: false as const, reason: "no public repos" };
+
+  const commitRes = await fetch(
+    `https://api.github.com/repos/${GITHUB_USER}/${target.name}/commits?author=${GITHUB_USER}&per_page=1`,
+    { headers: ghHeaders() }
   );
-  if (!push) return { available: false as const, reason: "no recent pushes" };
+  if (!commitRes.ok) throw new Error(`github commits ${commitRes.status}`);
 
-  const commits = push.payload.commits;
-  const head = commits[commits.length - 1];
+  const commits = await commitRes.json();
+  if (!Array.isArray(commits) || !commits.length) {
+    return { available: false as const, reason: "no commits found" };
+  }
 
+  const head = commits[0];
   return {
     available: true as const,
-    repo: String(push.repo?.name ?? "").replace(`${GITHUB_USER}/`, ""),
-    message: String(head?.message ?? "").split("\n")[0].slice(0, 120),
+    repo: String(target.name),
+    message: String(head?.commit?.message ?? "").split("\n")[0].slice(0, 120),
     sha: String(head?.sha ?? "").slice(0, 7),
-    at: push.created_at as string,
+    at: (head?.commit?.author?.date ?? head?.commit?.committer?.date) as string,
+    url: String(head?.html_url ?? ""),
   };
 };
 
