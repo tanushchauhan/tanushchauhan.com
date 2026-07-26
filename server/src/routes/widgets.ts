@@ -53,10 +53,20 @@ const loadContributions = async () => {
     return { available: false as const, reason: "GITHUB_TOKEN is not set" };
   }
 
+  /*
+   * restrictedContributionsCount is the count of work done in private repos.
+   * GitHub returns it as a bare number with no repository, message, or date
+   * detail attached, which is exactly the anonymised shape a public profile
+   * shows. It is only non-zero when "Include private contributions on my
+   * profile" is enabled in GitHub settings, and it needs no repo scope: a
+   * read-only user token is enough, so this server never holds a credential
+   * that could read private source.
+   */
   const query = `
     query($login: String!) {
       user(login: $login) {
         contributionsCollection {
+          restrictedContributionsCount
           contributionCalendar {
             totalContributions
             weeks { contributionDays { date contributionCount } }
@@ -76,6 +86,7 @@ const loadContributions = async () => {
     data?: {
       user?: {
         contributionsCollection?: {
+          restrictedContributionsCount?: number;
           contributionCalendar?: {
             totalContributions: number;
             weeks: { contributionDays: { date: string; contributionCount: number }[] }[];
@@ -85,8 +96,8 @@ const loadContributions = async () => {
     };
   };
 
-  const calendar =
-    body?.data?.user?.contributionsCollection?.contributionCalendar;
+  const collection = body?.data?.user?.contributionsCollection;
+  const calendar = collection?.contributionCalendar;
   if (!calendar) throw new Error("unexpected graphql shape");
 
   const days: { date: string; count: number }[] = calendar.weeks.flatMap(
@@ -98,6 +109,7 @@ const loadContributions = async () => {
   return {
     available: true as const,
     total: calendar.totalContributions as number,
+    private: collection?.restrictedContributionsCount ?? 0,
     days: days.slice(-119),
   };
 };

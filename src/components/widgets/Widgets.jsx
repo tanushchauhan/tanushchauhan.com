@@ -71,10 +71,15 @@ const Contributions = ({ data }) => (
     {data?.available ? (
       <>
         <p className="big">
-          {data.total}
+          {data.total.toLocaleString()}
           <span className="unit">this year</span>
         </p>
         <Heatmap days={data.days} />
+        {data.private > 0 && (
+          <p className="sub">
+            {data.private.toLocaleString()} in private repos
+          </p>
+        )}
       </>
     ) : (
       <p className="empty">
