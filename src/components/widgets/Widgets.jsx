@@ -6,10 +6,23 @@ import dayjs from "dayjs";
 import clsx from "clsx";
 import useWindowStore from "#store/window.js";
 import { Heatmap } from "./Sparkline.jsx";
+import { SunIcon, MoonIcon, GridIcon, CommitIcon, CubeIcon } from "./Icons.jsx";
 
 gsap.registerPlugin(Draggable);
 
 const POLL_MS = 15 * 60 * 1000; // GitHub is cached for 5 min server-side anyway
+
+/**
+ * One tinted glyph chip per card. The colour rides on the card as `--accent`
+ * rather than being hardcoded here, so the chip and anything else that wants to
+ * pick it up (the sha pill, the live dot) always agree.
+ */
+const Head = ({ icon, children }) => (
+  <header>
+    <span className="ico">{icon}</span>
+    {children}
+  </header>
+);
 
 /* ---------- Austin clock ----------
  * The menu bar already shows the visitor their own time, so repeating it would
@@ -48,10 +61,13 @@ const AustinClock = () => {
   const asleep = hour24 >= 2 && hour24 < 9;
 
   return (
-    <article className="widget w-clock">
-      <header>
-        <span>{asleep ? "🌙" : "☀️"}</span> Austin, TX
-      </header>
+    <article
+      className="widget w-clock"
+      // amber while I am likely up, indigo overnight: the card reads at a
+      // glance before you have parsed a single word of it
+      style={{ "--accent": asleep ? "#8ea2f6" : "#f5a524" }}
+    >
+      <Head icon={asleep ? <MoonIcon /> : <SunIcon />}>Austin, TX</Head>
       {/* centred, because the grid stretches every card to the tallest in the
           row and a clock has less to say than a heatmap */}
       <div className="body">
@@ -60,6 +76,7 @@ const AustinClock = () => {
           <span className="unit">{get("dayPeriod")}</span>
         </p>
         <p className="sub">
+          <i className="dot" />
           {weekday} · {asleep ? "probably asleep" : "probably around"}
         </p>
       </div>
@@ -69,10 +86,8 @@ const AustinClock = () => {
 
 /* ---------- GitHub contributions ---------- */
 const Contributions = ({ data }) => (
-  <article className="widget w-contrib">
-    <header>
-      <span>▦</span> Contributions
-    </header>
+  <article className="widget w-contrib" style={{ "--accent": "#f08a2d" }}>
+    <Head icon={<GridIcon />}>Contributions</Head>
     {data?.available ? (
       <>
         <p className="big">
@@ -98,23 +113,27 @@ const Contributions = ({ data }) => (
 
 /* ---------- latest commit ---------- */
 const LatestCommit = ({ data }) => (
-  <article className="widget w-commit">
-    <header>
-      <span>⚡</span> Latest commit
-    </header>
+  <article className="widget w-commit" style={{ "--accent": "#5fd39b" }}>
+    <Head icon={<CommitIcon />}>Latest commit</Head>
     {data?.available ? (
       <>
         <p className="repo">{data.repo}</p>
         <p className="msg">{data.message}</p>
-        <p className="sub">
+        {/* pushed to the bottom of the card: this row is a footer, and the grid
+            stretches this card to the height of the heatmap beside it, which
+            otherwise left a lot of dead space under the message */}
+        <p className="sub meta">
           {data.url ? (
-            <a href={data.url} target="_blank" rel="noopener noreferrer">
+            <a className="sha" href={data.url} target="_blank" rel="noopener noreferrer">
               {data.sha}
             </a>
           ) : (
-            data.sha
-          )}{" "}
-          · {dayjs(data.at).format("MMM D, YYYY")}
+            <span className="sha">{data.sha}</span>
+          )}
+          {/* one unit: a narrow card was breaking the date after the comma */}
+          <span className="whitespace-nowrap">
+            {dayjs(data.at).format("MMM D, YYYY")}
+          </span>
         </p>
       </>
     ) : (
@@ -129,15 +148,13 @@ const LatestCommit = ({ data }) => (
 
 /* ---------- now building ---------- */
 const NowBuilding = ({ data }) => (
-  <article className="widget w-building">
-    <header>
-      <span>🔨</span> Now building
-    </header>
+  <article className="widget w-building" style={{ "--accent": "#a78bfa" }}>
+    <Head icon={<CubeIcon />}>Now building</Head>
     {data?.text ? (
       <>
-        <p className="msg">{data.text}</p>
+        <p className="msg lead">{data.text}</p>
         {data.updatedAt && (
-          <p className="sub">updated {dayjs(data.updatedAt).format("MMM D")}</p>
+          <p className="sub meta">updated {dayjs(data.updatedAt).format("MMM D")}</p>
         )}
       </>
     ) : (

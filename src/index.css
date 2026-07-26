@@ -1044,12 +1044,32 @@ nav time {
   @apply pointer-events-auto cursor-grab active:cursor-grabbing;
 }
 
+/* bg-black/40 rather than /30: the wallpaper has a bright orange band running
+   straight through the widget column, and at /30 it bleached the heatmap's
+   empty cells until the grid read as blotchy rather than as a grid */
 .widget {
-  @apply flex h-full flex-col rounded-3xl border border-white/15 bg-black/30 p-5 text-white shadow-xl backdrop-blur-xl;
+  @apply flex h-full flex-col rounded-3xl border border-white/15 bg-black/55 p-5 text-white shadow-xl backdrop-blur-xl;
+  transition: border-color 0.25s ease;
+}
+
+/* every card carries its own --accent, so one rule tints the glyph chip, the
+   live dot and the sha pill without any of them naming a colour */
+.widget-slot:hover .widget {
+  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
 .widget header {
   @apply flex items-center gap-2 text-xs font-semibold tracking-wide text-white/55 uppercase;
+}
+
+.widget header .ico {
+  @apply grid size-6 shrink-0 place-items-center rounded-lg;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.widget header .ico svg {
+  @apply size-[0.95rem];
 }
 
 .widget .body {
@@ -1076,12 +1096,41 @@ nav time {
   @apply mt-2 text-xs text-white/50;
 }
 
+/* a footer, not a third paragraph: mt-auto pins it to the bottom edge, since
+   the grid stretches these cards to the tallest one in the row */
+.widget .sub.meta {
+  @apply mt-auto flex items-center gap-2 pt-3;
+}
+
+.widget .sub .dot {
+  @apply mr-1.5 inline-block size-1.5 shrink-0 rounded-full align-middle;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.widget .sub .sha {
+  @apply rounded-md px-1.5 py-0.5 font-mono text-[0.7rem] no-underline;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  transition: background-color 0.2s ease;
+}
+
+.widget .sub a.sha:hover {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
 .widget .repo {
   @apply mt-3 text-lg font-semibold text-white;
 }
 
 .widget .msg {
   @apply mt-1.5 text-sm leading-snug text-white/85;
+}
+
+/* "Now building" is one short line in an otherwise empty card, so it gets to
+   be the headline rather than body copy */
+.widget .msg.lead {
+  @apply mt-3 text-base leading-snug font-medium text-white;
 }
 
 .widget .empty {
@@ -1094,7 +1143,7 @@ nav time {
 }
 
 .heatmap rect {
-  fill: rgb(255 255 255 / 0.08);
+  fill: rgb(255 255 255 / 0.12);
 }
 .heatmap rect.lvl-1 {
   fill: rgb(191 87 0 / 0.45);
@@ -1149,12 +1198,24 @@ nav time {
   }
 
   #widgets header {
-    @apply text-[10px];
+    @apply gap-1.5 text-[10px];
+  }
+
+  #widgets header .ico {
+    @apply size-5 rounded-md;
+  }
+
+  #widgets header .ico svg {
+    @apply size-3;
   }
 
   #widgets .empty,
   #widgets .msg {
     @apply text-xs;
+  }
+
+  #widgets .msg.lead {
+    @apply text-sm;
   }
 }
 
@@ -1182,7 +1243,19 @@ nav time {
 }
 
 .m-widgets .widget header {
-  @apply text-[10px];
+  @apply gap-1.5 text-[10px];
+}
+
+.m-widgets .widget header .ico {
+  @apply size-5 rounded-md;
+}
+
+.m-widgets .widget header .ico svg {
+  @apply size-3;
+}
+
+.m-widgets .widget .msg.lead {
+  @apply text-sm;
 }
 
 .m-widgets .widget .heatmap {
