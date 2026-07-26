@@ -73,12 +73,12 @@ const Welcome = () => {
 
   return (
     <section id="welcome">
-      <p ref={subtitleRef} className="text-white/90">
-        {renderText("Hey, I'm Tanush. Welcome to", "text-3xl font-georama", 100)}
-      </p>
-      <h1 ref={titleRef} className="mt-7 text-white">
-        {renderText("tanushchauhan.com", "text-8xl italic font-georama", 400)}
+      <h1 ref={titleRef} className="text-white">
+        {renderText("tanushchauhan.com", "text-4xl italic font-georama", 400)}
       </h1>
+      <p ref={subtitleRef} className="mt-1 text-white/90">
+        {renderText("Hey, I'm Tanush", "text-lg font-georama", 100)}
+      </p>
       <p className="hint">
         This isn't a website, it's an operating system. Open a folder, try the
         terminal, or press ⌘K to search.

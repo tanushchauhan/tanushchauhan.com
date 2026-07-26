@@ -89,3 +89,19 @@ export const bootstrapTokens = pgTable("bootstrap_tokens", {
 });
 
 export type BootstrapToken = typeof bootstrapTokens.$inferSelect;
+
+/**
+ * Small pieces of hand-edited site copy, so changing what the "now building"
+ * widget says is a terminal command rather than a commit and a redeploy.
+ * A key/value table rather than a column per field, because the alternative is
+ * a migration every time a widget wants one more line of text.
+ */
+export const siteStatus = pgTable("site_status", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type SiteStatus = typeof siteStatus.$inferSelect;

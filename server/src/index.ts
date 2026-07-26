@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import { runMigrations } from "./db/index.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { guestbookRoutes } from "./routes/guestbook.ts";
+import { widgetRoutes } from "./routes/widgets.ts";
 
 const PORT = Number(Bun.env.PORT ?? 3001);
 
@@ -30,6 +31,7 @@ api.get("/health", (c) =>
 
 api.route("/auth", authRoutes);
 api.route("/guestbook", guestbookRoutes);
+api.route("/widgets", widgetRoutes);
 
 app.route("/api", api);
 

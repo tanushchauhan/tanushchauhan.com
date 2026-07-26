@@ -89,9 +89,11 @@ nav time {
   @apply bg-burnt text-white hover:bg-burnt;
 }
 
-/* ---------------- welcome hero ---------------- */
+/* ---------------- welcome nameplate ----------------
+   Anchored top-left rather than filling the desktop: it still says whose site
+   this is, but it no longer occupies the space the widgets need. */
 #welcome {
-  @apply pointer-events-none absolute inset-0 flex flex-col items-center justify-center pb-40 text-center;
+  @apply pointer-events-none absolute top-12 left-8 flex flex-col items-start text-left;
 }
 
 #welcome p,
@@ -105,7 +107,7 @@ nav time {
 }
 
 #welcome .hint {
-  @apply pointer-events-none mt-10 text-sm font-medium tracking-wide text-white/70;
+  @apply pointer-events-none mt-3 max-w-xs text-xs leading-relaxed font-medium tracking-wide text-white/60;
 }
 
 /* ---------------- dock ---------------- */
@@ -1001,4 +1003,77 @@ nav time {
 
 .m-settings li .sub {
   @apply text-xs text-neutral-500 dark:text-neutral-400;
+}
+
+/* ---------------- desktop widgets ----------------
+   A left-hand column, mirroring where the project folders sit on the right.
+   Cards are draggable and their offsets persist, the same contract as the
+   folders in Home.jsx. */
+#widgets {
+  @apply pointer-events-none absolute top-44 left-8 z-[5] flex w-64 flex-col gap-3;
+}
+
+.widget-slot {
+  @apply pointer-events-auto cursor-grab active:cursor-grabbing;
+}
+
+.widget {
+  @apply rounded-2xl border border-white/15 bg-black/25 p-4 text-white shadow-lg backdrop-blur-xl;
+}
+
+.widget header {
+  @apply flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white/60 uppercase;
+}
+
+.widget .big {
+  @apply mt-2 text-3xl leading-none font-semibold tabular-nums;
+}
+
+.widget .big .unit {
+  @apply ml-1.5 text-xs font-medium tracking-wide text-white/50 uppercase;
+}
+
+.widget .sub {
+  @apply mt-1.5 text-[11px] text-white/50;
+}
+
+.widget .repo {
+  @apply mt-2 text-sm font-semibold text-white;
+}
+
+.widget .msg {
+  @apply mt-1 text-xs leading-snug text-white/80;
+}
+
+.widget .empty {
+  @apply mt-2 text-xs leading-snug text-white/45;
+}
+
+/* contribution grid: burnt orange rather than GitHub green, to match the site */
+.widget .heatmap {
+  @apply mt-3 block;
+}
+
+.heatmap rect {
+  fill: rgb(255 255 255 / 0.08);
+}
+.heatmap rect.lvl-1 {
+  fill: rgb(191 87 0 / 0.45);
+}
+.heatmap rect.lvl-2 {
+  fill: rgb(214 108 20 / 0.7);
+}
+.heatmap rect.lvl-3 {
+  fill: rgb(240 138 45 / 0.85);
+}
+.heatmap rect.lvl-4 {
+  fill: rgb(255 168 79 / 1);
+}
+
+/* the widget column would collide with the hero and folders on a narrow
+   desktop viewport, and mobile has its own springboard entirely */
+@media (max-width: 1100px) {
+  #widgets {
+    @apply hidden;
+  }
 }

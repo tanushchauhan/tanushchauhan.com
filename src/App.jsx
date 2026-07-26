@@ -4,6 +4,7 @@ import {
   Welcome,
   Dock,
   Home,
+  Widgets,
   BootScreen,
   Spotlight,
   MobileExperience,
@@ -77,6 +78,7 @@ const App = () => {
       <Navbar />
       <main>
         <Welcome />
+        <Widgets />
         <Home />
 
         {FinderWindows.map((FinderWindow, i) => (

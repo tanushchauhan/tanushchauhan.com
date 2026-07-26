@@ -42,6 +42,7 @@ const useWindowStore = create(
       spotlightOpen: false,
       theme: "auto", // "auto" | "light" | "dark"
       folderPos: {}, // desktop folder drag offsets, keyed by project id
+      widgetPos: {}, // desktop widget drag offsets, keyed by widget id
 
       openWindow: (windowKey, data = null) => {
         if (!get().windows[windowKey]?.isOpen) play("open");
@@ -121,6 +122,11 @@ const useWindowStore = create(
           state.folderPos[id] = pos;
         }),
 
+      setWidgetPos: (id, pos) =>
+        set((state) => {
+          state.widgetPos[id] = pos;
+        }),
+
       setSpotlight: (open) =>
         set((state) => {
           state.spotlightOpen = open;
@@ -158,6 +164,7 @@ const useWindowStore = create(
       resetFolderPos: () =>
         set((state) => {
           state.folderPos = {};
+          state.widgetPos = {};
         }),
 
       // open a folder in a Finder window: reuse the window already showing it,
@@ -213,6 +220,7 @@ const useWindowStore = create(
         nextZIndex: state.nextZIndex,
         theme: state.theme,
         folderPos: state.folderPos,
+        widgetPos: state.widgetPos,
         soundOn: state.soundOn,
         desktopFolders: state.desktopFolders,
       }),

@@ -15,6 +15,13 @@
       "when": 1785014701244,
       "tag": "0001_careless_terror",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785044744086,
+      "tag": "0002_flat_albert_cleary",
+      "breakpoints": true
     }
   ]
 }

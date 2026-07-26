@@ -168,7 +168,7 @@ const COMMAND_NAMES = [
   "help", "ls", "cd", "cat", "open", "pwd", "whoami", "skills", "projects",
   "contact", "neofetch", "echo", "date", "history", "cite", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
-  "login", "logout", "enroll", "passkeys",
+  "login", "logout", "enroll", "passkeys", "building",
 ];
 
 /** A default nickname for a newly enrolled passkey, so it is identifiable later. */
@@ -326,6 +326,7 @@ export const TerminalBody = () => {
         "  login            sign in with a passkey (Touch ID / Face ID)",
         "  logout           end the session",
         "  passkeys         list registered passkeys",
+        "  building [text]  read or set the 'now building' widget",
       ]),
 
     ls: (args) => {
@@ -530,6 +531,36 @@ export const TerminalBody = () => {
         );
       } catch {
         print(["passkeys: could not reach the server."]);
+      }
+    },
+
+    // edits the "now building" widget in place, so saying what I'm working on
+    // is a sentence in a terminal rather than a commit and a redeploy
+    building: async (args) => {
+      const text = args.join(" ").trim();
+      if (!text) {
+        const res = await fetch("/api/widgets/building").catch(() => null);
+        const data = await res?.json().catch(() => null);
+        return print([
+          data?.text ? `currently: ${data.text}` : "nothing set.",
+          "",
+          "usage: building <what you're working on>",
+        ]);
+      }
+      if (auth.status !== "authed") {
+        return print(["building: not signed in. run 'sudo' first."]);
+      }
+      try {
+        const res = await fetch("/api/widgets/building", {
+          method: "PUT",
+          credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        const data = await res.json();
+        print([res.ok ? `now building: ${data.text}` : `building: ${data.error}`]);
+      } catch {
+        print(["building: could not reach the server."]);
       }
     },
 
