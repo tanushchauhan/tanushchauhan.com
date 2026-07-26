@@ -793,12 +793,40 @@ nav time {
 }
 
 #mobile .springboard {
-  @apply flex flex-1 flex-col overflow-y-auto px-5 pt-3;
+  @apply flex min-h-0 flex-1 flex-col pt-3;
   padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
 }
 
+/* iOS-style pages: each child is exactly one screen wide and snaps. The dock
+   and page dots sit outside this, so they stay put while pages move. */
+.m-pages {
+  @apply flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+
+.m-pages::-webkit-scrollbar {
+  display: none;
+}
+
+.m-page {
+  @apply w-full shrink-0 snap-center overflow-y-auto px-5;
+}
+
+.m-dots {
+  @apply flex items-center justify-center gap-1.5 py-3;
+}
+
+.m-dots button {
+  @apply size-1.5 cursor-pointer rounded-full bg-white/35 transition-all;
+}
+
+.m-dots button.on {
+  @apply w-4 bg-white/90;
+}
+
 .m-widget {
-  @apply mb-6 rounded-3xl border border-white/20 bg-white/15 p-5 text-white shadow-lg backdrop-blur-xl;
+  @apply mb-3 rounded-3xl border border-white/20 bg-white/15 px-4 py-3.5 text-white shadow-lg backdrop-blur-xl;
 }
 
 .m-widget .hello {
@@ -810,7 +838,7 @@ nav time {
 }
 
 .m-widget .tagline {
-  @apply mt-1.5 text-xs leading-relaxed text-white/70;
+  @apply mt-1 text-[11px] leading-snug text-white/70;
 }
 
 .m-grid {
@@ -1081,11 +1109,52 @@ nav time {
   fill: rgb(255 168 79 / 1);
 }
 
-/* the block would collide with the folders on a narrow desktop viewport, and
-   mobile renders its own swipeable row instead */
+/* Narrow desktop windows keep the 2x2 and shrink it. A single column was the
+   first attempt and it was worse: four stacked cards ran into the dock, which
+   then meant hiding two of them. Two columns are half the height, so nothing
+   has to be dropped. Below 768px the mobile springboard takes over entirely. */
 @media (max-width: 1280px) {
   #widgets {
-    @apply hidden;
+    @apply w-[27rem] gap-3;
+  }
+
+  #widgets .widget {
+    @apply rounded-2xl p-4;
+  }
+
+  #widgets .big {
+    @apply mt-2 text-4xl;
+  }
+
+  #widgets .repo {
+    @apply mt-2 text-base;
+  }
+
+  #widgets .msg {
+    @apply text-xs;
+  }
+}
+
+@media (max-width: 1000px) {
+  #widgets {
+    @apply w-[22rem] gap-2.5;
+  }
+
+  #widgets .widget {
+    @apply p-3.5;
+  }
+
+  #widgets .big {
+    @apply text-3xl;
+  }
+
+  #widgets header {
+    @apply text-[10px];
+  }
+
+  #widgets .empty,
+  #widgets .msg {
+    @apply text-xs;
   }
 }
 
@@ -1093,26 +1162,29 @@ nav time {
    A horizontally snapping row above the app grid, the way iOS puts widgets on
    the home screen. Pure CSS scroll-snap, so it swipes without any JS. */
 .m-widgets {
-  @apply flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2;
-  scrollbar-width: none;
-}
-
-.m-widgets::-webkit-scrollbar {
-  display: none;
+  @apply grid grid-cols-2 gap-2.5;
 }
 
 .m-widgets .widget-slot {
-  @apply w-[78%] shrink-0 snap-center cursor-auto;
+  @apply cursor-auto;
+}
+
+.m-widgets .widget-slot.wide {
+  @apply col-span-2;
 }
 
 .m-widgets .widget {
-  @apply min-h-40;
+  @apply h-full rounded-2xl p-3.5;
 }
 
 .m-widgets .widget .big {
-  @apply mt-2 text-4xl;
+  @apply mt-2 text-3xl;
+}
+
+.m-widgets .widget header {
+  @apply text-[10px];
 }
 
 .m-widgets .widget .heatmap {
-  @apply mt-2;
+  @apply mt-2 w-[86%];
 }

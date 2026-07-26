@@ -3,6 +3,7 @@ import gsap from "gsap";
 import { Draggable } from "gsap/Draggable";
 import { useGSAP } from "@gsap/react";
 import dayjs from "dayjs";
+import clsx from "clsx";
 import useWindowStore from "#store/window.js";
 import { Heatmap } from "./Sparkline.jsx";
 
@@ -182,21 +183,25 @@ const useWidgetData = () => {
   return { github, building };
 };
 
-/** The four cards, in order, so both layouts render the same set. */
+/**
+ * The four cards, in order, so both layouts render the same set. `wide` marks
+ * the ones that need the full width on mobile: a heatmap and a commit message
+ * are unreadable in a half-width tile, a clock is not.
+ */
 const cards = ({ github, building }) => [
   { id: "clock", node: <AustinClock /> },
-  { id: "contrib", node: <Contributions data={github?.contributions} /> },
-  { id: "commit", node: <LatestCommit data={github?.latest} /> },
   { id: "building", node: <NowBuilding data={building} /> },
+  { id: "contrib", wide: true, node: <Contributions data={github?.contributions} /> },
+  { id: "commit", wide: true, node: <LatestCommit data={github?.latest} /> },
 ];
 
-/** Mobile: a horizontally snapping row above the app grid, no dragging. */
+/** Mobile: a grid on the first springboard page. No dragging. */
 export const MobileWidgets = () => {
   const data = useWidgetData();
   return (
     <div className="m-widgets">
-      {cards(data).map(({ id, node }) => (
-        <div key={id} className="widget-slot">
+      {cards(data).map(({ id, node, wide }) => (
+        <div key={id} className={clsx("widget-slot", wide && "wide")}>
           {node}
         </div>
       ))}

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import {
   Wifi,
@@ -323,6 +323,22 @@ const AppIcon = ({ app, onOpen }) => (
 const MobileExperience = () => {
   const [activeApp, setActiveApp] = useState(null);
   const app = APPS.find((a) => a.id === activeApp);
+  const pagesRef = useRef(null);
+  const [page, setPage] = useState(0);
+
+  // derive the active page from scroll position rather than tracking gestures:
+  // works for swipes, dot taps, and keyboard scrolling alike
+  const onPageScroll = (e) => {
+    const el = e.currentTarget;
+    const next = Math.round(el.scrollLeft / el.clientWidth);
+    if (next !== page) setPage(next);
+  };
+
+  const goToPage = (i) => {
+    const el = pagesRef.current;
+    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
+  };
+
   const Screen = activeApp ? APP_SCREENS[activeApp] : null;
 
   return (
@@ -330,19 +346,39 @@ const MobileExperience = () => {
       <StatusBar />
 
       <div className="springboard">
-        <div className="m-widget">
-          <p className="hello">Hey, I'm Tanush</p>
-          <h1>tanushchauhan.com</h1>
-          <p className="tagline">
-            CS Honors + Math @ UT Austin · robotics researcher · hackathon regular
-          </p>
+        <div className="m-pages" ref={pagesRef} onScroll={onPageScroll}>
+          <section className="m-page">
+            <div className="m-widget">
+              <p className="hello">Hey, I'm Tanush</p>
+              <h1>tanushchauhan.com</h1>
+              <p className="tagline">
+                CS Honors + Math @ UT Austin · robotics researcher · hackathon regular
+              </p>
+            </div>
+
+            <MobileWidgets />
+          </section>
+
+          <section className="m-page">
+            <div className="m-grid">
+              {APPS.filter((a) => !DOCK_APPS.includes(a.id)).map((a) => (
+                <AppIcon key={a.id} app={a} onOpen={setActiveApp} />
+              ))}
+            </div>
+          </section>
         </div>
 
-        <MobileWidgets />
-
-        <div className="m-grid">
-          {APPS.filter((a) => !DOCK_APPS.includes(a.id)).map((a) => (
-            <AppIcon key={a.id} app={a} onOpen={setActiveApp} />
+        {/* the dock and dots sit outside .m-pages so they stay put while the
+            pages move, exactly as on iOS */}
+        <div className="m-dots">
+          {[0, 1].map((i) => (
+            <button
+              key={i}
+              type="button"
+              aria-label={`Page ${i + 1}`}
+              className={clsx(i === page && "on")}
+              onClick={() => goToPage(i)}
+            />
           ))}
         </div>
 
