@@ -221,6 +221,7 @@ export const TerminalBody = () => {
   const auth = useAuthStore();
   const isOpen = windows.terminal.isOpen;
   const [overlay, setOverlay] = useState(null); // "matrix" | "snake" | null
+  const [busy, setBusy] = useState(false); // a command is still running
 
   const [session] = useState(loadSession);
   const [history, setHistory] = useState(session.history);
@@ -543,15 +544,8 @@ export const TerminalBody = () => {
     },
   };
 
-  const runCommand = (raw) => {
-    const cmd = raw.trim();
-    setHistory((h) => [...h, { type: "cmd", text: cmd, prompt }]);
-    if (!cmd) return;
-
-    const nextCmdHistory = [...cmdHistory, cmd];
-    setCmdHistory(nextCmdHistory);
-    setHistIdx(-1);
-
+  /** Runs a command and returns whatever it produced, promise or not. */
+  const dispatch = (cmd, nextCmdHistory) => {
     const [name, ...args] = cmd.split(/\s+/);
     const handler = commands[name.toLowerCase()];
     if (handler) return handler(args, nextCmdHistory);
@@ -572,11 +566,38 @@ export const TerminalBody = () => {
         ]);
       }
       print(["verifying identity…"]);
-      auth.login().then((message) => print([message]));
-      return;
+      // returned, not fired and forgotten, so the prompt waits for the prompt
+      return auth.login().then((message) => print([message]));
     }
 
-    print([`zsh: command not found: ${name}, type 'help'`]);
+    return print([`zsh: command not found: ${name}, type 'help'`]);
+  };
+
+  /**
+   * A command that takes time (anything touching the network or a Touch ID
+   * prompt) holds the prompt until it finishes, the way a real shell does.
+   * Returning the prompt immediately let the next command's output land before
+   * the previous command's, so results appeared interleaved with unrelated
+   * lines.
+   */
+  const runCommand = async (raw) => {
+    const cmd = raw.trim();
+    setHistory((h) => [...h, { type: "cmd", text: cmd, prompt }]);
+    if (!cmd) return;
+
+    const nextCmdHistory = [...cmdHistory, cmd];
+    setCmdHistory(nextCmdHistory);
+    setHistIdx(-1);
+
+    const result = dispatch(cmd, nextCmdHistory);
+    if (!(result instanceof Promise)) return;
+
+    setBusy(true);
+    try {
+      await result;
+    } finally {
+      setBusy(false);
+    }
   };
 
   /* ---------- tab completion ---------- */
@@ -615,6 +636,11 @@ export const TerminalBody = () => {
   const handleKeyDown = (e) => {
     // while a game/effect owns the terminal, keys steer it, not the shell
     if (overlay) {
+      e.preventDefault();
+      return;
+    }
+    // no prompt means no input: the running command has the terminal
+    if (busy) {
       e.preventDefault();
       return;
     }
@@ -666,6 +692,11 @@ export const TerminalBody = () => {
     if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
 
+  // a passkey prompt steals focus; take it back when the command finishes
+  useEffect(() => {
+    if (!busy && isOpen && !overlay) inputRef.current?.focus();
+  }, [busy, isOpen, overlay]);
+
   const exitOverlay = (lines) => {
     setOverlay(null);
     if (lines.length) print(lines);
@@ -697,12 +728,14 @@ export const TerminalBody = () => {
           )
         )}
 
-        <div className="flex items-baseline gap-2">
+        {/* the prompt disappears while a command runs, so there is nowhere to
+            type and no way to interleave the next command's output */}
+        <div className="flex items-baseline gap-2" hidden={busy}>
           <span className="prompt shrink-0">{prompt}</span>
           <span
             ref={inputRef}
             className="term-input"
-            contentEditable={!overlay}
+            contentEditable={!overlay && !busy}
             suppressContentEditableWarning
             role="textbox"
             aria-label="terminal input"
