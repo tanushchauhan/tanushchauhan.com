@@ -1190,6 +1190,10 @@ nav time {
   color: var(--accent);
 }
 
+.w-system .app-mem {
+  @apply mt-2 text-[11px] text-white/40;
+}
+
 /* contribution grid: burnt orange rather than GitHub green, to match the site */
 .widget .heatmap {
   @apply mt-4 block;
@@ -1246,6 +1250,12 @@ nav time {
 
   #widgets.authed .widget {
     @apply p-3.5;
+  }
+
+  /* the site's own footprint is the least important line on the card, so it is
+     what goes when the fifth card is competing with the dock for space */
+  #widgets .w-system .app-mem {
+    @apply hidden;
   }
 }
 

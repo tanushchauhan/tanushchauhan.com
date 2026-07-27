@@ -4,67 +4,70 @@ import { db } from "../db/index.ts";
 import { metricSamples } from "../db/schema.ts";
 
 /**
- * Host metrics for the authenticated widgets.
+ * Whole-machine metrics for the hub server.
  *
- * The obvious implementation is `os.totalmem()` and `os.cpus()`, and inside a
- * container both of them lie: they report the whole host, so a 512 MB container
- * on a 16 GB box reads as "3% memory used" no matter how close it is to being
- * OOM-killed. Everything here prefers the cgroup v2 files, which describe what
- * this container actually has, and falls back to `node:os` only when they are
- * missing (running the server directly on macOS, for instance). Which source
- * answered is reported alongside the number rather than hidden.
+ * These are the numbers for the entire box, not for this container. That
+ * distinction cost a rewrite: the first version read cgroup v2, which describes
+ * only what this container is using, so a Postgres container pegging a core
+ * showed up here as 3%. The card is meant to answer "how is the server doing",
+ * so it reads the machine.
+ *
+ * `/proc/stat` and `/proc/meminfo` are not namespaced, so a container reads the
+ * host's real figures straight out of them with no privileges, no Docker socket
+ * and no agent. `node:os` is the fallback for development on macOS.
+ *
+ * Two deliberate choices worth knowing:
+ *  - memory used is MemTotal - MemAvailable, the number `free` calls "used".
+ *    os.freemem() reports MemFree, which excludes reclaimable page cache and
+ *    makes every healthy Linux box look 90%+ full.
+ *  - CPU busy excludes both idle and iowait. Time blocked on disk is not the
+ *    CPU doing work, and counting it makes a busy disk look like a busy CPU.
  */
 
-// overridable so the parsing can be tested against fixtures: the cgroup path is
-// the one that runs in production and it is unreachable from a dev machine
-const CGROUP = Bun.env.CGROUP_ROOT ?? "/sys/fs/cgroup";
+// overridable so the parsing can be tested against fixtures rather than only
+// against whatever the dev machine happens to report
+const PROC = Bun.env.PROC_ROOT ?? "/proc";
 const SAMPLE_MS = 30_000;
 const RETAIN_MS = 24 * 60 * 60 * 1000;
 const PRUNE_EVERY = 20; // ticks, so roughly every 10 minutes
 
-const readCgroup = async (name: string) => {
+const readProc = async (name: string) => {
   try {
-    const file = Bun.file(`${CGROUP}/${name}`);
+    const file = Bun.file(`${PROC}/${name}`);
     if (!(await file.exists())) return null;
-    return (await file.text()).trim();
+    return await file.text();
   } catch {
-    // reading cgroup files can fail on a host that namespaces them differently;
-    // that is a fallback, not an error worth surfacing
+    // absent on macOS, and a metrics read must never take the process down
     return null;
   }
-};
-
-/** Pulls `key N` out of a cgroup stat file. */
-const statValue = (raw: string | null, key: string) => {
-  const line = raw?.split("\n").find((l) => l.startsWith(`${key} `));
-  return line ? Number(line.slice(key.length + 1)) : null;
 };
 
 /* ---------- CPU ----------
  * A CPU percentage is a rate, so it only exists between two readings. The
  * sampler keeps the previous one; until the second tick lands there is nothing
- * honest to report and this returns null rather than a made-up zero.
+ * honest to report and this reports null rather than a made-up zero.
  */
-type CpuReading = { at: number; busy: number; total: number | null };
+type CpuReading = { at: number; busy: number; total: number };
 let previous: CpuReading | null = null;
 
-/** Cores this container may use: the cgroup quota, not the host's core count. */
-const cpuAllowance = async () => {
-  const raw = await readCgroup("cpu.max");
-  if (!raw) return os.cpus().length;
-  const [quota, period] = raw.split(/\s+/);
-  if (quota === "max") return os.cpus().length;
-  return Number(quota) / Number(period);
+/**
+ * The aggregate `cpu` line of /proc/stat, in jiffies:
+ *   cpu user nice system idle iowait irq softirq steal guest guest_nice
+ */
+const parseProcStat = (raw: string): CpuReading | null => {
+  const line = raw.split("\n").find((l) => l.startsWith("cpu "));
+  if (!line) return null;
+
+  const fields = line.trim().split(/\s+/).slice(1).map(Number);
+  if (fields.length < 5 || fields.some(Number.isNaN)) return null;
+
+  const [user = 0, nice = 0, system = 0, idle = 0, iowait = 0, irq = 0, softirq = 0, steal = 0] = fields;
+  const total = user + nice + system + idle + iowait + irq + softirq + steal;
+  return { at: Date.now(), busy: total - idle - iowait, total };
 };
 
-const cpuReading = async (): Promise<CpuReading> => {
-  const usage = statValue(await readCgroup("cpu.stat"), "usage_usec");
-  if (usage !== null) {
-    // cgroup: CPU microseconds burned by this container, against wall clock
-    return { at: Date.now(), busy: usage, total: null };
-  }
-
-  // host: aggregate jiffies across every core, busy being everything but idle
+/** macOS development fallback: the same arithmetic over os.cpus() tick counts. */
+const cpuFromOs = (): CpuReading => {
   let busy = 0;
   let total = 0;
   for (const cpu of os.cpus()) {
@@ -76,42 +79,46 @@ const cpuReading = async (): Promise<CpuReading> => {
   return { at: Date.now(), busy, total };
 };
 
-const cpuPercent = (now: CpuReading, before: CpuReading, cores: number) => {
-  if (now.total !== null && before.total !== null) {
-    const span = now.total - before.total;
-    return span > 0 ? ((now.busy - before.busy) / span) * 100 : null;
-  }
+const cpuReading = async (): Promise<{ reading: CpuReading; source: "proc" | "os" }> => {
+  const raw = await readProc("stat");
+  const parsed = raw ? parseProcStat(raw) : null;
+  return parsed ? { reading: parsed, source: "proc" } : { reading: cpuFromOs(), source: "os" };
+};
 
-  const elapsedUs = (now.at - before.at) * 1000;
-  if (elapsedUs <= 0 || cores <= 0) return null;
-  const pct = ((now.busy - before.busy) / (elapsedUs * cores)) * 100;
-  // a container that is throttled mid-window can briefly compute above 100
+const cpuPercent = (now: CpuReading, before: CpuReading) => {
+  const span = now.total - before.total;
+  if (span <= 0) return null;
+  const pct = ((now.busy - before.busy) / span) * 100;
   return Math.min(100, Math.max(0, pct));
 };
 
 /* ---------- memory ---------- */
+const parseMeminfo = (raw: string) => {
+  const value = (key: string) => {
+    const line = raw.split("\n").find((l) => l.startsWith(`${key}:`));
+    if (!line) return null;
+    const kb = Number(line.split(/\s+/)[1]);
+    return Number.isNaN(kb) ? null : kb * 1024;
+  };
+
+  const total = value("MemTotal");
+  // MemAvailable is the kernel's own estimate of what a new workload could
+  // claim without swapping, which is the honest definition of free
+  const available = value("MemAvailable");
+  if (total === null || available === null) return null;
+  return { usedBytes: total - available, totalBytes: total, source: "proc" as const };
+};
+
 export const readMemory = async () => {
-  const current = await readCgroup("memory.current");
-  if (current !== null) {
-    /*
-     * memory.current includes the page cache, which grows to fill whatever is
-     * available and is reclaimed under pressure rather than being a leak. This
-     * subtracts the reclaimable part, the same arithmetic `docker stats` does,
-     * so the number matches what you would see there.
-     */
-    const inactiveFile = statValue(await readCgroup("memory.stat"), "inactive_file") ?? 0;
-    const limit = await readCgroup("memory.max");
-    const totalBytes =
-      limit && limit !== "max" ? Number(limit) : os.totalmem();
-    const usedBytes = Math.max(0, Number(current) - inactiveFile);
-    return { usedBytes, totalBytes, source: "cgroup" as const };
-  }
+  const raw = await readProc("meminfo");
+  const parsed = raw ? parseMeminfo(raw) : null;
+  if (parsed) return parsed;
 
   /*
-   * Development only. Worth knowing that on macOS this reads near 100%:
-   * freemem() counts genuinely free pages, and macOS keeps almost none, using
-   * the rest for cache it will hand back on demand. The widget reports which
-   * source it used precisely so that number is not mistaken for a problem.
+   * Development only. On macOS this reads high: freemem() counts genuinely free
+   * pages and macOS keeps almost none, using the rest for cache it hands back on
+   * demand. The card reports which source answered so that is not mistaken for
+   * a problem.
    */
   return {
     usedBytes: os.totalmem() - os.freemem(),
@@ -124,24 +131,26 @@ const MB = 1024 * 1024;
 
 /** One reading of everything, with CPU measured against the previous call. */
 export const sample = async () => {
-  const cores = await cpuAllowance();
-  const reading = await cpuReading();
-  const pct = previous ? cpuPercent(reading, previous, cores) : null;
+  const { reading, source } = await cpuReading();
+  const pct = previous ? cpuPercent(reading, previous) : null;
   previous = reading;
 
   const memory = await readMemory();
-  const memPct = memory.totalBytes
-    ? (memory.usedBytes / memory.totalBytes) * 100
-    : 0;
+  const memPct = memory.totalBytes ? (memory.usedBytes / memory.totalBytes) * 100 : 0;
 
   return {
     cpuPct: pct === null ? null : Number(pct.toFixed(1)),
-    cores,
-    cpuSource: reading.total === null ? ("cgroup" as const) : ("os" as const),
+    cores: os.cpus().length,
     memPct: Number(memPct.toFixed(1)),
     memUsedMb: Math.round(memory.usedBytes / MB),
     memTotalMb: Math.round(memory.totalBytes / MB),
-    memSource: memory.source,
+    // "proc" means these are the machine's real figures; "os" means a dev
+    // machine's approximation
+    source: source === "proc" && memory.source === "proc" ? ("proc" as const) : ("os" as const),
+    // this process's own resident set, so a leak in the site itself is visible
+    // separately from whatever else the box is doing
+    appMemMb: Math.round(process.memoryUsage.rss() / MB),
+    hostUptimeSeconds: Math.floor(os.uptime()),
   };
 };
 

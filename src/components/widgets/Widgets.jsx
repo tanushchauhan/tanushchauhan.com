@@ -192,10 +192,12 @@ const Stat = ({ label, value, unit, values }) => (
   </div>
 );
 
+const gb = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`);
+
 /*
- * Deliberately the shortest card here. It is a fifth card in a grid that was
- * already close to the dock, so the uptime and environment ride along in the
- * header instead of taking a footer line of their own.
+ * The whole hub machine, not this container. Deliberately the shortest card
+ * here: it is a fifth card in a grid that was already close to the dock, so the
+ * uptime and environment ride along in the header rather than taking a line.
  */
 const System = ({ data }) => {
   const s = data?.sample;
@@ -204,35 +206,45 @@ const System = ({ data }) => {
   return (
     <article className="widget w-system" style={{ "--accent": "#5eb0ef" }}>
       <Head icon={<Activity />}>
-        System
+        Hub server
         {data && (
           <span className="tail">
+            {/* the machine's uptime, then how long since this container started,
+                which is the same thing as time since the last deploy */}
             up {duration(data.uptimeSeconds)}
-            {s && ` · ${s.cores} vCPU`}
+            {data.deployedSecondsAgo != null &&
+              ` · deployed ${duration(data.deployedSecondsAgo)} ago`}
+            {s && ` · ${s.cores} cores`}
             {` · ${data.env}`}
-            {/* says which numbers these are: cgroup means this container's own
-                limits, os means the whole host and the percentages are of a
-                box I am sharing */}
-            {s && ` · ${s.memSource}`}
           </span>
         )}
       </Head>
       {data ? (
-        <div className="stats">
-          <Stat
-            label="CPU"
-            // null until the sampler has two readings to compare
-            value={s?.cpuPct ?? "—"}
-            unit={s?.cpuPct == null ? "" : "%"}
-            values={history.map((h) => h.cpuPct)}
-          />
-          <Stat
-            label="Memory"
-            value={s?.memUsedMb ?? "—"}
-            unit={s ? ` / ${s.memTotalMb} MB` : ""}
-            values={history.map((h) => h.memPct)}
-          />
-        </div>
+        <>
+          <div className="stats">
+            <Stat
+              label="CPU"
+              // null until the sampler has two readings to compare
+              value={s?.cpuPct ?? "—"}
+              unit={s?.cpuPct == null ? "" : "%"}
+              values={history.map((h) => h.cpuPct)}
+            />
+            <Stat
+              label="Memory"
+              value={s ? gb(s.memUsedMb) : "—"}
+              unit={s ? ` / ${gb(s.memTotalMb)}` : ""}
+              values={history.map((h) => h.memPct)}
+            />
+          </div>
+          {s && (
+            <p className="sub app-mem">
+              {/* the site's own footprint, separate from the machine's, so a
+                  leak here is visible rather than lost in the server total */}
+              this site is using {gb(s.appMemMb)}
+              {s.source === "os" && " · dev machine figures, not a server"}
+            </p>
+          )}
+        </>
       ) : (
         <p className="empty">Waiting for the first reading…</p>
       )}
