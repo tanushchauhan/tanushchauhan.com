@@ -388,6 +388,21 @@ const cards = ({ github, building, system, authed }) => [
   ...(authed ? [{ id: "system", wide: true, node: <System data={system} /> }] : []),
 ];
 
+/* ---------- fitting above the dock ----------
+ * The block hangs from a fixed offset under the nameplate and grows downwards;
+ * the dock is pinned to the bottom. Nothing in CSS stops them meeting, and a
+ * media query cannot tell them apart either, because how tall this gets is a
+ * question about content: a live contributions heatmap is 31px that an empty
+ * card does not spend, which is the whole margin at 1470x806.
+ *
+ * So measure. Try each tier in order and stop at the first that clears the
+ * dock. Trying them in order is what keeps this from oscillating: the answer
+ * depends only on the untightened layout, so re-running it lands on the same
+ * tier rather than relaxing, colliding and tightening again.
+ */
+const FIT_TIERS = ["", "tight", "min"];
+const DOCK_CLEARANCE = 20;
+
 /**
  * Mobile: a grid on the first springboard page. No dragging.
  *
@@ -424,11 +439,39 @@ export const MobileSystem = () => {
   );
 };
 
+/**
+ * Which grid a set of drag offsets was measured against. Bump GEOMETRY when the
+ * block's own spacing changes, since offsets taken before it are then describing
+ * a layout that no longer exists; the card list covers the rest, because signing
+ * in adds a row and moves everything under it.
+ */
+const GEOMETRY = 2;
+const signature = (list) => `${GEOMETRY}:${list.map((c) => c.id).join(",")}`;
+
+/**
+ * Restores a saved offset without letting it put a card somewhere unreachable.
+ * The offset was taken in whatever window happened to be open at the time, so
+ * reopening the site smaller can leave a card under the dock or off the edge.
+ * Only on restore, not on drag: dragging is already bounded, and a card the
+ * visitor deliberately parked somewhere should stay parked there.
+ */
+const restore = (el, pos, area) => {
+  const base = el.getBoundingClientRect(); // untransformed: nothing set yet
+  const clamp = (v, lo, hi) => (hi < lo ? 0 : Math.min(hi, Math.max(lo, v)));
+  gsap.set(el, {
+    x: clamp(pos.x, area.left - base.left, area.right - base.right),
+    y: clamp(pos.y, area.top - base.top, area.bottom - base.bottom),
+  });
+};
+
 const Widgets = () => {
   const { widgetPos, setWidgetPos } = useWindowStore();
   const data = useWidgetData();
   const system = useSystemData(data.authed);
   const rootRef = useRef(null);
+
+  const list = cards({ ...data, system });
+  const layout = signature(list);
 
   // same drag-and-persist contract as the desktop folders in Home.jsx
   useGSAP(
@@ -436,26 +479,69 @@ const Widgets = () => {
       const slots = rootRef.current?.querySelectorAll(".widget-slot");
       if (!slots?.length) return;
 
-      const saved = useWindowStore.getState().widgetPos;
+      const main = rootRef.current.closest("main");
+      const dock = document.querySelector("#dock");
+      const bounds = main.getBoundingClientRect();
+      const area = {
+        left: bounds.left,
+        top: bounds.top,
+        right: bounds.right,
+        bottom: dock ? dock.getBoundingClientRect().top - 8 : bounds.bottom,
+      };
+
+      // Clear first. React does not own these transforms, so a card that moved
+      // under the previous layout would still be carrying that offset, and
+      // restore would measure its home position from the wrong place.
+      gsap.set(slots, { x: 0, y: 0 });
+
+      const saved = useWindowStore.getState().widgetPos[layout] ?? {};
       slots.forEach((el) => {
         const p = saved[el.dataset.id];
-        if (p) gsap.set(el, { x: p.x, y: p.y });
+        if (p) restore(el, p, area);
       });
 
       const instances = Draggable.create(slots, {
         // the element, not the selector: useGSAP's scope resolves selector
         // strings inside rootRef, where "main" does not exist
-        bounds: rootRef.current?.closest("main"),
+        bounds: main,
         onDragEnd() {
-          setWidgetPos(this.target.dataset.id, { x: this.x, y: this.y });
+          setWidgetPos(layout, this.target.dataset.id, { x: this.x, y: this.y });
         },
       });
       return () => instances.forEach((i) => i.kill());
     },
-    // re-run when the system card appears: the session resolves a moment after
-    // mount, so a one-shot effect would leave that fifth card undraggable
-    { scope: rootRef, dependencies: [data.authed] }
+    // re-run when the card set changes: the session resolves a moment after
+    // mount, so a one-shot effect would leave that fifth card undraggable, and
+    // the offsets it should be replaying change with it
+    { scope: rootRef, dependencies: [layout] }
   );
+
+  // Measured, not guessed: see FIT_TIERS. Re-run whenever anything that decides
+  // a card's height lands, and on resize.
+  useEffect(() => {
+    const el = rootRef.current;
+    const dock = document.querySelector("#dock");
+    if (!el || !dock) return;
+
+    const fit = () => {
+      // fonts.ready can resolve after an unmount, and a detached node measures
+      // as zero, which would read as "everything fits"
+      if (!el.isConnected) return;
+      for (const tier of FIT_TIERS) {
+        el.dataset.fit = tier;
+        // reading a rect flushes the pending style change, so every tier is
+        // measured under its own rules rather than the previous tier's
+        const clear = dock.getBoundingClientRect().top - el.getBoundingClientRect().bottom;
+        if (clear >= DOCK_CLEARANCE) return;
+      }
+    };
+
+    fit();
+    // a late webfont reflows the cards after the first pass
+    document.fonts?.ready.then(fit);
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [data.github, data.building, system, data.authed]);
 
   // "Clean Up" empties widgetPos: snap every card back to its home position
   useEffect(() => {
@@ -473,7 +559,7 @@ const Widgets = () => {
     // the fifth card has to come from somewhere: signing in slides the block
     // up towards the nameplate rather than down into the dock
     <section id="widgets" className={clsx(data.authed && "authed")} ref={rootRef}>
-      {cards({ ...data, system }).map(({ id, node, wide }) => (
+      {list.map(({ id, node, wide }) => (
         <div
           key={id}
           // system spans both columns here too: two stats side by side need

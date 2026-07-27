@@ -42,7 +42,14 @@ const useWindowStore = create(
       spotlightOpen: false,
       theme: "auto", // "auto" | "light" | "dark"
       folderPos: {}, // desktop folder drag offsets, keyed by project id
-      widgetPos: {}, // desktop widget drag offsets, keyed by widget id
+      // Desktop widget drag offsets, keyed first by layout signature and only
+      // then by widget id. An offset is a translation away from where the grid
+      // put a card, so it means nothing once the grid changes: signing in adds
+      // a card and moves the block, and a deploy can change the geometry under
+      // a tab that has been open for days. Keeping one bucket per layout means
+      // each arrangement is remembered on its own terms instead of being
+      // replayed against a grid it was never measured in.
+      widgetPos: {},
 
       openWindow: (windowKey, data = null) => {
         if (!get().windows[windowKey]?.isOpen) play("open");
@@ -122,9 +129,10 @@ const useWindowStore = create(
           state.folderPos[id] = pos;
         }),
 
-      setWidgetPos: (id, pos) =>
+      setWidgetPos: (layout, id, pos) =>
         set((state) => {
-          state.widgetPos[id] = pos;
+          state.widgetPos[layout] ??= {};
+          state.widgetPos[layout][id] = pos;
         }),
 
       setSpotlight: (open) =>
@@ -197,10 +205,17 @@ const useWindowStore = create(
     })),
     {
       name: "tanushos-v1",
-      version: 1,
-      // v0 had a light/dark toggle; "auto" (follow the system) is the new default
-      migrate: (persisted, version) =>
-        version < 1 ? { ...persisted, theme: "auto" } : persisted,
+      version: 2,
+      migrate: (persisted, version) => {
+        // v0 had a light/dark toggle; "auto" (follow the system) is the default
+        if (version < 1) persisted = { ...persisted, theme: "auto" };
+        // v1 kept widget offsets in one flat bucket with nothing recording
+        // which layout produced them. There is no way to tell now, so they go:
+        // a card back at its home position is right, a card replaying a
+        // measurement from a grid that no longer exists is not.
+        if (version < 2) persisted = { ...persisted, widgetPos: {} };
+        return persisted;
+      },
       // Saved state replaces defaults wholesale, so a browser holding an older
       // `windows` object would be missing any window added since. Rebuilding
       // from the current defaults backfills both new window keys and new

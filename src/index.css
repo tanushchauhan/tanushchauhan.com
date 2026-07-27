@@ -1154,13 +1154,52 @@ nav time {
   @apply p-4;
 }
 
-/* Below this there is genuinely no room: the four public cards already clear
-   the dock by only 46px in a 700px-tall window. The system card is mine alone,
-   so it yields here rather than shrinking the cards visitors came for. */
-@media (max-height: 760px) {
-  #widgets .widget-slot[data-id="system"] {
-    display: none;
-  }
+/* ---------------- fitting above the dock ----------------
+   How tall this block is depends on its content, not on the viewport: a live
+   heatmap adds 31px that an empty contributions card does not, so a media query
+   picking a height threshold is guessing at a number it cannot see. These two
+   tiers are chosen by measurement instead (see fitToDock in Widgets.jsx), which
+   is why they key off data-fit rather than @media.
+
+   Tier one tightens the block. Everything it gives up is padding, so the cards
+   stay legible; the site's own memory footprint goes because it is the least
+   important line on the least important card. */
+#widgets[data-fit="tight"],
+#widgets[data-fit="min"] {
+  @apply gap-2;
+}
+
+#widgets[data-fit="tight"] .widget,
+#widgets[data-fit="min"] .widget {
+  @apply rounded-2xl p-3.5;
+}
+
+#widgets[data-fit="tight"] .big,
+#widgets[data-fit="min"] .big {
+  @apply mt-2 text-4xl;
+}
+
+#widgets[data-fit="tight"] .widget .heatmap,
+#widgets[data-fit="min"] .widget .heatmap {
+  @apply mt-2.5;
+}
+
+#widgets[data-fit="tight"] .w-system .app-mem,
+#widgets[data-fit="min"] .w-system .app-mem {
+  @apply hidden;
+}
+
+/* the attribute wins over the SVG's own height, so the sparkline shortens with
+   everything else rather than being the one thing that never gives */
+#widgets[data-fit="tight"] .w-system .stat svg,
+#widgets[data-fit="min"] .w-system .stat svg {
+  @apply mt-1 h-8;
+}
+
+/* Tier two: even tightened it does not fit, so a card has to go. The system
+   card is mine alone, so it yields rather than the ones visitors came for. */
+#widgets[data-fit="min"] .widget-slot[data-id="system"] {
+  display: none;
 }
 
 /* uptime and environment, pushed to the far end of the header row so they cost
