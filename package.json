@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "bun server/src/index.ts",
-    "admin:token": "bun server/src/admin/token.ts"
+    "admin:token": "bun server/src/admin/token.ts",
+    "admin:enroll": "bun server/src/admin/enroll.ts"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

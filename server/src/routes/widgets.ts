@@ -1,9 +1,8 @@
 import { Hono } from "hono";
-import { desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db/index.ts";
-import { metricSamples, siteStatus } from "../db/schema.ts";
+import { siteStatus } from "../db/schema.ts";
 import { requireAuth } from "../auth/session.ts";
-import { latestSample } from "../lib/metrics.ts";
 
 const GITHUB_USER = "tanushchauhan";
 const CACHE_MS = 5 * 60 * 1000;
@@ -190,41 +189,6 @@ widgetRoutes.get("/building", async (c) => {
   return c.json({
     text: row?.value ?? null,
     updatedAt: row?.updatedAt ?? null,
-  });
-});
-
-/* ---------- system ----------
- * Whole-machine figures for the hub server, behind requireAuth. Not because
- * they are secret exactly, but knowing how much headroom a box has and how long
- * it has been up is reconnaissance if you are thinking about knocking it over.
- * Visitors get the portfolio, I get the vitals.
- */
-
-const HISTORY_POINTS = 90; // 45 minutes at one sample every 30 seconds
-
-widgetRoutes.get("/system", requireAuth, async (c) => {
-  const now = latestSample();
-
-  const rows = await db
-    .select({
-      at: metricSamples.at,
-      cpuPct: metricSamples.cpuPct,
-      memPct: metricSamples.memPct,
-    })
-    .from(metricSamples)
-    .orderBy(desc(metricSamples.at))
-    .limit(HISTORY_POINTS);
-
-  return c.json({
-    // null until the sampler's second tick: a CPU percentage is a rate, so the
-    // first reading after a boot genuinely has nothing to compare against
-    sample: now,
-    // the machine's uptime and this container's are different facts: one is how
-    // long the server has been up, the other is how long since the last deploy
-    uptimeSeconds: now?.hostUptimeSeconds ?? null,
-    deployedSecondsAgo: Math.floor(process.uptime()),
-    env: Bun.env.NODE_ENV ?? "development",
-    history: rows.reverse(), // oldest first, the order a sparkline draws in
   });
 });
 

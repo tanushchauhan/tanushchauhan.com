@@ -1169,6 +1169,44 @@ nav time {
   @apply ml-auto truncate pl-2 text-[10px] font-medium tracking-normal text-white/40 normal-case;
 }
 
+/* one tab per reporting machine; only rendered when there is more than one, so
+   a single-server setup never pays for the chrome */
+.w-system .tabs {
+  @apply mt-2.5 -mb-0.5 flex gap-1 overflow-x-auto;
+  scrollbar-width: none;
+}
+
+.w-system .tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.w-system .tabs button {
+  @apply flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white/50 transition-colors;
+}
+
+.w-system .tabs button:hover {
+  @apply text-white/80;
+}
+
+.w-system .tabs button.on {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.w-system .tabs button.stale {
+  @apply text-white/35;
+}
+
+/* amber, not the card accent: a server that stopped reporting should not look
+   like part of the normal palette */
+.w-system .tabs .dot-stale {
+  @apply block size-1.5 rounded-full bg-amber-400/80;
+}
+
+.w-system .warn {
+  @apply text-amber-300/80;
+}
+
 .w-system .stats {
   @apply mt-2.5 grid grid-cols-2 gap-4;
 }

@@ -1,7 +1,8 @@
 import os from "node:os";
 import { lt } from "drizzle-orm";
 import { db } from "../db/index.ts";
-import { metricSamples } from "../db/schema.ts";
+import { HUB_SLUG, metricSamples } from "../db/schema.ts";
+import { registerHub } from "./moontower.ts";
 
 /**
  * Whole-machine metrics for the hub server.
@@ -175,10 +176,14 @@ export const startMetricsSampler = () => {
       if (reading.cpuPct === null) return; // the priming read, nothing to store
 
       await db.insert(metricSamples).values({
+        server: HUB_SLUG,
         cpuPct: reading.cpuPct,
         memPct: reading.memPct,
         memUsedMb: reading.memUsedMb,
+        memTotalMb: reading.memTotalMb,
       });
+
+      await registerHub(reading.cores, `${os.type()} ${os.release()}`);
 
       if (++ticks % PRUNE_EVERY === 0) {
         await db

@@ -5,6 +5,7 @@ import { runMigrations } from "./db/index.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { guestbookRoutes } from "./routes/guestbook.ts";
 import { widgetRoutes } from "./routes/widgets.ts";
+import { moontowerRoutes } from "./routes/moontower.ts";
 import { startMetricsSampler } from "./lib/metrics.ts";
 
 const PORT = Number(Bun.env.PORT ?? 3001);
@@ -33,6 +34,7 @@ api.get("/health", (c) =>
 api.route("/auth", authRoutes);
 api.route("/guestbook", guestbookRoutes);
 api.route("/widgets", widgetRoutes);
+api.route("/moontower", moontowerRoutes);
 
 app.route("/api", api);
 

@@ -9,6 +9,9 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 
+/** The machine this hub runs on. It reports itself, so it needs no agent. */
+export const HUB_SLUG = "hub";
+
 export const guestbook = pgTable(
   "guestbook",
   {
@@ -120,11 +123,65 @@ export const metricSamples = pgTable(
   {
     id: serial("id").primaryKey(),
     at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    // which machine this reading came from; "hub" samples itself in-process,
+    // everything else arrives from a Moontower agent
+    server: text("server").notNull().default(HUB_SLUG),
     cpuPct: real("cpu_pct").notNull(),
     memPct: real("mem_pct").notNull(),
     memUsedMb: integer("mem_used_mb").notNull(),
+    // total is per server, not a constant: the box a reading came from is the
+    // only thing that knows how much memory it has
+    memTotalMb: integer("mem_total_mb"),
+    // optional collectors. Null means "this agent was not asked for it", which
+    // is a different thing from zero and has to render differently.
+    diskPct: real("disk_pct"),
+    diskUsedGb: real("disk_used_gb"),
+    diskTotalGb: real("disk_total_gb"),
+    load1: real("load_1"),
   },
-  (t) => [index("metric_samples_at_idx").on(t.at)]
+  (t) => [index("metric_samples_at_idx").on(t.server, t.at)]
 );
 
 export type MetricSample = typeof metricSamples.$inferSelect;
+
+/**
+ * Every machine reporting into the hub, including this one.
+ *
+ * "hub" is a row like any other so the card has nothing special-cased in it,
+ * but it has no key: it samples itself in-process and there is no credential to
+ * steal. Agent-backed servers each hold their own key, so one compromised box
+ * cannot impersonate another, and revoking it is deleting one row.
+ */
+export const servers = pgTable("servers", {
+  slug: text("slug").primaryKey(), // url-safe id, also what the agent reports as
+  name: text("name").notNull(), // display name on the tab
+  // null for hub. SHA-256 of the key, never the key itself, so a database leak
+  // cannot be replayed as a reporting credential
+  keyHash: text("key_hash"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  // how staleness is decided: no report in a few minutes and the tab greys out
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+  agentVersion: text("agent_version"),
+  osName: text("os_name"),
+  cores: integer("cores"),
+  uptimeSeconds: integer("uptime_seconds"),
+});
+
+export type Server = typeof servers.$inferSelect;
+
+/**
+ * Single-use tokens that buy exactly one thing: the right to register one new
+ * server and receive its long-lived key. Same shape as the passkey bootstrap
+ * tokens, and for the same reason: the install one-liner has to carry a secret,
+ * and a short-lived single-use one is far less dangerous to paste around than
+ * the reporting key itself.
+ */
+export const agentEnrollments = pgTable("agent_enrollments", {
+  tokenHash: text("token_hash").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  usedBy: text("used_by"), // the slug it created, for an audit trail
+});
+
+export type AgentEnrollment = typeof agentEnrollments.$inferSelect;

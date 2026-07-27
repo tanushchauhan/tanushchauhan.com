@@ -168,7 +168,7 @@ const COMMAND_NAMES = [
   "help", "ls", "cd", "cat", "open", "pwd", "whoami", "skills", "projects",
   "contact", "neofetch", "echo", "date", "history", "cite", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
-  "login", "logout", "enroll", "passkeys", "building",
+  "login", "logout", "enroll", "passkeys", "building", "moontower",
 ];
 
 /** A default nickname for a newly enrolled passkey, so it is identifiable later. */
@@ -536,6 +536,83 @@ export const TerminalBody = () => {
 
     // edits the "now building" widget in place, so saying what I'm working on
     // is a sentence in a terminal rather than a commit and a redeploy
+    /**
+     * Fleet management from the site's own terminal, which beats a docker exec
+     * for the common case. The CLI script stays for when logging in is the
+     * thing that is broken.
+     */
+    moontower: async (args) => {
+      const [sub, ...rest] = args;
+
+      if (auth.status !== "authed") {
+        return print(["moontower: not signed in. run 'sudo' first."]);
+      }
+
+      if (sub === "enroll") {
+        const name = rest.join(" ").trim();
+        if (!name) return print(["usage: moontower enroll <server name>"]);
+        try {
+          const res = await fetch("/api/moontower/enroll-token", {
+            method: "POST",
+            credentials: "same-origin",
+          });
+          const data = await res.json();
+          if (!res.ok) return print([`moontower: ${data.error}`]);
+          return print([
+            `enrollment token minted, single use, expires in ${data.minutes} minutes.`,
+            "",
+            "run this on the server you want to add:",
+            "",
+            `  curl -fsSL ${location.origin}/moontower/install.sh | sh -s -- \\`,
+            `      --token ${data.token} \\`,
+            `      --name "${name}"`,
+            "",
+            "the agent runs unprivileged and only reads /proc.",
+          ]);
+        } catch {
+          return print(["moontower: could not reach the server."]);
+        }
+      }
+
+      if (sub === "remove") {
+        const slug = rest.join("").trim();
+        if (!slug) return print(["usage: moontower remove <slug>"]);
+        try {
+          const res = await fetch(`/api/moontower/servers/${encodeURIComponent(slug)}`, {
+            method: "DELETE",
+            credentials: "same-origin",
+          });
+          const data = await res.json();
+          return print([
+            res.ok
+              ? `removed '${data.removed}'. its key no longer works.`
+              : `moontower: ${data.error}`,
+          ]);
+        } catch {
+          return print(["moontower: could not reach the server."]);
+        }
+      }
+
+      try {
+        const res = await fetch("/api/moontower/fleet", { credentials: "same-origin" });
+        const data = await res.json();
+        if (!res.ok) return print([`moontower: ${data.error}`]);
+        return print([
+          "fleet:",
+          ...data.servers.map((s) => {
+            const state = s.stale ? "stale" : "reporting";
+            const cpu = s.sample?.cpuPct != null ? `${s.sample.cpuPct}% cpu` : "no reading";
+            return `  ${s.slug.padEnd(12)} ${state.padEnd(10)} ${cpu}`;
+          }),
+          "",
+          "moontower enroll <name>   add a server",
+          "moontower remove <slug>   revoke and forget one",
+        ]);
+      } catch {
+        return print(["moontower: could not reach the server."]);
+      }
+    },
+
     building: async (args) => {
       const text = args.join(" ").trim();
       if (!text) {

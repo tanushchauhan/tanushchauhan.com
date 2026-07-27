@@ -195,55 +195,93 @@ const Stat = ({ label, value, unit, values }) => (
 const gb = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`);
 
 /*
- * The whole hub machine, not this container. Deliberately the shortest card
- * here: it is a fifth card in a grid that was already close to the dock, so the
- * uptime and environment ride along in the header rather than taking a line.
+ * Moontower: the fleet card. One tab per reporting machine, the hub itself
+ * being just another row rather than a special case.
+ *
+ * Deliberately the shortest card here. It is a fifth card in a grid that was
+ * already close to the dock, so the uptime and environment ride along in the
+ * header rather than taking a line of their own.
  */
 const System = ({ data }) => {
-  const s = data?.sample;
-  const history = data?.history ?? [];
+  const fleet = data?.servers ?? [];
+  const [active, setActive] = useState(0);
+  // a server disappearing (revoked while the tab is open) must not leave the
+  // card pointing at nothing
+  const server = fleet[Math.min(active, Math.max(0, fleet.length - 1))] ?? null;
+  const s = server?.sample;
+  const history = server?.history ?? [];
 
   return (
     <article className="widget w-system" style={{ "--accent": "#5eb0ef" }}>
       <Head icon={<Activity />}>
-        Hub server
+        Moontower
         {data && (
           <span className="tail">
-            {/* the machine's uptime, then how long since this container started,
-                which is the same thing as time since the last deploy */}
-            up {duration(data.uptimeSeconds)}
-            {data.deployedSecondsAgo != null &&
+            {server?.uptimeSeconds != null && `up ${duration(server.uptimeSeconds)}`}
+            {/* time since this container started, which is time since deploy */}
+            {server?.slug === "hub" &&
+              data.deployedSecondsAgo != null &&
               ` · deployed ${duration(data.deployedSecondsAgo)} ago`}
-            {s && ` · ${s.cores} cores`}
-            {` · ${data.env}`}
+            {server?.cores != null && ` · ${server.cores} cores`}
+            {server?.slug === "hub" && ` · ${data.env}`}
           </span>
         )}
       </Head>
-      {data ? (
+
+      {fleet.length > 1 && (
+        <div className="tabs" role="tablist">
+          {fleet.map((srv, i) => (
+            <button
+              key={srv.slug}
+              type="button"
+              role="tab"
+              aria-selected={i === active}
+              className={clsx(i === active && "on", srv.stale && "stale")}
+              onClick={() => setActive(i)}
+            >
+              {srv.name}
+              {srv.stale && <i className="dot-stale" aria-label="not reporting" />}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {server ? (
         <>
           <div className="stats">
             <Stat
               label="CPU"
-              // null until the sampler has two readings to compare
               value={s?.cpuPct ?? "—"}
               unit={s?.cpuPct == null ? "" : "%"}
               values={history.map((h) => h.cpuPct)}
             />
             <Stat
               label="Memory"
-              value={s ? gb(s.memUsedMb) : "—"}
-              unit={s ? ` / ${gb(s.memTotalMb)}` : ""}
+              value={s?.memUsedMb != null ? gb(s.memUsedMb) : "—"}
+              unit={s?.memTotalMb ? ` / ${gb(s.memTotalMb)}` : ""}
               values={history.map((h) => h.memPct)}
             />
           </div>
-          {s && (
-            <p className="sub app-mem">
-              {/* the site's own footprint, separate from the machine's, so a
-                  leak here is visible rather than lost in the server total */}
-              this site is using {gb(s.appMemMb)}
-              {s.source === "os" && " · dev machine figures, not a server"}
-            </p>
-          )}
+          <p className="sub app-mem">
+            {server.stale ? (
+              /* a frozen number presented as live is worse than no number */
+              <span className="warn">
+                not reporting · last seen{" "}
+                {server.lastSeenAt
+                  ? `${duration((Date.now() - new Date(server.lastSeenAt)) / 1000)} ago`
+                  : "never"}
+              </span>
+            ) : (
+              <>
+                {server.appMemMb != null && `this site is using ${gb(server.appMemMb)}`}
+                {server.agentVersion && `agent ${server.agentVersion}`}
+                {server.updateAvailable && (
+                  <span className="warn"> · {data.version} available</span>
+                )}
+                {s?.source === "os" && " · dev machine figures, not a server"}
+              </>
+            )}
+          </p>
         </>
       ) : (
         <p className="empty">Waiting for the first reading…</p>
@@ -310,7 +348,7 @@ const useSystemData = (enabled) => {
     const load = async () => {
       if (document.hidden) return;
       try {
-        const res = await fetch("/api/widgets/system", {
+        const res = await fetch("/api/moontower/fleet", {
           credentials: "same-origin",
         });
         if (!res.ok) return;
