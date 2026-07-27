@@ -5,12 +5,14 @@ import { useGSAP } from "@gsap/react";
 import dayjs from "dayjs";
 import clsx from "clsx";
 import useWindowStore from "#store/window.js";
-import { Heatmap } from "./Sparkline.jsx";
-import { SunIcon, MoonIcon, GridIcon, CommitIcon, CubeIcon } from "./Icons.jsx";
+import useAuthStore from "#store/auth.js";
+import { Heatmap, Sparkline } from "./Sparkline.jsx";
+import { Sun, Moon, Grid3x3, GitCommitVertical, Box, Activity } from "lucide-react";
 
 gsap.registerPlugin(Draggable);
 
 const POLL_MS = 15 * 60 * 1000; // GitHub is cached for 5 min server-side anyway
+const SYSTEM_POLL_MS = 30 * 1000; // matches the server's sampling interval
 
 /**
  * One tinted glyph chip per card. The colour rides on the card as `--accent`
@@ -67,7 +69,7 @@ const AustinClock = () => {
       // glance before you have parsed a single word of it
       style={{ "--accent": asleep ? "#8ea2f6" : "#f5a524" }}
     >
-      <Head icon={asleep ? <MoonIcon /> : <SunIcon />}>Austin, TX</Head>
+      <Head icon={asleep ? <Moon /> : <Sun />}>Austin, TX</Head>
       {/* centred, because the grid stretches every card to the tallest in the
           row and a clock has less to say than a heatmap */}
       <div className="body">
@@ -87,7 +89,7 @@ const AustinClock = () => {
 /* ---------- GitHub contributions ---------- */
 const Contributions = ({ data }) => (
   <article className="widget w-contrib" style={{ "--accent": "#f08a2d" }}>
-    <Head icon={<GridIcon />}>Contributions</Head>
+    <Head icon={<Grid3x3 />}>Contributions</Head>
     {data?.available ? (
       <>
         <p className="big">
@@ -114,7 +116,7 @@ const Contributions = ({ data }) => (
 /* ---------- latest commit ---------- */
 const LatestCommit = ({ data }) => (
   <article className="widget w-commit" style={{ "--accent": "#5fd39b" }}>
-    <Head icon={<CommitIcon />}>Latest commit</Head>
+    <Head icon={<GitCommitVertical />}>Latest commit</Head>
     {data?.available ? (
       <>
         <p className="repo">{data.repo}</p>
@@ -149,7 +151,7 @@ const LatestCommit = ({ data }) => (
 /* ---------- now building ---------- */
 const NowBuilding = ({ data }) => (
   <article className="widget w-building" style={{ "--accent": "#a78bfa" }}>
-    <Head icon={<CubeIcon />}>Now building</Head>
+    <Head icon={<Box />}>Now building</Head>
     {data?.text ? (
       <>
         <p className="msg lead">{data.text}</p>
@@ -162,6 +164,81 @@ const NowBuilding = ({ data }) => (
     )}
   </article>
 );
+
+/* ---------- system ----------
+ * Only rendered when I am signed in. The endpoint is behind requireAuth too:
+ * hiding a card in the client would be decoration, not a boundary.
+ */
+const duration = (seconds) => {
+  if (!Number.isFinite(seconds)) return "—";
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  return `${m}m`;
+};
+
+const Stat = ({ label, value, unit, values }) => (
+  <div className="stat">
+    <p className="k">{label}</p>
+    <p className="v">
+      {value}
+      {unit && <span className="unit">{unit}</span>}
+    </p>
+    {/* stroke stays currentColor: a var() in an SVG presentation attribute is
+        not reliably supported, so the CSS sets `color` on the svg instead */}
+    <Sparkline values={values} height={22} />
+  </div>
+);
+
+/*
+ * Deliberately the shortest card here. It is a fifth card in a grid that was
+ * already close to the dock, so the uptime and environment ride along in the
+ * header instead of taking a footer line of their own.
+ */
+const System = ({ data }) => {
+  const s = data?.sample;
+  const history = data?.history ?? [];
+
+  return (
+    <article className="widget w-system" style={{ "--accent": "#5eb0ef" }}>
+      <Head icon={<Activity />}>
+        System
+        {data && (
+          <span className="tail">
+            up {duration(data.uptimeSeconds)}
+            {s && ` · ${s.cores} vCPU`}
+            {` · ${data.env}`}
+            {/* says which numbers these are: cgroup means this container's own
+                limits, os means the whole host and the percentages are of a
+                box I am sharing */}
+            {s && ` · ${s.memSource}`}
+          </span>
+        )}
+      </Head>
+      {data ? (
+        <div className="stats">
+          <Stat
+            label="CPU"
+            // null until the sampler has two readings to compare
+            value={s?.cpuPct ?? "—"}
+            unit={s?.cpuPct == null ? "" : "%"}
+            values={history.map((h) => h.cpuPct)}
+          />
+          <Stat
+            label="Memory"
+            value={s?.memUsedMb ?? "—"}
+            unit={s ? ` / ${s.memTotalMb} MB` : ""}
+            values={history.map((h) => h.memPct)}
+          />
+        </div>
+      ) : (
+        <p className="empty">Waiting for the first reading…</p>
+      )}
+    </article>
+  );
+};
 
 /** Shared by the desktop grid and the mobile row, so they cannot drift apart. */
 const useWidgetData = () => {
@@ -197,27 +274,82 @@ const useWidgetData = () => {
     };
   }, []);
 
-  return { github, building };
+  const authed = useAuthStore((s) => s.status === "authed");
+
+  return { github, building, authed };
 };
 
 /**
- * The four cards, in order, so both layouts render the same set. `wide` marks
- * the ones that need the full width on mobile: a heatmap and a commit message
- * are unreadable in a half-width tile, a clock is not.
+ * Polls only while signed in and only while the tab is visible. The endpoint
+ * 401s for everyone else, so polling it anonymously would be a request per
+ * visitor per 30 seconds in exchange for nothing.
  */
-const cards = ({ github, building }) => [
+const useSystemData = (enabled) => {
+  const [system, setSystem] = useState(null);
+
+  useEffect(() => {
+    if (!enabled) {
+      setSystem(null); // signing out must drop the numbers, not freeze them
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      if (document.hidden) return;
+      try {
+        const res = await fetch("/api/widgets/system", {
+          credentials: "same-origin",
+        });
+        if (!res.ok) return;
+        const body = await res.json();
+        if (!cancelled) setSystem(body);
+      } catch {
+        /* keep the last good reading rather than flashing an error */
+      }
+    };
+
+    load();
+    const timer = setInterval(load, SYSTEM_POLL_MS);
+    document.addEventListener("visibilitychange", load);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", load);
+    };
+  }, [enabled]);
+
+  return system;
+};
+
+/**
+ * The cards, in order, so both layouts render the same set. `wide` marks the
+ * ones that need the full width on mobile: a heatmap and a commit message are
+ * unreadable in a half-width tile, a clock is not.
+ *
+ * System is appended rather than inserted, so signing in adds a row underneath
+ * instead of reshuffling the cards I already know the positions of.
+ */
+const cards = ({ github, building, system, authed }) => [
   { id: "clock", node: <AustinClock /> },
   { id: "building", node: <NowBuilding data={building} /> },
   { id: "contrib", wide: true, node: <Contributions data={github?.contributions} /> },
   { id: "commit", wide: true, node: <LatestCommit data={github?.latest} /> },
+  ...(authed ? [{ id: "system", wide: true, node: <System data={system} /> }] : []),
 ];
 
-/** Mobile: a grid on the first springboard page. No dragging. */
+/**
+ * Mobile: a grid on the first springboard page. No dragging.
+ *
+ * `authed: false` is not a bug. A fifth card overflows this page by 111px, and
+ * a springboard page that scrolls vertically stops feeling like a springboard,
+ * so the system card gets a page of its own instead (see MobileSystem).
+ */
 export const MobileWidgets = () => {
   const data = useWidgetData();
   return (
     <div className="m-widgets">
-      {cards(data).map(({ id, node, wide }) => (
+      {cards({ ...data, authed: false }).map(({ id, node, wide }) => (
         <div key={id} className={clsx("widget-slot", wide && "wide")}>
           {node}
         </div>
@@ -226,9 +358,26 @@ export const MobileWidgets = () => {
   );
 };
 
+/**
+ * The signed-in springboard page. Alone on its page it has room for the stats
+ * to be readable, which they were not squeezed under the other four cards.
+ */
+export const MobileSystem = () => {
+  const authed = useAuthStore((s) => s.status === "authed");
+  const system = useSystemData(authed);
+  return (
+    <div className="m-widgets">
+      <div className="widget-slot wide">
+        <System data={system} />
+      </div>
+    </div>
+  );
+};
+
 const Widgets = () => {
   const { widgetPos, setWidgetPos } = useWindowStore();
   const data = useWidgetData();
+  const system = useSystemData(data.authed);
   const rootRef = useRef(null);
 
   // same drag-and-persist contract as the desktop folders in Home.jsx
@@ -253,7 +402,9 @@ const Widgets = () => {
       });
       return () => instances.forEach((i) => i.kill());
     },
-    { scope: rootRef }
+    // re-run when the system card appears: the session resolves a moment after
+    // mount, so a one-shot effect would leave that fifth card undraggable
+    { scope: rootRef, dependencies: [data.authed] }
   );
 
   // "Clean Up" empties widgetPos: snap every card back to its home position
@@ -269,9 +420,17 @@ const Widgets = () => {
   }, [widgetPos]);
 
   return (
-    <section id="widgets" ref={rootRef}>
-      {cards(data).map(({ id, node }) => (
-        <div key={id} className="widget-slot" data-id={id}>
+    // the fifth card has to come from somewhere: signing in slides the block
+    // up towards the nameplate rather than down into the dock
+    <section id="widgets" className={clsx(data.authed && "authed")} ref={rootRef}>
+      {cards({ ...data, system }).map(({ id, node, wide }) => (
+        <div
+          key={id}
+          // system spans both columns here too: two stats side by side need
+          // the width, and a lone half-width card in a third row looks orphaned
+          className={clsx("widget-slot", id === "system" && wide && "wide")}
+          data-id={id}
+        >
           {node}
         </div>
       ))}

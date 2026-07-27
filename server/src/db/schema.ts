@@ -3,6 +3,7 @@ import {
   index,
   integer,
   pgTable,
+  real,
   serial,
   text,
   timestamp,
@@ -105,3 +106,25 @@ export const siteStatus = pgTable("site_status", {
 });
 
 export type SiteStatus = typeof siteStatus.$inferSelect;
+
+/**
+ * A rolling day of CPU and memory readings, taken every 30 seconds. Kept in
+ * Postgres rather than in memory so the sparklines survive a redeploy, which
+ * is exactly when I am most likely to be looking at them.
+ *
+ * Pruned to 24 hours by the sampler: this is a chart nobody will scroll back
+ * through, so an unbounded table would be all cost and no benefit.
+ */
+export const metricSamples = pgTable(
+  "metric_samples",
+  {
+    id: serial("id").primaryKey(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    cpuPct: real("cpu_pct").notNull(),
+    memPct: real("mem_pct").notNull(),
+    memUsedMb: integer("mem_used_mb").notNull(),
+  },
+  (t) => [index("metric_samples_at_idx").on(t.at)]
+);
+
+export type MetricSample = typeof metricSamples.$inferSelect;

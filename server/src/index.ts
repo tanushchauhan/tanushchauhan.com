@@ -5,6 +5,7 @@ import { runMigrations } from "./db/index.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { guestbookRoutes } from "./routes/guestbook.ts";
 import { widgetRoutes } from "./routes/widgets.ts";
+import { startMetricsSampler } from "./lib/metrics.ts";
 
 const PORT = Number(Bun.env.PORT ?? 3001);
 
@@ -68,6 +69,9 @@ app.get("*", serveStatic({ path: `${DIST}/index.html` }));
 
 // migrations complete before the first request is served
 await runMigrations();
+
+// starts after the migration that creates the table it writes to
+startMetricsSampler();
 
 // Warn rather than throw: a missing secret breaks logging in, but the public
 // portfolio is fine without it, and taking the whole site down over an auth

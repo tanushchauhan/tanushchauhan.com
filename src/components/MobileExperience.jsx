@@ -18,8 +18,9 @@ import clsx from "clsx";
 import { locations, highlights, gallery, techStack, socials } from "#constants";
 import { TerminalBody } from "#windows/Terminal.jsx";
 import { GuestbookBody } from "#windows/Guestbook.jsx";
-import { MobileWidgets } from "./widgets/Widgets.jsx";
+import { MobileWidgets, MobileSystem } from "./widgets/Widgets.jsx";
 import useWindowStore from "#store/window.js";
+import useAuthStore from "#store/auth.js";
 
 // same lazy module as the desktop Resume window: the PDF worker is only
 // fetched once someone actually opens the résumé. Nothing may be imported
@@ -325,6 +326,8 @@ const MobileExperience = () => {
   const app = APPS.find((a) => a.id === activeApp);
   const pagesRef = useRef(null);
   const [page, setPage] = useState(0);
+  const authed = useAuthStore((s) => s.status === "authed");
+  const pageCount = authed ? 3 : 2;
 
   // derive the active page from scroll position rather than tracking gestures:
   // works for swipes, dot taps, and keyboard scrolling alike
@@ -366,12 +369,20 @@ const MobileExperience = () => {
               ))}
             </div>
           </section>
+
+          {/* appended, so signing in adds a page rather than renumbering the
+              two every visitor already sees */}
+          {authed && (
+            <section className="m-page">
+              <MobileSystem />
+            </section>
+          )}
         </div>
 
         {/* the dock and dots sit outside .m-pages so they stay put while the
             pages move, exactly as on iOS */}
         <div className="m-dots">
-          {[0, 1].map((i) => (
+          {Array.from({ length: pageCount }, (_, i) => i).map((i) => (
             <button
               key={i}
               type="button"
