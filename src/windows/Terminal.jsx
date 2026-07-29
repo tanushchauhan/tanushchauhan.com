@@ -168,7 +168,7 @@ const COMMAND_NAMES = [
   "help", "ls", "cd", "cat", "open", "pwd", "whoami", "skills", "projects",
   "contact", "neofetch", "echo", "date", "history", "cite", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
-  "login", "logout", "enroll", "passkeys", "building", "moontower",
+  "login", "logout", "enroll", "passkeys", "building", "moontower", "services",
 ];
 
 /** A default nickname for a newly enrolled passkey, so it is identifiable later. */
@@ -327,6 +327,8 @@ export const TerminalBody = () => {
         "  logout           end the session",
         "  passkeys         list registered passkeys",
         "  building [text]  read or set the 'now building' widget",
+        "  moontower        the machines, and how to add one",
+        "  services         the applications, probed over http",
       ]),
 
     ls: (args) => {
@@ -602,14 +604,105 @@ export const TerminalBody = () => {
           ...data.servers.map((s) => {
             const state = s.stale ? "stale" : "reporting";
             const cpu = s.sample?.cpuPct != null ? `${s.sample.cpuPct}% cpu` : "no reading";
-            return `  ${s.slug.padEnd(12)} ${state.padEnd(10)} ${cpu}`;
+            // the unit rollup: which ones are broken is the point, so name them
+            const broken = (s.units ?? []).filter((u) => u.a !== "active");
+            const units = !s.units?.length
+              ? ""
+              : broken.length
+                ? `  ${broken.map((u) => u.n.replace(/\.service$/, "")).join(",")} down`
+                : `  ${s.units.length} units ok`;
+            return `  ${s.slug.padEnd(12)} ${state.padEnd(10)} ${cpu}${units}`;
           }),
           "",
           "moontower enroll <name>   add a server",
           "moontower remove <slug>   revoke and forget one",
+          "services                  the applications, probed over http",
         ]);
       } catch {
         return print(["moontower: could not reach the server."]);
+      }
+    },
+
+    /*
+     * The applications, as opposed to the machines. Kept a separate command for
+     * the same reason it is a separate card: "nginx is running" and "the site
+     * answers" are different facts and they fail independently.
+     */
+    services: async (args) => {
+      const [sub, ...rest] = args;
+
+      if (auth.status !== "authed") {
+        return print(["services: not signed in. run 'sudo' first."]);
+      }
+
+      if (sub === "add") {
+        // the url is the last word, everything before it is the display name
+        const url = rest[rest.length - 1] ?? "";
+        const name = rest.slice(0, -1).join(" ").trim();
+        if (!name || !url) return print(["usage: services add <name> <url>"]);
+        try {
+          const res = await fetch("/api/moontower/services", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ name, url }),
+          });
+          const data = await res.json();
+          if (!res.ok) return print([`services: ${data.error}`]);
+          return print([
+            `watching '${data.slug}'.`,
+            data.ok
+              ? `  answered ${data.status} in ${data.latencyMs}ms.`
+              : `  it is not answering right now: ${data.error}`,
+          ]);
+        } catch {
+          return print(["services: could not reach the server."]);
+        }
+      }
+
+      if (sub === "rm" || sub === "remove") {
+        const slug = rest.join("").trim();
+        if (!slug) return print(["usage: services rm <slug>"]);
+        try {
+          const res = await fetch(`/api/moontower/services/${encodeURIComponent(slug)}`, {
+            method: "DELETE",
+            credentials: "same-origin",
+          });
+          const data = await res.json();
+          return print([res.ok ? `stopped watching '${data.removed}'.` : `services: ${data.error}`]);
+        } catch {
+          return print(["services: could not reach the server."]);
+        }
+      }
+
+      try {
+        const res = await fetch("/api/moontower/fleet", { credentials: "same-origin" });
+        const data = await res.json();
+        if (!res.ok) return print([`services: ${data.error}`]);
+        if (!data.services?.length) {
+          return print([
+            "nothing watched yet.",
+            "",
+            "services add <name> <url>   probe it every minute",
+          ]);
+        }
+        return print([
+          "services:",
+          ...data.services.map((s) => {
+            const state = s.ok === null ? "checking" : s.ok ? "up" : "DOWN";
+            const detail = s.ok
+              ? `${s.latencyMs}ms`
+              : s.ok === false
+                ? (s.error ?? "no answer")
+                : "";
+            return `  ${s.slug.padEnd(14)} ${state.padEnd(9)} ${detail}`;
+          }),
+          "",
+          "services add <name> <url>   probe it every minute",
+          "services rm <slug>          stop watching one",
+        ]);
+      } catch {
+        return print(["services: could not reach the server."]);
       }
     },
 

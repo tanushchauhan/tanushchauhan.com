@@ -1,13 +1,15 @@
 import { Hono, type Context } from "hono";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db/index.ts";
-import { HUB_SLUG, metricSamples, servers } from "../db/schema.ts";
+import { HUB_SLUG, metricSamples, servers, services, type UnitState } from "../db/schema.ts";
+import { isProbeableUrl, probe } from "../lib/probes.ts";
 import { clientIp, hashIp, rateLimit } from "../lib/ratelimit.ts";
 import {
   AGENT_VERSION,
   configFor,
   enrollServer,
   mintEnrollmentToken,
+  normaliseSlug,
   serverForKey,
   STALE_AFTER_MS,
 } from "../lib/moontower.ts";
@@ -40,6 +42,32 @@ const tooMany = (c: Context, retryAfter: number) =>
 const num = (value: unknown, min: number, max: number) => {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   return Math.min(max, Math.max(min, value));
+};
+
+const MAX_UNITS = 40;
+const UNIT_NAME = /^[A-Za-z0-9@._\-\\:]+$/;
+
+/**
+ * Unit names are strings a reporting machine chose, and they end up rendered on
+ * a card, so they are checked here rather than trusted. The cap is a size limit
+ * on the row: a box with 300 units should not be able to put 300 of them in a
+ * jsonb column every 30 seconds.
+ */
+const parseUnits = (value: unknown): UnitState[] | null => {
+  if (!Array.isArray(value)) return null;
+  const out: UnitState[] = [];
+  for (const raw of value.slice(0, MAX_UNITS)) {
+    if (!raw || typeof raw !== "object") continue;
+    const { n, a, s, r } = raw as Record<string, unknown>;
+    if (typeof n !== "string" || !UNIT_NAME.test(n) || n.length > 80) continue;
+    out.push({
+      n,
+      a: typeof a === "string" ? a.slice(0, 20) : "unknown",
+      s: typeof s === "string" ? s.slice(0, 20) : "unknown",
+      r: Math.round(num(r, 0, 1e6) ?? 0),
+    });
+  }
+  return out;
 };
 
 /**
@@ -127,6 +155,10 @@ moontowerRoutes.post("/ingest", async (c) => {
     load1: num(body.load1, 0, 1024),
   });
 
+  // an agent too old to collect units sends none, which must leave the last
+  // snapshot alone rather than blanking the card
+  const units = parseUnits(body.units);
+
   await db
     .update(servers)
     .set({
@@ -135,11 +167,66 @@ moontowerRoutes.post("/ingest", async (c) => {
       osName: typeof body.os === "string" ? body.os.slice(0, 120) : server.osName,
       cores: typeof body.cores === "number" ? Math.round(body.cores) : server.cores,
       uptimeSeconds: Math.round(num(body.uptimeSeconds, 0, 2 ** 31 - 1) ?? 0) || null,
+      units: units ?? server.units,
+      failedUnits:
+        units === null
+          ? server.failedUnits
+          : Math.round(num(body.failedUnits, 0, 10000) ?? 0),
     })
     .where(eq(servers.slug, server.slug));
 
   // configuration and a version string. Nothing here is executed by the agent.
   return c.json(configFor(server));
+});
+
+/* ---------- services ----------
+ * The applications, as opposed to the machines. Managed by hand because the
+ * list is short and I am the only one who edits it; the probing itself runs on
+ * a timer in lib/probes.ts.
+ */
+
+moontowerRoutes.post("/services", requireAuth, async (c) => {
+  const body = await c.req.json().catch(() => null);
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const url = typeof body?.url === "string" ? body.url.trim() : "";
+
+  if (!name) return c.json({ error: "name required" }, 400);
+  if (!isProbeableUrl(url)) return c.json({ error: "url must be http or https" }, 400);
+
+  const slug = normaliseSlug(body?.slug ?? name);
+  if (!slug) return c.json({ error: "name must contain a letter or a digit" }, 400);
+
+  const [row] = await db
+    .insert(services)
+    .values({
+      slug,
+      name: name.slice(0, 60),
+      url,
+      server: typeof body?.server === "string" ? normaliseSlug(body.server) || null : null,
+    })
+    .onConflictDoNothing()
+    .returning();
+
+  if (!row) return c.json({ error: `"${slug}" is already on the list` }, 409);
+
+  // probe it now rather than leaving it blank for up to a minute: adding a
+  // service and being told nothing about it is a bad first impression
+  const result = await probe(row.url);
+  await db
+    .update(services)
+    .set({ ...result, checkedAt: new Date(), since: new Date() })
+    .where(eq(services.slug, row.slug));
+
+  return c.json({ ...row, ...result }, 201);
+});
+
+moontowerRoutes.delete("/services/:slug", requireAuth, async (c) => {
+  const [row] = await db
+    .delete(services)
+    .where(eq(services.slug, c.req.param("slug")))
+    .returning();
+  if (!row) return c.json({ error: `no service named "${c.req.param("slug")}"` }, 404);
+  return c.json({ removed: row.slug });
 });
 
 /* ---------- fleet ----------
@@ -200,10 +287,25 @@ moontowerRoutes.get("/fleet", requireAuth, async (c) => {
 
   const cutoff = Date.now() - STALE_AFTER_MS;
 
+  const watched = await db.select().from(services).orderBy(services.createdAt);
+
   return c.json({
     version: AGENT_VERSION,
     deployedSecondsAgo: Math.floor(process.uptime()),
     env: Bun.env.NODE_ENV ?? "development",
+    // one poll feeds both cards: they are the same question asked at two levels
+    services: watched.map((s) => ({
+      slug: s.slug,
+      name: s.name,
+      url: s.url,
+      server: s.server,
+      ok: s.ok,
+      status: s.status,
+      latencyMs: s.latencyMs,
+      error: s.error,
+      since: s.since,
+      checkedAt: s.checkedAt,
+    })),
     servers: fleet.map((s) => {
       const isHub = s.slug === HUB_SLUG;
       const lastSeen = isHub ? Date.now() : s.lastSeenAt?.getTime() ?? 0;
@@ -227,6 +329,9 @@ moontowerRoutes.get("/fleet", requireAuth, async (c) => {
         sample: isHub ? live : latestFor(historyFor(s.slug)),
         appMemMb: isHub ? live?.appMemMb ?? null : null,
         history: historyFor(s.slug),
+        // hub has no agent, so it has no systemd snapshot to report
+        units: s.units ?? null,
+        failedUnits: s.failedUnits,
       };
     }),
   });

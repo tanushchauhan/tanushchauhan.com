@@ -1156,49 +1156,88 @@ nav time {
 
 /* ---------------- fitting above the dock ----------------
    How tall this block is depends on its content, not on the viewport: a live
-   heatmap adds 31px that an empty contributions card does not, so a media query
-   picking a height threshold is guessing at a number it cannot see. These two
-   tiers are chosen by measurement instead (see fitToDock in Widgets.jsx), which
-   is why they key off data-fit rather than @media.
+   heatmap adds 31px that an empty contributions card does not, and signing in
+   adds two more cards, so a media query picking a height threshold is guessing
+   at a number it cannot see. These tiers are chosen by measurement instead
+   (see FIT_TIERS in Widgets.jsx), which is why they key off data-fit.
 
-   Tier one tightens the block. Everything it gives up is padding, so the cards
-   stay legible; the site's own memory footprint goes because it is the least
-   important line on the least important card. */
-#widgets[data-fit="tight"],
-#widgets[data-fit="min"] {
+   Each tier includes the ones above it, so they are written as "this tier and
+   everything below it" rather than repeated four times. */
+
+/* --- tier one: padding. Everything it gives up is whitespace, so the cards
+   stay exactly as legible; the site's own memory footprint goes because it is
+   the least important line on the least important card. --- */
+#widgets[data-fit]:not([data-fit=""]) {
   @apply gap-2;
 }
 
-#widgets[data-fit="tight"] .widget,
-#widgets[data-fit="min"] .widget {
+#widgets[data-fit]:not([data-fit=""]) .widget {
   @apply rounded-2xl p-3.5;
 }
 
-#widgets[data-fit="tight"] .big,
-#widgets[data-fit="min"] .big {
+#widgets[data-fit]:not([data-fit=""]) .big {
   @apply mt-2 text-4xl;
 }
 
-#widgets[data-fit="tight"] .widget .heatmap,
-#widgets[data-fit="min"] .widget .heatmap {
+#widgets[data-fit]:not([data-fit=""]) .widget .heatmap {
   @apply mt-2.5;
 }
 
-#widgets[data-fit="tight"] .w-system .app-mem,
-#widgets[data-fit="min"] .w-system .app-mem {
+#widgets[data-fit]:not([data-fit=""]) .w-system .app-mem {
   @apply hidden;
 }
 
 /* the attribute wins over the SVG's own height, so the sparkline shortens with
    everything else rather than being the one thing that never gives */
-#widgets[data-fit="tight"] .w-system .stat svg,
-#widgets[data-fit="min"] .w-system .stat svg {
+#widgets[data-fit="tight"] .w-system .stat svg {
   @apply mt-1 h-8;
 }
 
-/* Tier two: even tightened it does not fit, so a card has to go. The system
-   card is mine alone, so it yields rather than the ones visitors came for. */
-#widgets[data-fit="min"] .widget-slot[data-id="system"] {
+/* --- tier two: the fleet card gives up its decoration. Losing the shape of the
+   last 45 minutes beats losing the card, which is what the tiers below cost.
+   Without this step the gap between tiers was a whole card wide and a 1440x900
+   window fell through it over a single pixel. --- */
+#widgets:is([data-fit="compact"], [data-fit="pair"]) .w-system .stat svg,
+#widgets:is([data-fit="compact"], [data-fit="pair"]) .w-system .units {
+  display: none;
+}
+
+/* --- tier three: the two signed-in cards stop spanning the grid and share a
+   row, which buys back a whole row. Worth far more than the width costs them:
+   by now the fleet card has no sparklines to be wide for, and the services card
+   was only ever a line of text. --- */
+#widgets[data-fit="pair"] .widget-slot[data-id="system"],
+#widgets[data-fit="pair"] .widget-slot[data-id="services"] {
+  @apply col-span-1;
+}
+
+/* stacked, not side by side: at half width two columns of numbers collide */
+#widgets[data-fit="pair"] .w-system .stats {
+  @apply mt-2 grid-cols-1 gap-1;
+}
+
+#widgets[data-fit="pair"] .w-system .stat {
+  @apply flex items-baseline gap-2;
+}
+
+#widgets[data-fit="pair"] .w-system .stat .v {
+  @apply mt-0 ml-auto text-base;
+}
+
+#widgets[data-fit="pair"] .w-services .healthy {
+  @apply mt-1.5;
+}
+
+/* --- tier four: a card has to go. The fleet card yields rather than the ones
+   visitors came for, and rather than services, which is the one that says
+   whether anything is actually broken. --- */
+#widgets:is([data-fit="min"], [data-fit="bare"]) .widget-slot[data-id="system"] {
+  display: none;
+}
+
+/* --- the floor. Nothing below this, so it drops the second signed-in card too
+   and leaves the four a visitor came for. --- */
+#widgets[data-fit="bare"] .widget-slot[data-id="services"] {
   display: none;
 }
 
@@ -1244,6 +1283,90 @@ nav time {
 
 .w-system .warn {
   @apply text-amber-300/80;
+}
+
+/* the unit summary line, between the stats and the footer */
+.w-system .units {
+  @apply mt-2 flex items-center gap-1.5 text-[11px] text-white/50;
+}
+
+.w-system .units .dot-ok,
+.w-system .units .dot-bad {
+  @apply block size-1.5 shrink-0 rounded-full;
+}
+
+.w-system .units .dot-ok {
+  @apply bg-emerald-400/80;
+}
+
+.w-system .units .dot-bad {
+  @apply bg-rose-400/90;
+}
+
+/* ---------------- services card (signed in only) ----------------
+   Two columns of one-line rows. The dot carries the state, so the row stays
+   short enough that this card costs the grid far less height than the fleet
+   card above it. */
+.w-services .svc {
+  @apply mt-2.5 flex flex-col gap-1;
+}
+
+.w-services .svc li,
+.w-services .healthy {
+  @apply flex items-center gap-2 text-xs text-white/70;
+}
+
+/* the everything-is-fine line: one row for the whole healthy set, dimmer than
+   a failure and truncated rather than wrapped, since its job is to be scanned
+   and not read */
+.w-services .healthy {
+  @apply mt-2 text-[11px] text-white/45;
+}
+
+.w-services .healthy .n {
+  @apply truncate;
+}
+
+.w-services .svc .d {
+  @apply block size-1.5 shrink-0 rounded-full;
+}
+
+.w-services .svc .d-ok {
+  @apply bg-emerald-400/90;
+}
+
+/* rose rather than the card accent: down should never look like part of the
+   normal palette, the same reason a stale server tab goes amber */
+.w-services .svc .d-bad {
+  @apply bg-rose-400;
+  box-shadow: 0 0 0 3px rgb(251 113 133 / 0.2);
+}
+
+.w-services .svc .d-wait {
+  @apply bg-white/30;
+}
+
+.w-services .svc .n {
+  @apply truncate;
+}
+
+/* the timing pushes right and never wraps: a slow response should not be able
+   to reflow the name next to it */
+.w-services .svc .t {
+  @apply ml-auto shrink-0 text-[11px] whitespace-nowrap text-white/40 tabular-nums;
+}
+
+/* a down row is the only thing on this card that gets full-strength text */
+.w-services .svc li .n {
+  @apply text-white;
+}
+
+.w-services .svc li .t {
+  @apply text-rose-300/90;
+}
+
+.w-services header .tail {
+  @apply ml-auto truncate pl-2 text-[10px] font-medium tracking-normal text-white/40 normal-case;
 }
 
 .w-system .stats {

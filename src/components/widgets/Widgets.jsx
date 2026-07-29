@@ -7,7 +7,7 @@ import clsx from "clsx";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { Heatmap, Sparkline } from "./Sparkline.jsx";
-import { Sun, Moon, Grid3x3, GitCommitVertical, Box, Activity } from "lucide-react";
+import { Sun, Moon, Grid3x3, GitCommitVertical, Box, Activity, Globe } from "lucide-react";
 
 gsap.registerPlugin(Draggable);
 
@@ -262,6 +262,44 @@ const System = ({ data }) => {
               values={history.map((h) => h.memPct)}
             />
           </div>
+          {/* A summary, not a list. What matters at a glance is whether
+              anything is broken; which unit it was is a question for the
+              terminal, and twelve green dots on a card is just noise. */}
+          {server.units?.length > 0 && (
+            <p className="sub units">
+              {(() => {
+                const broken = server.units.filter((u) => u.a !== "active");
+                const flapping = server.units.filter((u) => u.r > 0);
+                if (broken.length) {
+                  return (
+                    <span className="warn">
+                      <i className="dot-bad" />
+                      {broken.map((u) => u.n.replace(/\.service$/, "")).join(", ")}{" "}
+                      {broken.length === 1 ? "is" : "are"} not running
+                    </span>
+                  );
+                }
+                return (
+                  <>
+                    <i className="dot-ok" />
+                    {server.units.length} units healthy
+                    {server.failedUnits > 0 && (
+                      <span className="warn"> · {server.failedUnits} failed elsewhere</span>
+                    )}
+                    {/* a unit that is up but has restarted 40 times today is
+                        the thing a plain up/down dot hides completely */}
+                    {!server.failedUnits && flapping.length > 0 && (
+                      <span className="warn">
+                        {" "}
+                        · {flapping[0].n.replace(/\.service$/, "")} restarted {flapping[0].r}x
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
+            </p>
+          )}
+
           <p className="sub app-mem">
             {server.stale ? (
               /* a frozen number presented as live is worse than no number */
@@ -285,6 +323,75 @@ const System = ({ data }) => {
         </>
       ) : (
         <p className="empty">Waiting for the first reading…</p>
+      )}
+    </article>
+  );
+};
+
+/* ---------- services ----------
+ * The applications, as opposed to the machines above.
+ *
+ * A separate card because it answers a separate question. Moontower says nginx
+ * and docker are running, which is the plumbing; this says the site behind them
+ * actually returns a page. The interesting outage is the one where every unit
+ * on the box is green and the thing is still down, and only a real request over
+ * the real network catches that.
+ */
+const Services = ({ data }) => {
+  const list = data?.services ?? [];
+  const down = list.filter((s) => s.ok === false);
+  const up = list.filter((s) => s.ok !== false);
+  // one number for the whole healthy set: the slowest is the only one that
+  // would ever make me look, and an average would hide it
+  const latencies = up.map((s) => s.latencyMs).filter((v) => typeof v === "number");
+  const slowest = latencies.length ? Math.max(...latencies) : null;
+
+  return (
+    <article className="widget w-services" style={{ "--accent": "#2dd4bf" }}>
+      <Head icon={<Globe />}>
+        Services
+        {list.length > 0 && (
+          <span className="tail">
+            {down.length ? `${down.length} down` : `all ${list.length} up`}
+          </span>
+        )}
+      </Head>
+
+      {list.length === 0 ? (
+        <p className="empty">
+          Nothing watched yet. Run `services add &lt;name&gt; &lt;url&gt;` in the terminal.
+        </p>
+      ) : (
+        <>
+          {/* Only what is broken gets a row of its own. Four green lines saying
+              nothing is wrong is four lines of nothing, and it was costing this
+              card an entire grid row it did not need. */}
+          {down.length > 0 && (
+            <ul className="svc">
+              {down.map((s) => (
+                <li key={s.slug}>
+                  <i className="d d-bad" />
+                  <span className="n">{s.name}</span>
+                  <span className="t">
+                    {/* how long it has been broken beats the status code, which
+                        is usually just 502 either way */}
+                    {s.since
+                      ? `down ${duration((Date.now() - new Date(s.since)) / 1000)}`
+                      : (s.error ?? "down")}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {up.length > 0 && (
+            <p className="sub healthy">
+              <i className={clsx("d", up.some((s) => s.ok === null) ? "d-wait" : "d-ok")} />
+              <span className="n">{up.map((s) => s.name).join(" · ")}</span>
+              {slowest != null && <span className="t">{slowest}ms</span>}
+            </p>
+          )}
+        </>
       )}
     </article>
   );
@@ -385,7 +492,12 @@ const cards = ({ github, building, system, authed }) => [
   { id: "building", node: <NowBuilding data={building} /> },
   { id: "contrib", wide: true, node: <Contributions data={github?.contributions} /> },
   { id: "commit", wide: true, node: <LatestCommit data={github?.latest} /> },
-  ...(authed ? [{ id: "system", wide: true, node: <System data={system} /> }] : []),
+  ...(authed
+    ? [
+        { id: "system", wide: true, node: <System data={system} /> },
+        { id: "services", wide: true, node: <Services data={system} /> },
+      ]
+    : []),
 ];
 
 /* ---------- fitting above the dock ----------
@@ -399,8 +511,12 @@ const cards = ({ github, building, system, authed }) => [
  * dock. Trying them in order is what keeps this from oscillating: the answer
  * depends only on the untightened layout, so re-running it lands on the same
  * tier rather than relaxing, colliding and tightening again.
+ *
+ * The last tier is the floor. If even that collides there is nothing further to
+ * give, and running out of rungs has to leave the block at its smallest rather
+ * than back at full size, so the loop falls through with `bare` still applied.
  */
-const FIT_TIERS = ["", "tight", "min"];
+const FIT_TIERS = ["", "tight", "compact", "pair", "min", "bare"];
 const DOCK_CLEARANCE = 20;
 
 /**
@@ -434,6 +550,11 @@ export const MobileSystem = () => {
     <div className="m-widgets">
       <div className="widget-slot wide">
         <System data={system} />
+      </div>
+      {/* both signed-in cards, since they answer the same question at two
+          levels and this page has the room the desktop grid does not */}
+      <div className="widget-slot wide">
+        <Services data={system} />
       </div>
     </div>
   );
@@ -564,7 +685,7 @@ const Widgets = () => {
           key={id}
           // system spans both columns here too: two stats side by side need
           // the width, and a lone half-width card in a third row looks orphaned
-          className={clsx("widget-slot", id === "system" && wide && "wide")}
+          className={clsx("widget-slot", (id === "system" || id === "services") && wide && "wide")}
           data-id={id}
         >
           {node}

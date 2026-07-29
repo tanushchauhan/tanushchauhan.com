@@ -18,7 +18,7 @@ import { agentEnrollments, servers, HUB_SLUG } from "../db/schema.ts";
  * authority for a portfolio site to hold over a mail server.
  */
 
-export const AGENT_VERSION = "1.0.0";
+export const AGENT_VERSION = "1.1.0";
 
 /** How long without a report before a server is shown as stale rather than live. */
 export const STALE_AFTER_MS = 3 * 60 * 1000;
@@ -32,7 +32,7 @@ const ENROLL_PREFIX = "mt_enroll_";
  * in its row, never a code push to the machine. Agents ignore names they do not
  * recognise, so an older agent degrades to fewer metrics instead of breaking.
  */
-export const COLLECTORS = ["cpu", "memory", "disk", "load"] as const;
+export const COLLECTORS = ["cpu", "memory", "disk", "load", "units"] as const;
 export type Collector = (typeof COLLECTORS)[number];
 
 const hash = async (value: string) => {

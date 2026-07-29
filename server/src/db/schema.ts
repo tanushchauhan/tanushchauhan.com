@@ -2,6 +2,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   real,
   serial,
@@ -165,9 +166,54 @@ export const servers = pgTable("servers", {
   osName: text("os_name"),
   cores: integer("cores"),
   uptimeSeconds: integer("uptime_seconds"),
+  // Latest systemd snapshot from this machine's agent. A column rather than a
+  // table because unit state has no history worth keeping: what matters is what
+  // is broken now, and NRestarts already carries "how often has this flapped"
+  // without me storing a row every 30 seconds to derive it.
+  units: jsonb("units").$type<UnitState[]>(),
+  // how many units systemd itself considers failed, watched or not. One number
+  // that catches everything the watchlist does not name.
+  failedUnits: integer("failed_units"),
 });
 
 export type Server = typeof servers.$inferSelect;
+
+/** One systemd unit as the agent found it. Short keys: this rides in every report. */
+export type UnitState = {
+  n: string; // unit name, e.g. "nginx.service"
+  a: string; // ActiveState: active | inactive | failed | activating
+  s: string; // SubState: running | exited | dead
+  r: number; // NRestarts
+};
+
+/**
+ * Applications the hub probes over HTTP.
+ *
+ * Deliberately separate from the systemd units above, because they answer
+ * different questions. A unit tells you nginx is running; only a request tells
+ * you the site behind it returns a page. Both fail independently and the
+ * interesting outage is the one where the units are all green.
+ */
+export const services = pgTable("services", {
+  slug: text("slug").primaryKey(),
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  // which machine it lives on, for grouping on the card. Free text, and not a
+  // foreign key: a service can outlive the server row it was tagged with, and
+  // losing the label is better than the delete failing.
+  server: text("server"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  checkedAt: timestamp("checked_at", { withTimezone: true }),
+  ok: boolean("ok"), // null until the first probe lands
+  status: integer("status"), // HTTP status, null if the request never got one
+  latencyMs: integer("latency_ms"),
+  error: text("error"),
+  // when the current up/down state began, so the card can say "down for 12m"
+  // rather than just "down". Only moves when the state flips.
+  since: timestamp("since", { withTimezone: true }),
+});
+
+export type Service = typeof services.$inferSelect;
 
 /**
  * Single-use tokens that buy exactly one thing: the right to register one new

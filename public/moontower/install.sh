@@ -70,7 +70,7 @@ cores=$(awk '/^processor/{n++}END{print n?n:1}' /proc/cpuinfo)
 
 response=$(curl -fsS --max-time 20 \
     -H "content-type: application/json" \
-    -d "{\"token\":\"$TOKEN\",\"name\":\"$NAME\",\"os\":\"$os_name\",\"cores\":$cores,\"agentVersion\":\"1.0.0\"}" \
+    -d "{\"token\":\"$TOKEN\",\"name\":\"$NAME\",\"os\":\"$os_name\",\"cores\":$cores,\"agentVersion\":\"1.1.0\"}" \
     "$HUB/api/moontower/enroll") || { echo "moontower: enrollment failed" >&2; exit 1; }
 
 KEY=$(printf '%s' "$response" | sed -n 's/.*"key":"\([^"]*\)".*/\1/p')
@@ -90,6 +90,15 @@ cat > "$CONF_DIR/config" <<EOF
 MOONTOWER_HUB="$HUB"
 MOONTOWER_KEY="$KEY"
 MOONTOWER_STATE="$STATE_DIR/cpu"
+
+# Which systemd units to report, space separated, ".service" optional. Left
+# unset the agent uses its built-in list of the usual suspects and skips
+# anything this machine does not have installed.
+#
+# It lives here rather than in the hub on purpose. These names become arguments
+# to a command, so accepting them over the network would mean a compromise of
+# the website could run whatever it liked on this machine.
+#MOONTOWER_UNITS="nginx mariadb dovecot"
 EOF
 
 # ---------- 5. schedule ----------
