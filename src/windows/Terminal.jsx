@@ -914,7 +914,13 @@ export const TerminalBody = () => {
     <div
       ref={bodyRef}
       className="term-body"
-      onClick={() => inputRef.current?.focus()}
+      // A click that ends a drag is someone selecting output, not asking for
+      // the prompt. Focusing the input would collapse the selection on mouseup,
+      // so it never survived long enough to copy.
+      onClick={() => {
+        if (!document.getSelection()?.isCollapsed) return;
+        inputRef.current?.focus();
+      }}
     >
       {overlay === "matrix" && <MatrixOverlay onExit={exitOverlay} />}
       {overlay === "snake" && <SnakeOverlay onExit={exitOverlay} />}

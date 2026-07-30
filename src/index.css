@@ -241,8 +241,12 @@ nav time {
   @apply text-neutral-300;
 }
 
+/* select-text, because the body sets select-none for the whole desktop: you
+   should not be able to drag a highlight across the dock or a folder label.
+   Terminal output is the one place here that is text you would actually want to
+   copy, so it opts back in. */
 .term-body {
-  @apply relative flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100;
+  @apply relative flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100 select-text;
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
