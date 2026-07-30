@@ -56,10 +56,16 @@ const UNIT_NAME = /^[A-Za-z0-9@._\-\\:]+$/;
 const parseUnits = (value: unknown): UnitState[] | null => {
   if (!Array.isArray(value)) return null;
   const out: UnitState[] = [];
-  for (const raw of value.slice(0, MAX_UNITS)) {
+  const seen = new Set<string>();
+  for (const raw of value) {
+    if (out.length >= MAX_UNITS) break;
     if (!raw || typeof raw !== "object") continue;
     const { n, a, s, r } = raw as Record<string, unknown>;
     if (typeof n !== "string" || !UNIT_NAME.test(n) || n.length > 80) continue;
+    // deduped here too, not only in the agent: a duplicate would otherwise
+    // spend the cap and push a real unit off the end of the list
+    if (seen.has(n)) continue;
+    seen.add(n);
     out.push({
       n,
       a: typeof a === "string" ? a.slice(0, 20) : "unknown",

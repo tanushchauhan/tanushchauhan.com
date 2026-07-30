@@ -155,6 +155,11 @@ read_units() {
             if (load != "loaded") next
             # keep the JSON well formed no matter what systemd hands back
             gsub(/[^A-Za-z0-9@._-]/, "", id)
+            # Debian aliases sshd to ssh, mysql to mariadb and bind9 to named,
+            # and `show` resolves an alias to its canonical Id. Watching both
+            # names is normal and should not report the service twice.
+            if (id in seen) next
+            seen[id] = 1
             gsub(/[^a-z-]/, "", active)
             gsub(/[^a-z-]/, "", state)
             if (restarts !~ /^[0-9]+$/) restarts = 0
