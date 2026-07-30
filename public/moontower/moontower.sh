@@ -15,7 +15,7 @@
 
 set -eu
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 CONFIG="${MOONTOWER_CONFIG:-/etc/moontower/config}"
 
 [ -r "$CONFIG" ] || { echo "moontower: cannot read $CONFIG" >&2; exit 1; }
@@ -82,9 +82,13 @@ read_disk() {
 # could run whatever it liked here, which is the one thing this design refuses
 # to allow. The default list is intersected with what is actually installed, so
 # a box that has no mariadb simply reports no mariadb.
+# A name may contain *, which systemd expands against what is installed. That
+# is not a nicety: Debian calls it php8.0-fpm and Ubuntu calls it php8.3-fpm, so
+# no fixed list can name the one unit a LAMP box most wants watched.
 DEFAULT_UNITS="nginx apache2 caddy docker containerd mariadb mysql postgresql
-redis-server valkey dovecot exim4 postfix bind9 named php-fpm ssh sshd fail2ban
-cron crond ufw firewalld"
+redis-server valkey dovecot exim4 postfix bind9 named php*-fpm ssh sshd
+fail2ban cron crond ufw firewalld vsftpd proftpd spamassassin
+clamav-daemon clamav-freshclam"
 
 read_units() {
     # Empty, not zero. A box with no systemd should leave the hub's last
@@ -99,11 +103,26 @@ read_units() {
     set --
     for unit in ${MOONTOWER_UNITS:-$DEFAULT_UNITS}; do
         case "$unit" in
-            *[!A-Za-z0-9@._-]*) continue ;;
+            *[!A-Za-z0-9@._*-]*) continue ;;
         esac
         case "$unit" in
-            *.service) set -- "$@" "$unit" ;;
-            *)         set -- "$@" "$unit.service" ;;
+            *.service) name="$unit" ;;
+            *)         name="$unit.service" ;;
+        esac
+
+        case "$name" in
+            *"*"*)
+                # systemd does the expanding, not the shell. The pattern stays
+                # quoted the whole way here, so a * can never glob against the
+                # filesystem on its way to systemctl.
+                for found in $(systemctl list-units --all --plain --no-legend "$name" 2>/dev/null | awk '{print $1}'); do
+                    case "$found" in
+                        *[!A-Za-z0-9@._-]*) continue ;;
+                    esac
+                    set -- "$@" "$found"
+                done
+                ;;
+            *) set -- "$@" "$name" ;;
         esac
     done
     [ $# -gt 0 ] || return 0

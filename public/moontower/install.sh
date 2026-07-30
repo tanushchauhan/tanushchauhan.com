@@ -70,7 +70,7 @@ cores=$(awk '/^processor/{n++}END{print n?n:1}' /proc/cpuinfo)
 
 response=$(curl -fsS --max-time 20 \
     -H "content-type: application/json" \
-    -d "{\"token\":\"$TOKEN\",\"name\":\"$NAME\",\"os\":\"$os_name\",\"cores\":$cores,\"agentVersion\":\"1.1.0\"}" \
+    -d "{\"token\":\"$TOKEN\",\"name\":\"$NAME\",\"os\":\"$os_name\",\"cores\":$cores,\"agentVersion\":\"1.2.0\"}" \
     "$HUB/api/moontower/enroll") || { echo "moontower: enrollment failed" >&2; exit 1; }
 
 KEY=$(printf '%s' "$response" | sed -n 's/.*"key":"\([^"]*\)".*/\1/p')
