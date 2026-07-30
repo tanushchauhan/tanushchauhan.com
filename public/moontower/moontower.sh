@@ -209,7 +209,8 @@ response=$(curl -fsS --max-time 15 \
 # always a human re-running the installer. Nothing from the hub is executed.
 latest=$(printf '%s' "$response" | sed -n 's/.*"latestVersion":"\([^"]*\)".*/\1/p')
 if [ -n "$latest" ] && [ "$latest" != "$VERSION" ]; then
-    echo "moontower: version $latest is available (running $VERSION); re-run the installer to upgrade"
+    echo "moontower: version $latest is available (running $VERSION). upgrade with:"
+    echo "  curl -fsSL $MOONTOWER_HUB/moontower/install.sh | sh -s -- --upgrade"
 fi
 
 [ "${MOONTOWER_QUIET:-1}" = "1" ] || echo "moontower: cpu ${cpu_pct}% mem ${mem_pct}% disk ${disk_pct}%"

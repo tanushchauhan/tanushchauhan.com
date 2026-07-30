@@ -4,6 +4,14 @@
 #   curl -fsSL https://tanushchauhan.com/moontower/install.sh | sh -s -- \
 #       --token mt_enroll_… --name "vps"
 #
+# To upgrade a machine that is already enrolled, with no token and no downtime:
+#
+#   curl -fsSL https://tanushchauhan.com/moontower/install.sh | sh -s -- --upgrade
+#
+# That replaces the agent and its unit files and leaves the key, the schedule
+# and the server's history alone. Enrolling is a one-time thing; a server never
+# has to be removed and re-added to pick up a new version.
+#
 # What it does, so you can check before running it as root:
 #   1. creates a system user `moontower` with no login shell and no home
 #   2. installs one shell script to /usr/local/lib/moontower/moontower.sh
@@ -21,6 +29,7 @@ set -eu
 HUB="https://tanushchauhan.com"
 NAME=""
 TOKEN=""
+UPGRADE=0
 LIB="/usr/local/lib/moontower"
 CONF_DIR="/etc/moontower"
 STATE_DIR="/var/lib/moontower"
@@ -31,18 +40,33 @@ while [ $# -gt 0 ]; do
         --token) TOKEN="${2:-}"; shift 2 ;;
         --name)  NAME="${2:-}";  shift 2 ;;
         --hub)   HUB="${2:-}";   shift 2 ;;
+        --upgrade) UPGRADE=1; shift ;;
         *) echo "unknown option: $1" >&2; exit 2 ;;
     esac
 done
 
-[ -n "$TOKEN" ] || { echo "moontower: --token is required (mint one with 'bun run admin:enroll')" >&2; exit 2; }
-[ -n "$NAME" ]  || { echo "moontower: --name is required, for example --name vps" >&2; exit 2; }
+# An install with no token on a machine that already holds a key is an upgrade,
+# not a mistake. Treating it as one is what makes "re-run the installer" true.
+if [ "$UPGRADE" -eq 0 ] && [ -z "$TOKEN" ] && [ -r "$CONF_DIR/config" ]; then
+    UPGRADE=1
+fi
+
+if [ "$UPGRADE" -eq 1 ]; then
+    [ -r "$CONF_DIR/config" ] || { echo "moontower: nothing to upgrade, $CONF_DIR/config does not exist" >&2; exit 1; }
+else
+    [ -n "$TOKEN" ] || { echo "moontower: --token is required, or --upgrade to update an enrolled machine" >&2; exit 2; }
+    [ -n "$NAME" ]  || { echo "moontower: --name is required, for example --name vps" >&2; exit 2; }
+fi
 [ "$(id -u)" -eq 0 ] || { echo "moontower: install needs root (the agent itself does not)" >&2; exit 1; }
 
 command -v curl >/dev/null 2>&1 || { echo "moontower: curl is required" >&2; exit 1; }
 [ -r /proc/stat ] || { echo "moontower: /proc/stat is unreadable, is this Linux?" >&2; exit 1; }
 
-echo "moontower: installing agent for \"$NAME\""
+if [ "$UPGRADE" -eq 1 ]; then
+    echo "moontower: upgrading the agent in place, keeping the existing key"
+else
+    echo "moontower: installing agent for \"$NAME\""
+fi
 
 # ---------- 1. unprivileged user ----------
 if ! id "$USER_NAME" >/dev/null 2>&1; then
@@ -57,7 +81,10 @@ curl -fsSL "$HUB/moontower/moontower.sh" -o "$LIB/moontower.sh"
 chmod 0755 "$LIB/moontower.sh"
 chown -R "$USER_NAME" "$STATE_DIR"
 
-# ---------- 3. enrol ----------
+# ---------- 3. enrol (new installs only) ----------
+# An upgrade must never touch the config: the key in it is the machine's
+# identity, and rewriting it is how you would lose a server's history.
+if [ "$UPGRADE" -eq 0 ]; then
 # Sent as a body field rather than a query string so the single-use token does
 # not end up in any proxy or access log along the way.
 # `.` is a special builtin, so a missing file exits the shell before any
@@ -100,8 +127,11 @@ MOONTOWER_STATE="$STATE_DIR/cpu"
 # the website could run whatever it liked on this machine.
 #MOONTOWER_UNITS="nginx mariadb dovecot"
 EOF
+fi
 
 # ---------- 5. schedule ----------
+# rewritten on upgrade too, so a change to the sandbox or the interval lands
+# without anyone having to know the unit files moved
 if command -v systemctl >/dev/null 2>&1 && [ -d /etc/systemd/system ]; then
     cat > /etc/systemd/system/moontower.service <<EOF
 [Unit]
@@ -159,6 +189,15 @@ chmod 0755 "$LIB/uninstall.sh"
 
 # first reading now, so the hub shows the server immediately rather than in 30s
 su -s /bin/sh "$USER_NAME" -c "$LIB/moontower.sh" || true
+
+if [ "$UPGRADE" -eq 1 ]; then
+    cat <<EOF
+
+moontower: upgraded to $(grep -m1 '^VERSION=' "$LIB/moontower.sh" | cut -d'"' -f2).
+The key, the schedule and this server's history are unchanged.
+EOF
+    exit 0
+fi
 
 cat <<EOF
 
