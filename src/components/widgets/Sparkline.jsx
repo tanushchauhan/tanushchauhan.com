@@ -47,6 +47,22 @@ export const Sparkline = ({ values = [], width = 220, height = 44, stroke = "cur
 };
 
 /**
+ * A fill bar, for the stats that are a capacity rather than a rate.
+ *
+ * Disk gets one of these instead of a sparkline because 45 minutes of disk
+ * history is a flat line: what you want to know is how much of it is gone, not
+ * what shape it made getting there.
+ */
+export const Bar = ({ pct = 0, height = 4 }) => {
+  const clamped = Math.min(100, Math.max(0, pct));
+  return (
+    <div className="bar" style={{ height }} role="img" aria-label={`${Math.round(clamped)}% used`}>
+      <span style={{ width: `${clamped}%` }} />
+    </div>
+  );
+};
+
+/**
  * GitHub-style contribution grid: one column per week, seven rows, oldest
  * column first. `days` is [{ date, count }] in chronological order.
  */

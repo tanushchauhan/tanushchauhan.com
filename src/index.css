@@ -1144,10 +1144,31 @@ nav time {
   @apply col-span-2;
 }
 
-/* signed in, the block carries a fifth card, so it starts higher and tightens
-   its own spacing rather than pushing the bottom row into the dock */
+/* Signed in the block carries two more cards, and the answer is width, not
+   compression: there is 635px of empty wallpaper between this column and the
+   project folders at 1470px, so growing sideways costs nothing while squeezing
+   vertically costs the dock clearance. The two signed-in cards then share the
+   third row instead of taking one each.
+
+   Only when signed in. What a visitor sees is a deliberate 2x2 against the
+   wallpaper, and it should not change shape because I happen to be logged in
+   somewhere else. */
 #widgets.authed {
   @apply top-48 gap-3;
+}
+
+/* The width only exists on a wide desktop. At 1100px the folders start at 878
+   and a 46rem grid would run within 110px of them, so below this the two cards
+   go back to a row each and the fit ladder handles the height as before. */
+@media (min-width: 1360px) {
+  #widgets.authed {
+    @apply w-[46rem];
+  }
+
+  #widgets.authed .widget-slot[data-id="system"],
+  #widgets.authed .widget-slot[data-id="services"] {
+    @apply col-span-1;
+  }
 }
 
 #widgets.authed .widget {
@@ -1197,46 +1218,27 @@ nav time {
    last 45 minutes beats losing the card, which is what the tiers below cost.
    Without this step the gap between tiers was a whole card wide and a 1440x900
    window fell through it over a single pixel. --- */
-#widgets:is([data-fit="compact"], [data-fit="pair"]) .w-system .stat svg,
-#widgets:is([data-fit="compact"], [data-fit="pair"]) .w-system .units {
+#widgets[data-fit="compact"] .w-system .stat svg,
+#widgets[data-fit="compact"] .w-system .stat .bar,
+#widgets[data-fit="compact"] .w-system .units,
+#widgets:is([data-fit="compact"], [data-fit="min"]) .w-services .svc li.up {
   display: none;
 }
 
-/* --- tier three: the two signed-in cards stop spanning the grid and share a
-   row, which buys back a whole row. Worth far more than the width costs them:
-   by now the fleet card has no sparklines to be wide for, and the services card
-   was only ever a line of text. --- */
-#widgets[data-fit="pair"] .widget-slot[data-id="system"],
-#widgets[data-fit="pair"] .widget-slot[data-id="services"] {
-  @apply col-span-1;
+#widgets:is([data-fit="compact"], [data-fit="min"]) .w-services .healthy {
+  @apply flex;
 }
 
-/* stacked, not side by side: at half width two columns of numbers collide */
-#widgets[data-fit="pair"] .w-system .stats {
-  @apply mt-2 grid-cols-1 gap-1;
-}
-
-#widgets[data-fit="pair"] .w-system .stat {
-  @apply flex items-baseline gap-2;
-}
-
-#widgets[data-fit="pair"] .w-system .stat .v {
-  @apply mt-0 ml-auto text-base;
-}
-
-#widgets[data-fit="pair"] .w-services .healthy {
-  @apply mt-1.5;
-}
-
-/* --- tier four: a card has to go. The fleet card yields rather than the ones
-   visitors came for, and rather than services, which is the one that says
-   whether anything is actually broken. --- */
+/* --- tier three: the fleet card goes, rather than the ones visitors came for
+   or services, which is the one that says whether anything is broken.
+   Below 1360px the two are stacked, so this buys a row. Above it they share a
+   row and it buys nothing, which needs no special case: the ladder measures
+   this tier, finds it no better, and carries on to the next. --- */
 #widgets:is([data-fit="min"], [data-fit="bare"]) .widget-slot[data-id="system"] {
   display: none;
 }
 
-/* --- the floor. Nothing below this, so it drops the second signed-in card too
-   and leaves the four a visitor came for. --- */
+/* --- the floor: the whole signed-in row goes. --- */
 #widgets[data-fit="bare"] .widget-slot[data-id="services"] {
   display: none;
 }
@@ -1316,11 +1318,11 @@ nav time {
   @apply flex items-center gap-2 text-xs text-white/70;
 }
 
-/* the everything-is-fine line: one row for the whole healthy set, dimmer than
-   a failure and truncated rather than wrapped, since its job is to be scanned
-   and not read */
+/* the everything-is-fine line: the whole healthy set on one row, dimmer than a
+   failure and truncated rather than wrapped, since its job is to be scanned and
+   not read. Hidden while the rows themselves fit; see the fit tiers. */
 .w-services .healthy {
-  @apply mt-2 text-[11px] text-white/45;
+  @apply mt-2 hidden text-[11px] text-white/45;
 }
 
 .w-services .healthy .n {
@@ -1357,12 +1359,16 @@ nav time {
 }
 
 /* a down row is the only thing on this card that gets full-strength text */
-.w-services .svc li .n {
+.w-services .svc li.bad .n {
   @apply text-white;
 }
 
-.w-services .svc li .t {
+.w-services .svc li.bad .t {
   @apply text-rose-300/90;
+}
+
+.w-services .svc li.up .n {
+  @apply text-white/65;
 }
 
 .w-services header .tail {
@@ -1373,12 +1379,24 @@ nav time {
   @apply mt-2.5 grid grid-cols-2 gap-4;
 }
 
+/* disk joins CPU and memory once a machine reports it; before that the card
+   stays on two so it never shows an empty third column */
+.w-system .stats.three {
+  @apply grid-cols-3 gap-3;
+}
+
 .w-system .stat .k {
   @apply text-[10px] font-medium tracking-wide text-white/45 uppercase;
 }
 
 .w-system .stat .v {
   @apply mt-0.5 text-xl leading-none font-semibold tabular-nums;
+}
+
+/* three-up on a half-width card is the tightest this gets, so the numbers give
+   a little rather than breaking across lines */
+.w-system .stats.three .stat .v {
+  @apply text-lg whitespace-nowrap;
 }
 
 .w-system .stat .v .unit {
@@ -1390,8 +1408,33 @@ nav time {
   color: var(--accent);
 }
 
+/* the capacity bar, for disk. Same vertical rhythm as a sparkline so a
+   three-column row lines up whichever kind of stat is in it. */
+.bar {
+  @apply mt-[0.6rem] w-full overflow-hidden rounded-full bg-white/12;
+}
+
+.bar span {
+  @apply block h-full rounded-full;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+/* amber wins over the card accent once the disk is nearly full: this is the
+   one number here that takes the whole machine down when it runs out */
+.w-system .stat.warn .v,
+.w-system header .tail .warn {
+  @apply text-amber-300;
+}
+
+.w-system .stat.warn .bar span {
+  @apply bg-amber-400;
+}
+
+/* one line, truncated: this is a footnote, and letting it wrap to a second line
+   makes the whole grid row taller for the least important text on the card */
 .w-system .app-mem {
-  @apply mt-2 text-[11px] text-white/40;
+  @apply mt-2 truncate text-[11px] text-white/40;
 }
 
 /* contribution grid: burnt orange rather than GitHub green, to match the site */

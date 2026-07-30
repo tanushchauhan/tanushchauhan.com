@@ -604,6 +604,7 @@ export const TerminalBody = () => {
           ...data.servers.map((s) => {
             const state = s.stale ? "stale" : "reporting";
             const cpu = s.sample?.cpuPct != null ? `${s.sample.cpuPct}% cpu` : "no reading";
+            const disk = s.sample?.diskPct != null ? `  ${Math.round(s.sample.diskPct)}% disk` : "";
             // the unit rollup: which ones are broken is the point, so name them
             const broken = (s.units ?? []).filter((u) => u.a !== "active");
             const units = !s.units?.length
@@ -611,7 +612,7 @@ export const TerminalBody = () => {
               : broken.length
                 ? `  ${broken.map((u) => u.n.replace(/\.service$/, "")).join(",")} down`
                 : `  ${s.units.length} units ok`;
-            return `  ${s.slug.padEnd(12)} ${state.padEnd(10)} ${cpu}${units}`;
+            return `  ${s.slug.padEnd(12)} ${state.padEnd(10)} ${cpu.padEnd(12)}${disk}${units}`;
           }),
           "",
           "moontower enroll <name>   add a server",

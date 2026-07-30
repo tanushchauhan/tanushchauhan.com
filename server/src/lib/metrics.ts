@@ -129,6 +129,40 @@ export const readMemory = async () => {
 };
 
 const MB = 1024 * 1024;
+const GB = 1024 * MB;
+
+/* ---------- disk ----------
+ * The one figure here that is not read out of /proc, because the kernel does
+ * not put filesystem usage there. statfs is the same question `df` asks.
+ *
+ * Worth knowing, given the cgroup rewrite: inside a container this measures the
+ * overlay filesystem, which for overlay2 sits on the host's disk and so reports
+ * the host's real numbers. That is true of the normal Docker setup rather than
+ * guaranteed by anything, so DISK_PATH exists to point it at a host volume if
+ * hub ever stops agreeing with `df /` on the machine itself.
+ */
+const DISK_PATH = Bun.env.DISK_PATH ?? "/";
+
+const readDisk = async () => {
+  try {
+    const { statfs } = await import("node:fs/promises");
+    const fs = await statfs(DISK_PATH);
+    const total = Number(fs.blocks) * Number(fs.bsize);
+    // blocks - bfree, not bavail: bavail excludes the root reserve, and
+    // counting reserved-but-unused space as used is what `df` does too
+    const used = (Number(fs.blocks) - Number(fs.bfree)) * Number(fs.bsize);
+    if (!total) return null;
+    return {
+      diskPct: Number(((used / total) * 100).toFixed(1)),
+      diskUsedGb: Number((used / GB).toFixed(1)),
+      diskTotalGb: Number((total / GB).toFixed(1)),
+    };
+  } catch {
+    // statfs landed in Node 18.15 and is in Bun, but a metrics read must never
+    // be the reason the site goes down
+    return null;
+  }
+};
 
 /** One reading of everything, with CPU measured against the previous call. */
 export const sample = async () => {
@@ -138,10 +172,14 @@ export const sample = async () => {
 
   const memory = await readMemory();
   const memPct = memory.totalBytes ? (memory.usedBytes / memory.totalBytes) * 100 : 0;
+  const disk = await readDisk();
 
   return {
     cpuPct: pct === null ? null : Number(pct.toFixed(1)),
     cores: os.cpus().length,
+    ...(disk ?? { diskPct: null, diskUsedGb: null, diskTotalGb: null }),
+    // already a 1-minute average, so unlike CPU it needs no previous reading
+    load1: Number(os.loadavg()[0].toFixed(2)),
     memPct: Number(memPct.toFixed(1)),
     memUsedMb: Math.round(memory.usedBytes / MB),
     memTotalMb: Math.round(memory.totalBytes / MB),
@@ -181,6 +219,10 @@ export const startMetricsSampler = () => {
         memPct: reading.memPct,
         memUsedMb: reading.memUsedMb,
         memTotalMb: reading.memTotalMb,
+        diskPct: reading.diskPct,
+        diskUsedGb: reading.diskUsedGb,
+        diskTotalGb: reading.diskTotalGb,
+        load1: reading.load1,
       });
 
       await registerHub(reading.cores, `${os.type()} ${os.release()}`);

@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import clsx from "clsx";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
-import { Heatmap, Sparkline } from "./Sparkline.jsx";
+import { Bar, Heatmap, Sparkline } from "./Sparkline.jsx";
 import { Sun, Moon, Grid3x3, GitCommitVertical, Box, Activity, Globe } from "lucide-react";
 
 gsap.registerPlugin(Draggable);
@@ -179,8 +179,12 @@ const duration = (seconds) => {
   return `${m}m`;
 };
 
-const Stat = ({ label, value, unit, values }) => (
-  <div className="stat">
+/**
+ * `values` draws a sparkline, `pct` draws a fill bar. A rate wants its shape
+ * over time; a capacity wants how much of it is gone.
+ */
+const Stat = ({ label, value, unit, values, pct, warn }) => (
+  <div className={clsx("stat", warn && "warn")}>
     <p className="k">{label}</p>
     <p className="v">
       {value}
@@ -188,11 +192,17 @@ const Stat = ({ label, value, unit, values }) => (
     </p>
     {/* stroke stays currentColor: a var() in an SVG presentation attribute is
         not reliably supported, so the CSS sets `color` on the svg instead */}
-    <Sparkline values={values} height={22} />
+    {pct == null ? <Sparkline values={values} height={22} /> : <Bar pct={pct} />}
   </div>
 );
 
 const gb = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`);
+
+/* Capacities read as "used / total UNIT", with the unit said once. Three stats
+   on a half-width card leave about 113px each, and "4.2 GB / 8.0 GB" does not
+   fit in that: it wrapped between the "8.0" and its "GB". */
+const gbValue = (mb) => (mb >= 1024 ? (mb / 1024).toFixed(1) : String(mb));
+const gbUnit = (mb) => (mb >= 1024 ? "GB" : "MB");
 
 /*
  * Moontower: the fleet card. One tab per reporting machine, the hub itself
@@ -218,12 +228,16 @@ const System = ({ data }) => {
         {data && (
           <span className="tail">
             {server?.uptimeSeconds != null && `up ${duration(server.uptimeSeconds)}`}
-            {/* time since this container started, which is time since deploy */}
-            {server?.slug === "hub" &&
-              data.deployedSecondsAgo != null &&
-              ` · deployed ${duration(data.deployedSecondsAgo)} ago`}
+            {/* Load rides next to the core count because one is meaningless
+                without the other: 4.0 is a saturated 4-core box and a bored
+                16-core one. Amber once there are more runnable processes than
+                cores to run them, which is the point it starts queueing. */}
+            {s?.load1 != null && (
+              <span className={clsx(server?.cores && s.load1 > server.cores && "warn")}>
+                {" · "}load {s.load1.toFixed(2)}
+              </span>
+            )}
             {server?.cores != null && ` · ${server.cores} cores`}
-            {server?.slug === "hub" && ` · ${data.env}`}
           </span>
         )}
       </Head>
@@ -248,7 +262,7 @@ const System = ({ data }) => {
 
       {server ? (
         <>
-          <div className="stats">
+          <div className={clsx("stats", s?.diskPct != null && "three")}>
             <Stat
               label="CPU"
               value={s?.cpuPct ?? "—"}
@@ -257,10 +271,33 @@ const System = ({ data }) => {
             />
             <Stat
               label="Memory"
-              value={s?.memUsedMb != null ? gb(s.memUsedMb) : "—"}
-              unit={s?.memTotalMb ? ` / ${gb(s.memTotalMb)}` : ""}
+              value={s?.memUsedMb != null ? gbValue(s.memUsedMb) : "—"}
+              unit={
+                s?.memUsedMb == null
+                  ? ""
+                  : s.memTotalMb
+                    ? ` / ${Math.round(s.memTotalMb / 1024)} GB`
+                    : ` ${gbUnit(s.memUsedMb)}`
+              }
               values={history.map((h) => h.memPct)}
             />
+            {/* only when the agent actually reported it: an older agent, or a
+                machine where statfs failed, must not show a confident 0% */}
+            {s?.diskPct != null && (
+              <Stat
+                label="Disk"
+                value={s.diskUsedGb != null ? `${Math.round(s.diskUsedGb)}` : Math.round(s.diskPct)}
+                unit={
+                  s.diskUsedGb != null && s.diskTotalGb != null
+                    ? ` / ${Math.round(s.diskTotalGb)} GB`
+                    : "%"
+                }
+                pct={s.diskPct}
+                // the number that actually needs to catch your eye, since a
+                // full disk takes everything down and nothing else warns first
+                warn={s.diskPct >= 85}
+              />
+            )}
           </div>
           {/* A summary, not a list. What matters at a glance is whether
               anything is broken; which unit it was is a question for the
@@ -312,6 +349,11 @@ const System = ({ data }) => {
             ) : (
               <>
                 {server.appMemMb != null && `this site is using ${gb(server.appMemMb)}`}
+                {/* about this process rather than the machine, which is why it
+                    lives on the footer and not in the header beside uptime */}
+                {server.slug === "hub" && data.deployedSecondsAgo != null &&
+                  ` · deployed ${duration(data.deployedSecondsAgo)} ago`}
+                {server.slug === "hub" && ` · ${data.env}`}
                 {server.agentVersion && `agent ${server.agentVersion}`}
                 {server.updateAvailable && (
                   <span className="warn"> · {data.version} available</span>
@@ -366,24 +408,32 @@ const Services = ({ data }) => {
           {/* Only what is broken gets a row of its own. Four green lines saying
               nothing is wrong is four lines of nothing, and it was costing this
               card an entire grid row it did not need. */}
-          {down.length > 0 && (
-            <ul className="svc">
-              {down.map((s) => (
-                <li key={s.slug}>
-                  <i className="d d-bad" />
-                  <span className="n">{s.name}</span>
-                  <span className="t">
-                    {/* how long it has been broken beats the status code, which
-                        is usually just 502 either way */}
-                    {s.since
-                      ? `down ${duration((Date.now() - new Date(s.since)) / 1000)}`
-                      : (s.error ?? "down")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <ul className="svc">
+            {down.map((s) => (
+              <li key={s.slug} className="bad">
+                <i className="d d-bad" />
+                <span className="n">{s.name}</span>
+                <span className="t">
+                  {/* how long it has been broken beats the status code, which
+                      is usually just 502 either way */}
+                  {s.since
+                    ? `down ${duration((Date.now() - new Date(s.since)) / 1000)}`
+                    : (s.error ?? "down")}
+                </span>
+              </li>
+            ))}
+            {up.map((s) => (
+              <li key={s.slug} className="up">
+                <i className={clsx("d", s.ok === null ? "d-wait" : "d-ok")} />
+                <span className="n">{s.name}</span>
+                <span className="t">{s.ok === null ? "checking" : `${s.latencyMs}ms`}</span>
+              </li>
+            ))}
+          </ul>
 
+          {/* The same healthy set as one line. Both are rendered and the fit
+              tiers choose: with room a row each is more useful, and when the
+              grid is under pressure four green rows are four rows of nothing. */}
           {up.length > 0 && (
             <p className="sub healthy">
               <i className={clsx("d", up.some((s) => s.ok === null) ? "d-wait" : "d-ok")} />
@@ -516,7 +566,7 @@ const cards = ({ github, building, system, authed }) => [
  * give, and running out of rungs has to leave the block at its smallest rather
  * than back at full size, so the loop falls through with `bare` still applied.
  */
-const FIT_TIERS = ["", "tight", "compact", "pair", "min", "bare"];
+const FIT_TIERS = ["", "tight", "compact", "min", "bare"];
 const DOCK_CLEARANCE = 20;
 
 /**
@@ -683,8 +733,9 @@ const Widgets = () => {
       {list.map(({ id, node, wide }) => (
         <div
           key={id}
-          // system spans both columns here too: two stats side by side need
-          // the width, and a lone half-width card in a third row looks orphaned
+          // The signed-in cards span the grid by default and pair up only
+          // where there is width for it (see the min-width rule in the CSS).
+          // At half of a narrow grid three stats do not fit on a line.
           className={clsx("widget-slot", (id === "system" || id === "services") && wide && "wide")}
           data-id={id}
         >

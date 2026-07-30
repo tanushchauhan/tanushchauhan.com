@@ -238,21 +238,40 @@ moontowerRoutes.delete("/services/:slug", requireAuth, async (c) => {
 
 const HISTORY_POINTS = 90; // 45 minutes at one sample every 30 seconds
 
+type Row = {
+  cpuPct: number;
+  memPct: number;
+  memUsedMb: number;
+  memTotalMb: number | null;
+  diskPct: number | null;
+  diskUsedGb: number | null;
+  diskTotalGb: number | null;
+  load1: number | null;
+};
+
 /** The newest stored row, shaped like a live sample so the card renders one way. */
-const latestFor = (history: { cpuPct: number; memPct: number; memUsedMb: number; memTotalMb: number | null }[]) => {
+const latestFor = (history: Row[]) => {
   const last = history[history.length - 1];
   if (!last) return null;
+
+  /*
+   * Capacities do not change between readings, so one report that omits a
+   * total should not blank the card. Rates are different: a missing cpuPct
+   * means the agent did not measure it, and showing the previous one as
+   * current would be inventing data.
+   */
+  const carried = <K extends keyof Row>(key: K) =>
+    last[key] ?? [...history].reverse().find((h) => h[key] != null)?.[key] ?? null;
+
   return {
     cpuPct: last.cpuPct,
     memPct: last.memPct,
     memUsedMb: last.memUsedMb,
-    // How much memory a machine has does not change between readings, so one
-    // report that omits it should not blank the card. Fall back to the most
-    // recent reading that did include it.
-    memTotalMb:
-      last.memTotalMb ??
-      [...history].reverse().find((h) => h.memTotalMb != null)?.memTotalMb ??
-      null,
+    memTotalMb: carried("memTotalMb"),
+    diskPct: last.diskPct,
+    diskUsedGb: last.diskUsedGb,
+    diskTotalGb: carried("diskTotalGb"),
+    load1: last.load1,
   };
 };
 
@@ -274,6 +293,10 @@ moontowerRoutes.get("/fleet", requireAuth, async (c) => {
       memPct: metricSamples.memPct,
       memUsedMb: metricSamples.memUsedMb,
       memTotalMb: metricSamples.memTotalMb,
+      diskPct: metricSamples.diskPct,
+      diskUsedGb: metricSamples.diskUsedGb,
+      diskTotalGb: metricSamples.diskTotalGb,
+      load1: metricSamples.load1,
     })
     .from(metricSamples)
     .orderBy(desc(metricSamples.at))
