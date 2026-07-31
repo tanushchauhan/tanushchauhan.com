@@ -169,6 +169,7 @@ const COMMAND_NAMES = [
   "contact", "neofetch", "echo", "date", "history", "cite", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
   "login", "logout", "enroll", "passkeys", "building", "moontower", "services",
+  "guestbook",
 ];
 
 /** A default nickname for a newly enrolled passkey, so it is identifiable later. */
@@ -329,6 +330,7 @@ export const TerminalBody = () => {
         "  building [text]  read or set the 'now building' widget",
         "  moontower        the machines, and how to add one",
         "  services         the applications, probed over http",
+        "  guestbook        read the guestbook, hide or delete an entry",
       ]),
 
     ls: (args) => {
@@ -704,6 +706,87 @@ export const TerminalBody = () => {
         ]);
       } catch {
         return print(["services: could not reach the server."]);
+      }
+    },
+
+    /*
+     * Moderation. Anyone can write in the guestbook, so there has to be a way
+     * to take something down, and until this existed the only one was psql
+     * against production. Hiding is the default because it is reversible and
+     * leaves the row where the rate limiter can still see it.
+     */
+    guestbook: async (args) => {
+      const [sub, ...rest] = args;
+
+      if (auth.status !== "authed") {
+        return print(["guestbook: not signed in. run 'sudo' first."]);
+      }
+
+      const ids = rest.map(Number).filter((n) => Number.isInteger(n) && n > 0);
+
+      if (sub === "hide" || sub === "show" || sub === "rm" || sub === "remove") {
+        if (!ids.length) return print([`usage: guestbook ${sub} <id> [id...]`]);
+
+        const hiding = sub === "hide";
+        const removing = sub === "rm" || sub === "remove";
+        const done = [];
+        const failed = [];
+
+        for (const id of ids) {
+          try {
+            const res = await fetch(`/api/guestbook/${id}`, {
+              method: removing ? "DELETE" : "PATCH",
+              credentials: "same-origin",
+              ...(removing
+                ? {}
+                : {
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ hidden: hiding }),
+                  }),
+            });
+            if (res.ok) done.push(id);
+            else failed.push(`${id} (${(await res.json().catch(() => ({}))).error ?? res.status})`);
+          } catch {
+            failed.push(`${id} (no answer)`);
+          }
+        }
+
+        const verb = removing ? "deleted" : hiding ? "hidden" : "visible again";
+        return print([
+          done.length ? `${done.join(", ")} ${done.length > 1 ? "are" : "is"} ${verb}.` : "",
+          failed.length ? `could not touch ${failed.join(", ")}` : "",
+        ].filter(Boolean));
+      }
+
+      try {
+        const res = await fetch("/api/guestbook/all", { credentials: "same-origin" });
+        const data = await res.json();
+        if (!res.ok) return print([`guestbook: ${data.error}`]);
+        if (!data.entries?.length) return print(["the guestbook is empty."]);
+
+        const hidden = data.entries.filter((e) => e.isHidden).length;
+        return print([
+          `${data.entries.length} entries${hidden ? `, ${hidden} hidden` : ""}:`,
+          "",
+          ...data.entries.slice(0, 25).map((e) => {
+            const flag = e.isHidden ? "-" : " ";
+            // one line each: the id to act on, who, where from, and enough of
+            // the message to recognise it
+            const who = (e.name ?? "anonymous").slice(0, 14).padEnd(14);
+            const body = e.message.replace(/\s+/g, " ").slice(0, 46);
+            return `${flag} ${String(e.id).padStart(4)}  ${who} ${(e.source ?? "?").padEnd(9)} ${body}`;
+          }),
+          data.entries.length > 25 ? `  ... and ${data.entries.length - 25} more` : "",
+          "",
+          "a leading - means hidden. the column after the name groups entries",
+          "that came from the same source, which is how a spam run looks.",
+          "",
+          "guestbook hide <id...>   take entries off the public list",
+          "guestbook show <id...>   put them back",
+          "guestbook rm <id...>     delete them outright",
+        ].filter(Boolean));
+      } catch {
+        return print(["guestbook: could not reach the server."]);
       }
     },
 
