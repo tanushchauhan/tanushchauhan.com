@@ -30,6 +30,7 @@ const WINDOW_CONFIG = Object.fromEntries(
       zIndex: INITIAL_Z_INDEX,
       data: null,
       pos: null, // last dragged {x, y}, persisted
+      size: null, // last resized {w, h}, persisted
     },
   ])
 );
@@ -122,6 +123,17 @@ const useWindowStore = create(
           const win = state.windows[windowKey];
           if (!win) return;
           win.pos = pos;
+        }),
+
+      // Null means "whatever the stylesheet says", which is what a window that
+      // has never been resized should keep using: the CSS sizes are tuned per
+      // window and expressed in viewport units, so they follow a screen the
+      // saved pixels would not.
+      setWindowSize: (windowKey, size) =>
+        set((state) => {
+          const win = state.windows[windowKey];
+          if (!win) return;
+          win.size = size;
         }),
 
       setFolderPos: (id, pos) =>

@@ -43,6 +43,6 @@ const Resume = () => {
   );
 };
 
-const ResumeWindow = WindowWrapper(Resume, "resume");
+const ResumeWindow = WindowWrapper(Resume, "resume", { min: { w: 420, h: 320 } });
 
 export default ResumeWindow;

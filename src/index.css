@@ -181,6 +181,66 @@ nav time {
     border-radius 0.25s ease;
 }
 
+/* The width and height transition above is for maximize, where the jump is the
+   point. Under the pointer it is lag, so a live resize turns it off. */
+.window.resizing {
+  transition: none;
+}
+
+/* One cursor for the whole drag, and no text picked up along the way: the
+   terminal body opts back into selection, so a resize that crosses it would
+   otherwise highlight output. */
+body.resizing,
+body.resizing * {
+  user-select: none !important;
+}
+
+/* Resize handles. Inside the frame rather than straddling it, because .window
+   clips its overflow, and 6px is close to what macOS gives you anyway. */
+.rh {
+  @apply absolute z-20;
+}
+
+.rh-n {
+  @apply inset-x-0 top-0 h-1.5;
+}
+
+.rh-s {
+  @apply inset-x-0 bottom-0 h-1.5;
+}
+
+.rh-e {
+  @apply inset-y-0 right-0 w-1.5;
+}
+
+.rh-w {
+  @apply inset-y-0 left-0 w-1.5;
+}
+
+/* above the edges they overlap, so a corner drag wins over a straight one */
+.rh-nw,
+.rh-ne,
+.rh-sw,
+.rh-se {
+  @apply z-30 size-3.5;
+}
+
+.rh-nw {
+  @apply top-0 left-0;
+}
+
+.rh-ne {
+  @apply top-0 right-0;
+}
+
+.rh-sw {
+  @apply bottom-0 left-0;
+}
+
+.rh-se {
+  @apply right-0 bottom-0;
+}
+
 .window.maximized {
   top: 0 !important;
   left: 0 !important;
@@ -246,7 +306,7 @@ nav time {
    Terminal output is the one place here that is text you would actually want to
    copy, so it opts back in. */
 .term-body {
-  @apply relative flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100 select-text;
+  @apply relative min-h-0 flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100 select-text;
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -302,8 +362,10 @@ nav time {
   @apply flex-1 border-none bg-transparent text-sm outline-none dark:text-neutral-100 dark:placeholder:text-neutral-500;
 }
 
+/* flex-1 min-h-0 so the body is the part that takes up the slack when the
+   window is resized, and the part that shrinks and scrolls when it runs out */
 #safari .blog {
-  @apply overflow-y-auto bg-white p-6 dark:bg-neutral-900;
+  @apply min-h-0 flex-1 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
 }
 
 #safari .blog h2 {
@@ -351,7 +413,7 @@ nav time {
 }
 
 #resume .pdf-scroll {
-  @apply flex-1 overflow-y-auto bg-neutral-200 p-4 dark:bg-neutral-900;
+  @apply min-h-0 flex-1 overflow-y-auto bg-neutral-200 p-4 dark:bg-neutral-900;
 }
 
 #resume .react-pdf__Document {
@@ -554,7 +616,7 @@ nav time {
 }
 
 #photos .photos-body {
-  @apply flex-1 space-y-7 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
+  @apply min-h-0 flex-1 space-y-7 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
 }
 
 #photos .photos-body h3 {
@@ -588,7 +650,7 @@ nav time {
 }
 
 #txtFile .txt-body {
-  @apply space-y-4 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
+  @apply min-h-0 flex-1 space-y-4 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
 }
 
 #txtFile .txt-body h3 {
@@ -617,7 +679,7 @@ nav time {
 /* the body scrolls rather than the image shrinking, so a tall document-shaped
    image (the get-to-know-me poster) stays readable instead of being squeezed */
 #imgFile .img-body {
-  @apply overflow-y-auto bg-neutral-100 p-4 dark:bg-neutral-900;
+  @apply min-h-0 flex-1 overflow-y-auto bg-neutral-100 p-4 dark:bg-neutral-900;
 }
 
 #imgFile .img-body img {

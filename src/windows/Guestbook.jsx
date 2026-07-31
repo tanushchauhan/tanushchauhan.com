@@ -151,6 +151,6 @@ const Guestbook = () => {
   );
 };
 
-const GuestbookWindow = WindowWrapper(Guestbook, "guestbook");
+const GuestbookWindow = WindowWrapper(Guestbook, "guestbook", { min: { w: 360, h: 320 } });
 
 export default GuestbookWindow;

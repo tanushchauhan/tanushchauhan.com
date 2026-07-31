@@ -44,6 +44,6 @@ const Contact = () => {
   );
 };
 
-const ContactWindow = WindowWrapper(Contact, "contact");
+const ContactWindow = WindowWrapper(Contact, "contact", { resizable: false });
 
 export default ContactWindow;

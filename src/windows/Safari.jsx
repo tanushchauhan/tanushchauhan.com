@@ -62,6 +62,6 @@ const Safari = () => {
   );
 };
 
-const SafariWindow = WindowWrapper(Safari, "safari");
+const SafariWindow = WindowWrapper(Safari, "safari", { min: { w: 480, h: 300 } });
 
 export default SafariWindow;

@@ -49,6 +49,6 @@ const Photos = () => {
   );
 };
 
-const PhotosWindow = WindowWrapper(Photos, "photos");
+const PhotosWindow = WindowWrapper(Photos, "photos", { min: { w: 480, h: 320 } });
 
 export default PhotosWindow;

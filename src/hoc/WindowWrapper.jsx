@@ -7,9 +7,42 @@ import useWindowStore from "#store/window.js";
 
 gsap.registerPlugin(Draggable);
 
-const WindowWrapper = (Component, windowKey) => {
+/* Edges first, corners after, so a corner sits on top of the two edges it
+ * overlaps and a diagonal drag wins over a straight one. */
+const EDGES = ["n", "s", "e", "w", "nw", "ne", "sw", "se"];
+
+const DEFAULT_MIN = { w: 360, h: 240 };
+
+const CURSOR = {
+  n: "ns-resize",
+  s: "ns-resize",
+  e: "ew-resize",
+  w: "ew-resize",
+  nw: "nwse-resize",
+  se: "nwse-resize",
+  ne: "nesw-resize",
+  sw: "nesw-resize",
+};
+
+const clamp = (value, low, high) => Math.min(Math.max(value, low), Math.max(low, high));
+
+/* An explicit height has to switch the stylesheet's max-height off. Those are
+ * viewport fractions chosen for the default size, so they would quietly cap a
+ * window the user had deliberately dragged taller. */
+const applySize = (el, w, h) => {
+  el.style.width = `${w}px`;
+  el.style.height = `${h}px`;
+  el.style.maxHeight = "none";
+};
+
+const WindowWrapper = (Component, windowKey, options = {}) => {
+  /* Not every window resizes. About This Mac does not on a real Mac either,
+   * and the small panels have no scrolling region to give the extra space to,
+   * so a taller one would just be a taller box with the same content in it. */
+  const { resizable = true, min = DEFAULT_MIN } = options;
+
   const Wrapped = (props) => {
-    const { focusWindow, setWindowPos, windows } = useWindowStore();
+    const { focusWindow, setWindowPos, setWindowSize, windows } = useWindowStore();
     const { isOpen, isMinimized, isMaximized, zIndex, pos } = windows[windowKey];
     const ref = useRef(null);
     const dragRef = useRef(null);
@@ -97,9 +130,19 @@ const WindowWrapper = (Component, windowKey) => {
       const el = ref.current;
       if (!el) return;
 
-      // restore the last dragged position from the persisted store
-      const saved = useWindowStore.getState().windows[windowKey].pos;
-      if (saved) gsap.set(el, { x: saved.x, y: saved.y });
+      // restore the last dragged position and size from the persisted store
+      const win = useWindowStore.getState().windows[windowKey];
+      if (win.pos) gsap.set(el, { x: win.pos.x, y: win.pos.y });
+      // clamped on the way in as well as on the way out: a size dragged out on
+      // a 27" monitor must not open wider than the laptop it is restored on
+      if (win.size) {
+        const b = (el.closest("main") ?? document.body).getBoundingClientRect();
+        applySize(
+          el,
+          clamp(win.size.w, min.w, b.width),
+          clamp(win.size.h, min.h, b.height)
+        );
+      }
 
       const [instance] = Draggable.create(el, {
         trigger: el.querySelector("#window-header") ?? el,
@@ -127,6 +170,68 @@ const WindowWrapper = (Component, windowKey) => {
       }
     }, [isMaximized]);
 
+    const startResize = (dir) => (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      const el = ref.current;
+      if (!el) return;
+      focusWindow(windowKey);
+
+      const bounds = (el.closest("main") ?? document.body).getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const x0 = Number(gsap.getProperty(el, "x"));
+      const y0 = Number(gsap.getProperty(el, "y"));
+      const sx = e.clientX;
+      const sy = e.clientY;
+
+      el.classList.add("resizing");
+      document.body.classList.add("resizing");
+      document.body.style.cursor = CURSOR[dir];
+
+      let next = { w: r.width, h: r.height, x: x0, y: y0 };
+
+      const move = (ev) => {
+        let { width: w, height: h } = r;
+        let x = x0;
+        let y = y0;
+        const dx = ev.clientX - sx;
+        const dy = ev.clientY - sy;
+
+        /* East and south grow away from the window's own top left, so they
+         * only change the size. North and west move the window too, and that
+         * shift has to come from the clamped size rather than from the mouse:
+         * derive it from the pointer and the window keeps sliding after it has
+         * stopped growing. */
+        if (dir.includes("e")) w = clamp(r.width + dx, min.w, bounds.right - r.left);
+        if (dir.includes("w")) w = clamp(r.width - dx, min.w, r.right - bounds.left);
+        if (dir.includes("s")) h = clamp(r.height + dy, min.h, bounds.bottom - r.top);
+        if (dir.includes("n")) h = clamp(r.height - dy, min.h, r.bottom - bounds.top);
+        if (dir.includes("w")) x = x0 + (r.width - w);
+        if (dir.includes("n")) y = y0 + (r.height - h);
+
+        next = { w, h, x, y };
+        applySize(el, w, h);
+        gsap.set(el, { x, y });
+      };
+
+      const stop = () => {
+        document.removeEventListener("pointermove", move);
+        el.classList.remove("resizing");
+        document.body.classList.remove("resizing");
+        document.body.style.cursor = "";
+
+        setWindowSize(windowKey, { w: Math.round(next.w), h: Math.round(next.h) });
+        if (next.x !== x0 || next.y !== y0) {
+          setWindowPos(windowKey, { x: next.x, y: next.y });
+        }
+        // the drag bounds were measured against the size we just changed
+        dragRef.current?.update(true);
+      };
+
+      document.addEventListener("pointermove", move);
+      document.addEventListener("pointerup", stop, { once: true });
+    };
+
     return (
       <section
         id={windowKey}
@@ -136,6 +241,18 @@ const WindowWrapper = (Component, windowKey) => {
         onMouseDown={() => focusWindow(windowKey)}
       >
         <Component {...props} />
+
+        {/* nothing to grab on a window that fills the screen */}
+        {resizable &&
+          !isMaximized &&
+          EDGES.map((dir) => (
+            <span
+              key={dir}
+              className={`rh rh-${dir}`}
+              style={{ cursor: CURSOR[dir] }}
+              onPointerDown={startResize(dir)}
+            />
+          ))}
       </section>
     );
   };

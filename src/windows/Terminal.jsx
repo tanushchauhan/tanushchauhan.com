@@ -967,6 +967,6 @@ const Terminal = () => (
   </>
 );
 
-const TerminalWindow = WindowWrapper(Terminal, "terminal");
+const TerminalWindow = WindowWrapper(Terminal, "terminal", { min: { w: 420, h: 240 } });
 
 export default TerminalWindow;

@@ -51,6 +51,6 @@ const AboutMac = () => {
   );
 };
 
-const AboutWindow = WindowWrapper(AboutMac, "about");
+const AboutWindow = WindowWrapper(AboutMac, "about", { resizable: false });
 
 export default AboutWindow;

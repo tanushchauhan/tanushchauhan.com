@@ -81,7 +81,7 @@ const Finder = ({ windowKey }) => {
 const FinderWindows = FINDER_KEYS.map((key) => {
   const Bound = (props) => <Finder {...props} windowKey={key} />;
   Bound.displayName = `Finder(${key})`;
-  return WindowWrapper(Bound, key);
+  return WindowWrapper(Bound, key, { min: { w: 520, h: 320 } });
 });
 
 export default FinderWindows;
