@@ -35,6 +35,10 @@ CONF_DIR="/etc/moontower"
 STATE_DIR="/var/lib/moontower"
 USER_NAME="moontower"
 
+# kept before the parse loop shifts them away, so the sudo hint below can echo
+# back the command the caller actually typed rather than a bare re-run
+ORIGINAL_ARGS="$*"
+
 while [ $# -gt 0 ]; do
     case "$1" in
         --token) TOKEN="${2:-}"; shift 2 ;;
@@ -45,19 +49,32 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+# Root first, before anything looks at the config. That file is 0600 and owned
+# by the agent's own user, so every test against it is false for an ordinary
+# user, and checking it first meant a missing sudo reported itself as "nothing
+# to upgrade" on a machine that was in fact enrolled.
+[ "$(id -u)" -eq 0 ] || {
+    echo "moontower: needs root. try:" >&2
+    echo "  curl -fsSL $HUB/moontower/install.sh | sudo sh -s -- $ORIGINAL_ARGS" >&2
+    exit 1
+}
+
 # An install with no token on a machine that already holds a key is an upgrade,
 # not a mistake. Treating it as one is what makes "re-run the installer" true.
-if [ "$UPGRADE" -eq 0 ] && [ -z "$TOKEN" ] && [ -r "$CONF_DIR/config" ]; then
+if [ "$UPGRADE" -eq 0 ] && [ -z "$TOKEN" ] && [ -f "$CONF_DIR/config" ]; then
     UPGRADE=1
 fi
 
 if [ "$UPGRADE" -eq 1 ]; then
-    [ -r "$CONF_DIR/config" ] || { echo "moontower: nothing to upgrade, $CONF_DIR/config does not exist" >&2; exit 1; }
+    [ -f "$CONF_DIR/config" ] || {
+        echo "moontower: nothing to upgrade, $CONF_DIR/config does not exist." >&2
+        echo "  to enroll this machine instead, mint a token with 'moontower enroll <name>'" >&2
+        exit 1
+    }
 else
     [ -n "$TOKEN" ] || { echo "moontower: --token is required, or --upgrade to update an enrolled machine" >&2; exit 2; }
     [ -n "$NAME" ]  || { echo "moontower: --name is required, for example --name vps" >&2; exit 2; }
 fi
-[ "$(id -u)" -eq 0 ] || { echo "moontower: install needs root (the agent itself does not)" >&2; exit 1; }
 
 command -v curl >/dev/null 2>&1 || { echo "moontower: curl is required" >&2; exit 1; }
 [ -r /proc/stat ] || { echo "moontower: /proc/stat is unreadable, is this Linux?" >&2; exit 1; }
