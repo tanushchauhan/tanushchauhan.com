@@ -1203,6 +1203,13 @@ body.resizing * {
   @apply mt-3 text-sm leading-snug text-white/45;
 }
 
+/* the command to type, on its own line: backticks in a rendered card read as
+   punctuation someone forgot to remove */
+.widget .empty code {
+  @apply mt-1.5 block rounded-md bg-black/25 px-2 py-1 text-[12px] text-white/70;
+  font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 /* ---------------- system card (signed in only) ----------------
    Two stats side by side rather than two more cards: the grid is already as
    tall as it can be without meeting the dock, so this buys one row, not two. */

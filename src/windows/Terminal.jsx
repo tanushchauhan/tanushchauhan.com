@@ -692,12 +692,22 @@ export const TerminalBody = () => {
         return print([
           "services:",
           ...data.services.map((s) => {
-            const state = s.ok === null ? "checking" : s.ok ? "up" : "DOWN";
-            const detail = s.ok
-              ? `${s.latencyMs}ms`
-              : s.ok === false
-                ? (s.error ?? "no answer")
-                : "";
+            // a stale reading is not a verdict: the probe loop has stopped and
+            // the last number it left is no longer about right now
+            const state = s.stale
+              ? "no check"
+              : s.ok === null
+                ? "checking"
+                : s.ok
+                  ? "up"
+                  : "DOWN";
+            const detail = s.stale
+              ? (s.checkedAt ? `last seen ${new Date(s.checkedAt).toLocaleTimeString()}` : "never checked")
+              : s.ok
+                ? `${s.latencyMs}ms`
+                : s.ok === false
+                  ? (s.error ?? "no answer")
+                  : "";
             return `  ${s.slug.padEnd(14)} ${state.padEnd(9)} ${detail}`;
           }),
           "",

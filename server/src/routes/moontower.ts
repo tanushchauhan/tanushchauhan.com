@@ -2,7 +2,7 @@ import { Hono, type Context } from "hono";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import { HUB_SLUG, metricSamples, servers, services, type UnitState } from "../db/schema.ts";
-import { isProbeableUrl, probe } from "../lib/probes.ts";
+import { isProbeableUrl, probe, PROBE_STALE_MS } from "../lib/probes.ts";
 import { clientIp, hashIp, rateLimit } from "../lib/ratelimit.ts";
 import {
   AGENT_VERSION,
@@ -328,6 +328,9 @@ moontowerRoutes.get("/fleet", requireAuth, async (c) => {
       name: s.name,
       url: s.url,
       server: s.server,
+      // same idea as a stale server: the last reading stops speaking for the
+      // present once the loop that produced it has clearly stopped
+      stale: !s.checkedAt || s.checkedAt.getTime() < Date.now() - PROBE_STALE_MS,
       ok: s.ok,
       status: s.status,
       latencyMs: s.latencyMs,

@@ -381,27 +381,36 @@ const System = ({ data }) => {
  */
 const Services = ({ data }) => {
   const list = data?.services ?? [];
-  const down = list.filter((s) => s.ok === false);
-  const up = list.filter((s) => s.ok !== false);
+  /* Three states, not two. A service whose last reading has gone stale is not
+     up and it is not down: the probe loop stopped, and the honest thing is to
+     say so rather than keep showing the number it left behind. */
+  const unknown = list.filter((s) => s.ok === null || s.stale);
+  const down = list.filter((s) => s.ok === false && !s.stale);
+  const up = list.filter((s) => s.ok === true && !s.stale);
   // one number for the whole healthy set: the slowest is the only one that
   // would ever make me look, and an average would hide it
   const latencies = up.map((s) => s.latencyMs).filter((v) => typeof v === "number");
   const slowest = latencies.length ? Math.max(...latencies) : null;
+  // everything that is not a problem, in one list: the card gives a row each
+  // when there is room and collapses them to a line when there is not
+  const quiet = [...unknown, ...up];
+  const tail = down.length
+    ? `${down.length} down`
+    : up.length
+      ? `all ${up.length} up`
+      : "no recent check";
 
   return (
     <article className="widget w-services" style={{ "--accent": "#2dd4bf" }}>
       <Head icon={<Globe />}>
         Services
-        {list.length > 0 && (
-          <span className="tail">
-            {down.length ? `${down.length} down` : `all ${list.length} up`}
-          </span>
-        )}
+        {list.length > 0 && <span className="tail">{tail}</span>}
       </Head>
 
       {list.length === 0 ? (
         <p className="empty">
-          Nothing watched yet. Run `services add &lt;name&gt; &lt;url&gt;` in the terminal.
+          Nothing watched yet. In the terminal:
+          <code>services add &lt;name&gt; &lt;url&gt;</code>
         </p>
       ) : (
         <>
@@ -422,11 +431,13 @@ const Services = ({ data }) => {
                 </span>
               </li>
             ))}
-            {up.map((s) => (
+            {quiet.map((s) => (
               <li key={s.slug} className="up">
-                <i className={clsx("d", s.ok === null ? "d-wait" : "d-ok")} />
+                <i className={clsx("d", s.ok === true && !s.stale ? "d-ok" : "d-wait")} />
                 <span className="n">{s.name}</span>
-                <span className="t">{s.ok === null ? "checking" : `${s.latencyMs}ms`}</span>
+                <span className="t">
+                  {s.stale ? "no check" : s.ok === null ? "checking" : `${s.latencyMs}ms`}
+                </span>
               </li>
             ))}
           </ul>
@@ -434,10 +445,10 @@ const Services = ({ data }) => {
           {/* The same healthy set as one line. Both are rendered and the fit
               tiers choose: with room a row each is more useful, and when the
               grid is under pressure four green rows are four rows of nothing. */}
-          {up.length > 0 && (
+          {quiet.length > 0 && (
             <p className="sub healthy">
-              <i className={clsx("d", up.some((s) => s.ok === null) ? "d-wait" : "d-ok")} />
-              <span className="n">{up.map((s) => s.name).join(" · ")}</span>
+              <i className={clsx("d", unknown.length ? "d-wait" : "d-ok")} />
+              <span className="n">{quiet.map((s) => s.name).join(" · ")}</span>
               {slowest != null && <span className="t">{slowest}ms</span>}
             </p>
           )}

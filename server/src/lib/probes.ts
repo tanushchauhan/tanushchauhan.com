@@ -18,6 +18,13 @@ import { services, type Service } from "../db/schema.ts";
 const PROBE_MS = 60 * 1000;
 const TIMEOUT_MS = 8 * 1000;
 
+/**
+ * After this, a reading is old news rather than the truth. Two missed passes:
+ * one is a slow tick, three in a row means the loop is not running, and a
+ * confident "42ms" from an hour ago is worse than admitting nothing is known.
+ */
+export const PROBE_STALE_MS = 3 * PROBE_MS;
+
 /** Only I can add a service, so the URL is trusted; the scheme still is not. */
 export const isProbeableUrl = (raw: string) => {
   try {
