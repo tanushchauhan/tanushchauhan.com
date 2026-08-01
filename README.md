@@ -1,5 +1,7 @@
 # tanushchauhan.com 🤘
 
+[![CI](https://github.com/tanushchauhan/tanushchauhan.com/actions/workflows/ci.yml/badge.svg)](https://github.com/tanushchauhan/tanushchauhan.com/actions/workflows/ci.yml)
+
 A personal portfolio that doesn't behave like a website — it boots like an
 operating system. Built by [Tanush Chauhan](https://github.com/tanushchauhan)
 (CS Honors + Math @ UT Austin '29).
@@ -23,14 +25,22 @@ React 19 · Vite · Tailwind CSS v4 · GSAP (+ Draggable) · Zustand + Immer · 
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # production build in dist/
-npm test         # browser tests, starts a dev server if none is up
+npm run dev        # http://localhost:5173
+npm run build      # production build in dist/
+npm test           # browser tests, starts a dev server if none is up
+npm run typecheck  # the server's TypeScript
+npm run og         # re-shoot the social preview image
 ```
 
 `npm test` drives a real Chrome against the running site. See
 [`tests/README.md`](tests/README.md) for what it covers and why it is built the
-way it is.
+way it is. The same three run on every push and pull request through
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+The link preview at `public/images/og.png` is a screenshot of the live desktop
+rather than a designed card. Reshoot it with `npm run og` after anything that
+changes the desktop's furniture, and note that scrapers cache hard: Facebook
+and LinkedIn keep the old one for days unless you poke their URL debuggers.
 
 ## Make it yours
 

@@ -10,3 +10,6 @@ dist
 
 # local postgres volume from docker-compose
 .pgdata
+
+# photographs of failing assertions, rewritten every run
+tests/screenshots

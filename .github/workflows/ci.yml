@@ -1,0 +1,85 @@
+name: CI
+
+# Coolify deploys from main on push, and it does not run any of this first. So
+# a red run here is a warning about something already on its way out, not a
+# gate. That is worth knowing about within three minutes rather than from a
+# screenshot a week later.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build and typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # bun.lock is the lockfile in this repo, for the frontend as well as the
+      # server, so the install has to be bun's even though the tests run on node
+      - name: install
+        run: bun install --frozen-lockfile
+
+      - name: install server deps
+        run: bun install --frozen-lockfile
+        working-directory: server
+
+      - name: typecheck the server
+        run: bun run typecheck
+        working-directory: server
+
+      - name: build
+        run: bun run build
+
+  test:
+    name: browser tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # the runner spawns `npm run dev` and is itself a node script, so node has
+      # to be here too even though bun does the installing
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: install
+        run: bun install --frozen-lockfile
+
+      # playwright-core ships no browser on purpose: locally it drives the
+      # Chrome that is already installed, and here it drives this one
+      - name: install chrome
+        id: chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: test
+        run: npm test
+        env:
+          CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
+
+      # the failure is almost always visual, and a screenshot of the moment it
+      # broke saves reproducing it by hand
+      - name: keep the screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-screenshots
+          path: tests/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -11,7 +11,9 @@
     "start": "bun server/src/index.ts",
     "admin:token": "bun server/src/admin/token.ts",
     "admin:enroll": "bun server/src/admin/enroll.ts",
-    "test": "node tests/run.js"
+    "test": "node tests/run.js",
+    "typecheck": "cd server && bun run typecheck",
+    "og": "node scripts/og-image.js"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

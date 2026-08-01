@@ -45,6 +45,24 @@ export const seed = ({ windows = {}, ...rest } = {}) =>
     version: 2,
   });
 
+/* The page a spec is working in, so the runner can photograph a failure without
+   every check having to be handed one. Specs open pages one at a time. */
+let open = null;
+export const currentPage = () => (open && !open.isClosed() ? open : null);
+
+/* Work that has to finish before the page it concerns goes away. `t.check` is
+   synchronous and specs do not await it, so a screenshot of a failure is still
+   being taken when the spec reaches its `page.close()`. Tracking it here lets
+   close wait, which is the only reason any of this needs to exist. */
+const pending = new Set();
+
+export const track = (promise) => {
+  pending.add(promise);
+  promise.finally(() => pending.delete(promise));
+};
+
+export const flush = () => Promise.all([...pending]);
+
 /**
  * A page with the API stubbed and the store seeded.
  *
@@ -63,6 +81,14 @@ export const openPage = async (
       ? { isMobile: true, hasTouch: true, deviceScaleFactor: 3, userAgent: IPHONE_UA }
       : {}),
   });
+
+  open = page; // before the navigation, so a page that fails to load is still photographable
+
+  const close = page.close.bind(page);
+  page.close = async () => {
+    await flush();
+    return close();
+  };
 
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));

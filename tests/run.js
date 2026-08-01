@@ -15,55 +15,22 @@
  * A dev server already listening on 5173 is reused and left running.
  */
 import { chromium } from "playwright-core";
-import { spawn } from "node:child_process";
-import { readdir } from "node:fs/promises";
+import { readdir, mkdir, rm } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import { ensureServer, stopServer, chromeOptions } from "../scripts/dev-server.js";
+import { currentPage, track, flush } from "./lib/harness.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const URL = process.env.TEST_URL ?? "http://localhost:5173";
+const SHOTS = path.join(HERE, "screenshots");
+
+const slug = (text) =>
+  text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
 
 const args = process.argv.slice(2);
 const headed = args.includes("--headed");
 const filters = args.filter((a) => !a.startsWith("--"));
-
-const reachable = async (url) => {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(1500) });
-    return res.ok;
-  } catch {
-    return false;
-  }
-};
-
-/** Starts `vite` and waits for it, unless something is already serving. */
-const ensureServer = async () => {
-  if (await reachable(URL)) {
-    console.log(`using the dev server already on ${URL}\n`);
-    return null;
-  }
-
-  console.log("starting a dev server…");
-  /* detached so the child gets its own process group. `npm run dev` is a
-     wrapper: killing it leaves the vite process it spawned holding the port,
-     and the next run finds a stale server it did not start and will not stop. */
-  const child = spawn("npm", ["run", "dev"], {
-    cwd: path.join(HERE, ".."),
-    stdio: "ignore",
-    detached: true,
-  });
-
-  for (let i = 0; i < 40; i++) {
-    await new Promise((r) => setTimeout(r, 500));
-    if (await reachable(URL)) {
-      console.log(`dev server up on ${URL}\n`);
-      return child;
-    }
-  }
-
-  child.kill();
-  throw new Error(`the dev server never came up on ${URL}`);
-};
 
 const main = async () => {
   const files = (await readdir(path.join(HERE, "specs")))
@@ -76,25 +43,48 @@ const main = async () => {
     process.exit(1);
   }
 
-  const server = await ensureServer();
+  const server = await ensureServer(URL);
   globalThis.__TEST_URL__ = URL;
 
-  const browser = await chromium.launch({ channel: "chrome", headless: !headed });
+  // last run's shots would otherwise be read as this run's
+  await rm(SHOTS, { recursive: true, force: true });
+  await mkdir(SHOTS, { recursive: true });
+
+  const browser = await chromium.launch({ ...chromeOptions(), headless: !headed });
   const failures = [];
   let passed = 0;
   const started = Date.now();
 
   for (const file of files) {
     const spec = await import(path.join(HERE, "specs", file));
-    console.log(`\n\x1b[1m${spec.name ?? file}\x1b[0m`);
+    const label = spec.name ?? file;
+    console.log(`\n\x1b[1m${label}\x1b[0m`);
+
+    /* Every failure is photographed. These are layout and interaction
+       assertions, so "the card overlapped the dock by 9px" is a sentence you
+       can act on only with the picture next to it, and on CI there is no
+       browser left to look at afterwards. The shot is tracked rather than
+       awaited, because check is synchronous: tracking is what keeps the page
+       open long enough for the screenshot to be taken. */
+    const capture = (name) => {
+      const page = currentPage();
+      if (!page) return;
+      const dest = path.join(SHOTS, `${slug(label)}--${slug(name)}.png`);
+      track(
+        page
+          .screenshot({ path: dest })
+          .catch(() => {}) // a shot that fails must not become a second failure
+      );
+    };
 
     // one collector per spec, so a failure names the spec it came from
     const t = {
       check(name, ok, detail = "") {
         const line = `  ${ok ? "\x1b[32m✓\x1b[0m" : "\x1b[31m✗\x1b[0m"} ${name}`;
         console.log(detail ? `${line}  \x1b[2m${detail}\x1b[0m` : line);
-        if (ok) passed++;
-        else failures.push(`${spec.name ?? file}: ${name}${detail ? `  (${detail})` : ""}`);
+        if (ok) return void passed++;
+        failures.push(`${label}: ${name}${detail ? `  (${detail})` : ""}`);
+        capture(name);
       },
       note(text) {
         console.log(`  \x1b[2m${text}\x1b[0m`);
@@ -106,24 +96,21 @@ const main = async () => {
     } catch (error) {
       // a spec that throws is a failure, not a reason to abandon the rest
       console.log(`  \x1b[31m✗\x1b[0m threw: ${error.message}`);
-      failures.push(`${spec.name ?? file}: threw ${error.message}`);
+      failures.push(`${label}: threw ${error.message}`);
+      capture("threw");
     }
+
+    await flush();
   }
 
   await browser.close();
-  // only a server this run started: one that was already up is somebody's
-  if (server) {
-    try {
-      process.kill(-server.pid, "SIGTERM");
-    } catch {
-      server.kill();
-    }
-  }
+  stopServer(server);
 
   const seconds = ((Date.now() - started) / 1000).toFixed(1);
   console.log(
     `\n${passed} passed, ${failures.length} failed, ${seconds}s\n` +
-      failures.map((f) => `  \x1b[31m✗\x1b[0m ${f}`).join("\n")
+      failures.map((f) => `  \x1b[31m✗\x1b[0m ${f}`).join("\n") +
+      (failures.length ? `\n\nscreenshots in ${path.relative(process.cwd(), SHOTS)}/` : "")
   );
   process.exit(failures.length ? 1 : 0);
 };
