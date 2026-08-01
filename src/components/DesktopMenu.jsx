@@ -24,11 +24,15 @@ const DesktopMenu = () => {
     const onKey = (e) => e.key === "Escape" && setMenu(null);
 
     document.addEventListener("contextmenu", onContextMenu);
-    window.addEventListener("mousedown", onDown);
+    // pointerdown and capture, for the same reason as the Control Center: the
+    // widgets are draggables, they preventDefault on pointerdown, and that
+    // suppresses the mouse events a bubble-phase mousedown listener waits for.
+    // This menu stayed open when you clicked one.
+    window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("keydown", onKey);
     return () => {
       document.removeEventListener("contextmenu", onContextMenu);
-      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("pointerdown", onDown, true);
       window.removeEventListener("keydown", onKey);
     };
   }, []);
