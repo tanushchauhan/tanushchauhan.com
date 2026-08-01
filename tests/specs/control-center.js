@@ -1,0 +1,128 @@
+import { openPage, seed, win, storedState, settled } from "../lib/harness.js";
+
+export const name = "control center: appearance, wallpaper, sound";
+
+const wallpaperOf = (page) =>
+  page.$eval("main", (el) => getComputedStyle(el).backgroundImage);
+const isDark = (page) =>
+  page.evaluate(() => document.documentElement.classList.contains("dark"));
+
+export const run = async ({ browser, t }) => {
+  const page = await openPage(browser, { state: seed({ windows: {} }) });
+
+  t.check("the menu bar has the button", await page.isVisible("#control-center-button"));
+  t.check("the panel starts closed", !(await page.isVisible(".control-center")));
+
+  await page.click("#control-center-button");
+  await page.waitForTimeout(400);
+  t.check("clicking opens it", await page.isVisible(".control-center"));
+
+  // ---------- appearance ----------
+  await page.click(".cc-segmented button:nth-child(3)"); // Dark
+  await page.waitForTimeout(400);
+  t.check("dark applies", await isDark(page));
+  t.check(
+    "and the segment shows it",
+    (await page.$eval(".cc-segmented button.on", (el) => el.innerText)).includes("Dark")
+  );
+  t.check(
+    "the wallpaper follows the theme",
+    (await wallpaperOf(page)).includes("austin-night"),
+    "every wallpaper is a light/dark pair"
+  );
+
+  await page.click(".cc-segmented button:nth-child(2)"); // Light
+  await page.waitForTimeout(400);
+  t.check("light applies", !(await isDark(page)));
+  t.check("and swaps back to the day one", (await wallpaperOf(page)).includes("austin.svg"));
+
+  // ---------- wallpaper ----------
+  t.check("every wallpaper is offered", (await page.$$(".cc-paper")).length === 3);
+  t.check("each swatch shows both halves", (await page.$$(".cc-paper:first-child .swatch img")).length === 2);
+
+  await page.click(".cc-paper:nth-child(2)");
+  await page.waitForTimeout(500);
+  t.check("picking one changes the desktop", (await wallpaperOf(page)).includes("bluebonnet.svg"));
+  t.check(
+    "and it is marked as chosen",
+    (await page.$eval(".cc-paper.on .name", (el) => el.innerText)) === "Bluebonnet"
+  );
+
+  await page.click(".cc-segmented button:nth-child(3)");
+  await page.waitForTimeout(400);
+  t.check(
+    "the new wallpaper has its own night version",
+    (await wallpaperOf(page)).includes("bluebonnet-night")
+  );
+
+  await page.click(".cc-paper:nth-child(3)");
+  await page.waitForTimeout(500);
+  t.check("a third choice works too", (await wallpaperOf(page)).includes("graphite-night"));
+
+  // ---------- sound ----------
+  const soundBefore = (await storedState(page)).soundOn;
+  await page.click(".cc-row");
+  await page.waitForTimeout(300);
+  t.check("the sound switch flips", (await storedState(page)).soundOn === !soundBefore);
+  t.check(
+    "and the switch shows it",
+    (await page.$$(".cc-switch.on")).length === (soundBefore ? 0 : 1)
+  );
+
+  // ---------- closing ----------
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+  t.check("escape closes it", !(await page.isVisible(".control-center")));
+
+  await page.click("#control-center-button");
+  await page.waitForTimeout(300);
+  await page.mouse.click(1100, 820); // bare wallpaper
+  await page.waitForTimeout(300);
+  t.check("clicking the desktop closes it", !(await page.isVisible(".control-center")));
+
+  await page.click("#control-center-button");
+  await page.waitForTimeout(300);
+  await page.mouse.click(700, 660); // a widget
+  await page.waitForTimeout(300);
+  t.check(
+    "clicking a widget closes it too",
+    !(await page.isVisible(".control-center")),
+    "widgets are draggables and preventDefault on pointerdown, which suppresses mousedown entirely"
+  );
+
+  await page.click("#control-center-button");
+  await page.waitForTimeout(300);
+  await page.click("#control-center-button");
+  await page.waitForTimeout(300);
+  t.check("the button toggles rather than reopening", !(await page.isVisible(".control-center")));
+
+  // ---------- the desktop menu opens it ----------
+  await page.mouse.click(1100, 820, { button: "right" });
+  await page.waitForTimeout(400);
+  const items = await page.$$eval(".desktop-menu button", (els) => els.map((e) => e.innerText.trim()));
+  t.check("Change Wallpaper is in the right-click menu", items.some((i) => i.includes("Change Wallpaper")));
+
+  const themeBefore = await isDark(page);
+  const buttons = await page.$$(".desktop-menu button");
+  await buttons[items.findIndex((i) => i.includes("Change Wallpaper"))].click();
+  await page.waitForTimeout(500);
+  t.check("and opens the picker", await page.isVisible(".control-center"));
+  t.check("rather than flipping the theme, as it used to", (await isDark(page)) === themeBefore);
+
+  await page.mouse.click(1100, 820);
+  await page.waitForTimeout(300);
+  t.check("the desktop menu closes on a widget click too", !(await page.isVisible(".desktop-menu")));
+
+  // ---------- persistence ----------
+  const before = await storedState(page);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await settled(page);
+  const after = await storedState(page);
+  t.check("the wallpaper is remembered", after.wallpaper === "graphite", after.wallpaper);
+  t.check("the theme is remembered", after.theme === before.theme);
+  t.check("the panel does not reopen itself", !(await page.isVisible(".control-center")));
+  t.check("and the desktop comes back with the chosen wallpaper", (await wallpaperOf(page)).includes("graphite"));
+
+  t.check("no page errors", page.pageErrors.length === 0, page.pageErrors.join(" | "));
+  await page.close();
+};

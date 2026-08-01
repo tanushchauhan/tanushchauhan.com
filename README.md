@@ -25,7 +25,12 @@ React 19 · Vite · Tailwind CSS v4 · GSAP (+ Draggable) · Zustand + Immer · 
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # production build in dist/
+npm test         # browser tests, starts a dev server if none is up
 ```
+
+`npm test` drives a real Chrome against the running site. See
+[`tests/README.md`](tests/README.md) for what it covers and why it is built the
+way it is.
 
 ## Make it yours
 
