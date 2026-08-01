@@ -40,7 +40,7 @@ const Safari = () => {
       <div className="blog">
         <h2>Highlights</h2>
         <p className="sub">
-          The greatest hits: research, wins, and things that shipped.
+          Research, competitions, and things that shipped.
         </p>
         <div className="space-y-2">
           {highlights.map(({ id, tag, title, description, image, link, cta }) => (

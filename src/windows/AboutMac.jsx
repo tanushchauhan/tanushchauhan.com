@@ -3,12 +3,19 @@ import { WindowControls } from "#components";
 import { locations } from "#constants";
 import useWindowStore from "#store/window.js";
 
+/*
+ * What the machine is, not what its owner has achieved. The spec sheet used to
+ * put a GPA in the Memory slot and a scholarship in the Startup Disk, which is
+ * a boast wearing a joke's clothes. The panel is more use to the sort of person
+ * who opens it if it answers what the thing is built out of, and there is a
+ * More Info button for the rest.
+ */
 const SPECS = [
-  ["Chip", "Perception M1 Pro"],
-  ["Memory", "3.86 GPA / 4.0 unified"],
-  ["Startup Disk", "Dean's Scholars HD"],
-  ["Graphics", "LiDAR + RGB Fusion"],
-  ["Serial Number", "TC-ATX-CS29"],
+  ["Chip", "React 19 on Vite"],
+  ["Memory", "Hono on Bun, Postgres"],
+  ["Startup Disk", "Coolify"],
+  ["Graphics", "GSAP"],
+  ["Serial Number", "TC-ATX-2026"],
 ];
 
 const AboutMac = () => {

@@ -92,7 +92,7 @@ export const techStack = [
   },
 ];
 
-// Safari "reading list": the things worth bragging about.
+// Safari "reading list": the four things I would point at first.
 export const highlights = [
   {
     id: 1,
@@ -263,7 +263,7 @@ export const locations = {
           description: [
             "Crave is an AI dining concierge. A voice agent (ElevenLabs) calls custom Supabase Edge Function tools to query the database and reconcile group food preferences using Titan embeddings + pgvector HNSW search.",
             "It also does receipt-OCR bill splitting and ships a B2B analytics chatbot for restaurants.",
-            "🏆 Won Best Use of Supabase and Most Startup Ready at Hook 'Em Hacks 2026 (UT Austin).",
+            "Won Best Use of Supabase and Most Startup Ready at Hook 'Em Hacks 2026, UT Austin.",
             "Stack: React Native · Next.js 16 · AWS Bedrock · Supabase + pgvector · AWS Lambda · ElevenLabs",
           ],
         },
@@ -302,7 +302,7 @@ export const locations = {
           image: "/images/projects/shoo.jpg",
           description: [
             "Shoo! is an edge-AI wildlife detection product. Ultrasonic + GPS-triggered ESP32-CAM captures stream to an on-prem Python server running Qwen2.5-VL locally for species identification, then sync to a community mobile app via Supabase Realtime.",
-            "🏆 Awarded Best Presentation by Texas Convergent (Spring 2026, IoT Case).",
+            "Best Presentation, Texas Convergent IoT Case, Spring 2026.",
             "Stack: ESP32-CAM · C++ · Python · Qwen2.5-VL / Ollama · Supabase (Realtime/RLS/Storage) · React Native",
           ],
         },
@@ -341,7 +341,7 @@ export const locations = {
           image: "/images/projects/kindred.jpg",
           description: [
             "Kindred is an AI-driven marketplace that matches trainers and nutritionists with clients. A matching pipeline uses Supabase vector search and Llama 3.1 (through NVIDIA NIM) to analyze user profiles and automate personalized matches.",
-            "🏆 Awarded Best Presentation by Texas Convergent (Fall 2025, Health Tech Case).",
+            "Best Presentation, Texas Convergent Health Tech Case, Fall 2025.",
             "Stack: Next.js 16 · React Native · Supabase · NVIDIA AI",
           ],
         },
@@ -431,9 +431,9 @@ export const locations = {
           subtitle: "Hey, I'm Tanush",
           image: "/images/me.jpg",
           description: [
-            "I'm a CS Honors + Math double major at UT Austin ('29, Dean's Scholars), minoring in Robotics, and I like building things that live where software meets the physical world.",
-            "Right now I'm an undergraduate researcher at the Autonomous Mobile Robotics Lab, teaching robots to track and follow humans by fusing LiDAR and RGB streams in ROS2. Before that, I co-authored MemeQA (yes, a peer-reviewed paper about memes), published at ACL 2025.",
-            "When I'm not in the lab, I'm probably at a hackathon (Crave won Best Use of Supabase at Hook 'Em Hacks 2026), building with Texas Convergent, or making a robotic arm move with nothing but eye movements at ECLAIR Robotics.",
+            "I'm a CS Honors + Math double major at UT Austin ('29, Dean's Scholars), minoring in Robotics. I build things that have to work in the physical world, where the hard part is never the code.",
+            "Right now I'm an undergraduate researcher at the Autonomous Mobile Robotics Lab, teaching robots to track and follow people by fusing LiDAR and RGB streams in ROS2. Before that I co-authored MemeQA, a 9,000 question benchmark for meme comprehension, published at ACL 2025.",
+            "Outside the lab I'm usually at a hackathon, building with Texas Convergent, or at ECLAIR Robotics, where we drive a robotic arm with eye movement alone.",
             "Austin, TX · tanush@utexas.edu",
           ],
         },
@@ -511,14 +511,14 @@ export const locations = {
         position: "top-4 left-4",
         data: {
           name: "boring_portfolio_v1.txt",
-          subtitle: "Deleted for a reason",
+          subtitle: "My first one, kept as a baseline",
           description: [
             "<html>",
             "  <h1>Hi, I'm Tanush.</h1>",
             '  <img src="me.jpg" align="right" />',
             "  <p>Here are my projects. Please consider me.</p>",
             "</html>",
-            "…yeah. We don't do that anymore.",
+            "It worked. Nobody stayed longer than nine seconds.",
           ],
         },
       },
@@ -531,12 +531,12 @@ export const locations = {
         position: "top-4 left-32",
         data: {
           name: "how_to_center_a_div.txt",
-          subtitle: "Kept for emergencies",
+          subtitle: "Still the answer, most days",
           description: [
             "display: flex;",
             "justify-content: center;",
             "align-items: center;",
-            "You never know when you'll need it again.",
+            "Every time, and I still look it up.",
           ],
         },
       },

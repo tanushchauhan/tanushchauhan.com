@@ -18,8 +18,7 @@ const NEOFETCH = `
   Kernel    CS Honors + Math + Robotics '29
   Shell     /bin/ros2
   Uptime    building since high school
-  Packages  react, ros2, supabase, caffeine
-  GPA       3.86 / 4.0
+  Packages  react, ros2, supabase, postgres
   Location  Austin, TX`;
 
 const CITATION = `
@@ -32,16 +31,20 @@ const CITATION = `
 
   yes, it is a peer-reviewed paper about memes.`;
 
+/*
+ * Observations, not advertising. Three of these used to be the site plugging
+ * its own author: a paper, a project, and a GPA, each delivered as a fortune so
+ * it would not read as a boast. It read as a boast.
+ */
 const FORTUNES = [
   "A robot that follows you is a feature. A robot that follows you home is a paper.",
   "The best time to start a hackathon project was 36 hours ago. The second best time is now.",
-  "You will soon publish a peer-reviewed paper about memes. Wait, that already happened.",
-  "pgvector remembers what you had for dinner. Crave made sure of it.",
-  "Your GPA is a float, but your ambition is a double.",
-  "Real shells have no 'undo'. This one has no 'rm'. You're welcome.",
-  "Somewhere a LiDAR point cloud is aligning perfectly. Today is your day.",
-  "Ship it. The demo gods favor the brave.",
+  "Real shells have no 'undo'. This one has no 'rm'. Call it even.",
+  "Somewhere a LiDAR point cloud is aligning perfectly. Not this one.",
   "Reviewer 2 has notes. Reviewer 2 always has notes.",
+  "Every demo works until someone else holds the laptop.",
+  "The bug is in the part you were sure about.",
+  "Two weeks of debugging can save you an afternoon of reading the docs.",
 ];
 
 const cowsay = (text) => {
@@ -200,8 +203,8 @@ const deviceName = () => {
 };
 
 const WELCOME_LINES = [
-  { type: "out", text: "tanushchauhan.com, last login: just now, from somewhere great" },
-  { type: "out", text: "Type 'help' to see what I can do.\n" },
+  { type: "out", text: "tanushchauhan.com, last login: just now" },
+  { type: "out", text: "Type 'help' for the list of commands.\n" },
 ];
 
 // the terminal session survives reloads, like a machine left running
@@ -308,9 +311,9 @@ export const TerminalBody = () => {
         "  open <target>    open files, folders, or apps in a window",
         "                   apps: projects · gallery · highlights · contact · resume",
         "  pwd              print working directory",
-        "  whoami           who is this guy?",
+        "  whoami           the short version",
         "  skills           tech stack, by category",
-        "  projects         quick tour of things I've built",
+        "  projects         what I have built, one line each",
         "  contact          how to reach me",
         "  neofetch         system information",
         "  echo <text>      print text",
@@ -321,7 +324,7 @@ export const TerminalBody = () => {
         "  cowsay <text>    a cow says it",
         "  fortune          questionable wisdom",
         "  cite             bibtex for my ACL 2025 paper",
-        "  matrix           follow the white rabbit",
+        "  matrix           green rain",
         "  snake            arrows to move, esc to quit",
         "  clear            clear terminal",
         "",
@@ -398,8 +401,8 @@ export const TerminalBody = () => {
     whoami: () =>
       print([
         "Tanush Chauhan, CS Honors + Math @ UT Austin ('29), Robotics minor.",
-        "Undergrad researcher at the Autonomous Mobile Robotics Lab,",
-        "hackathon regular, and co-author of a peer-reviewed paper about memes (ACL 2025).",
+        "Undergrad researcher at the Autonomous Mobile Robotics Lab, working on",
+        "human tracking from LiDAR and RGB. Co-author on MemeQA, ACL 2025.",
         "",
         auth.status === "authed"
           ? `session: authenticated via passkey '${auth.passkey}'.`
@@ -420,7 +423,7 @@ export const TerminalBody = () => {
           return `  ${p.name.padEnd(12)} ${about?.subtitle ?? ""}`;
         }),
         "",
-        "Tip: 'cd projects/crave' then 'cat about.txt', or 'open projects'.",
+        "'cd projects/crave' then 'cat about.txt', or 'open projects'.",
       ]),
 
     contact: () =>
@@ -429,7 +432,7 @@ export const TerminalBody = () => {
         "  github    github.com/tanushchauhan",
         "  linkedin  linkedin.com/in/tanushchauhan",
         "",
-        "Or run 'open contact' for the pretty version.",
+        "'open contact' for the window version.",
       ]),
 
     neofetch: () => print([NEOFETCH]),

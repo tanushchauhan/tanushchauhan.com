@@ -205,10 +205,10 @@ const ContactApp = () => (
       alt="Tanush Chauhan"
       className="mx-auto w-24 rounded-full"
     />
-    <h3 className="mt-4 text-xl font-bold">Let's connect</h3>
+    <h3 className="mt-4 text-xl font-bold">Get in touch</h3>
     <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-      Got a robot to build, an idea to ship, or just want to talk tech? I'm in.
-      Based in Austin, TX.
+      Austin, TX. Email is the fastest way to reach me, and I answer: research,
+      robotics, or something you want built.
     </p>
     <div className="mt-5 space-y-3">
       {socials.map(({ id, text, icon, link, bg }) => (

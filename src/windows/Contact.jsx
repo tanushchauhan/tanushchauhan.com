@@ -17,10 +17,10 @@ const Contact = () => {
           className="w-20 rounded-full"
         />
         <div>
-          <h3>Let's connect</h3>
+          <h3>Get in touch</h3>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-            Got a robot to build, an idea to ship, or just want to talk tech? I'm
-            in. Based in Austin, TX.
+            Austin, TX. Email is the fastest way to reach me, and I answer:
+            research, robotics, or something you want built.
           </p>
         </div>
 
