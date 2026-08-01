@@ -245,6 +245,36 @@ nav time {
   @apply !rounded-md !bg-black/75 !px-2 !py-1 !text-xs !text-white;
 }
 
+/* ---------------- selection ----------------
+   The body sets select-none for the whole desktop, which is right for the
+   chrome: you should not be able to drag a highlight across the dock, a folder
+   label, or the menu bar. It was wrong for everything inside a window. A real
+   Mac lets you select the text in a window, and here it meant a visitor could
+   not copy my email address out of the Contact window or quote a line back at
+   me from the guestbook.
+
+   So: window and app-screen content is selectable, and the parts you grab
+   rather than read are not. */
+.window,
+.m-scroll,
+.m-sheet {
+  @apply select-text;
+}
+
+/* the title bar is a handle, and a drag along it should move the window rather
+   than highlight its name */
+.window #window-header,
+.m-back {
+  @apply select-none;
+}
+
+/* Finder items are icons you click, not prose. Dragging across the grid
+   highlighting five file names is not what that gesture is for. */
+.finder-body .content li,
+.finder-body .sidebar {
+  @apply select-none;
+}
+
 /* ---------------- windows (generic) ---------------- */
 .window {
   @apply absolute flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/10 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-white/10;
@@ -377,12 +407,8 @@ body.resizing * {
   @apply text-neutral-300;
 }
 
-/* select-text, because the body sets select-none for the whole desktop: you
-   should not be able to drag a highlight across the dock or a folder label.
-   Terminal output is the one place here that is text you would actually want to
-   copy, so it opts back in. */
 .term-body {
-  @apply relative min-h-0 flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100 select-text;
+  @apply relative min-h-0 flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100;
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
