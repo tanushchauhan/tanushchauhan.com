@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { play, setSoundEnabled } from "../utils/sound.js";
+import { DEFAULT_WALLPAPER } from "../constants/index.js";
 
 const INITIAL_Z_INDEX = 1000;
 
@@ -41,7 +42,9 @@ const useWindowStore = create(
       windows: WINDOW_CONFIG,
       nextZIndex: INITIAL_Z_INDEX + 1,
       spotlightOpen: false,
+      controlCenterOpen: false, // like spotlight, not worth persisting
       theme: "auto", // "auto" | "light" | "dark"
+      wallpaper: DEFAULT_WALLPAPER,
       folderPos: {}, // desktop folder drag offsets, keyed by project id
       // Desktop widget drag offsets, keyed first by layout signature and only
       // then by widget id. An offset is a translation away from where the grid
@@ -157,6 +160,16 @@ const useWindowStore = create(
           state.theme = theme;
         }),
 
+      setWallpaper: (wallpaper) =>
+        set((state) => {
+          state.wallpaper = wallpaper;
+        }),
+
+      setControlCenter: (open) =>
+        set((state) => {
+          state.controlCenterOpen = open;
+        }),
+
       soundOn: false,
 
       toggleSound: () => {
@@ -246,6 +259,7 @@ const useWindowStore = create(
         windows: state.windows,
         nextZIndex: state.nextZIndex,
         theme: state.theme,
+        wallpaper: state.wallpaper,
         folderPos: state.folderPos,
         widgetPos: state.widgetPos,
         soundOn: state.soundOn,

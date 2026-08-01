@@ -13,9 +13,11 @@ import {
   MonitorCog,
   Check,
   Mail,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import clsx from "clsx";
-import { locations, highlights, gallery, techStack, socials } from "#constants";
+import { locations, highlights, gallery, techStack, socials, wallpapers } from "#constants";
 import { TerminalBody } from "#windows/Terminal.jsx";
 import { GuestbookBody } from "#windows/Guestbook.jsx";
 import { MobileWidgets, MobileSystem } from "./widgets/Widgets.jsx";
@@ -268,12 +270,15 @@ const AboutApp = () => {
   );
 };
 
+/* The phone's half of the Control Center. Same three settings, in the shape a
+   phone expects them: a list of rows rather than a panel of tiles. */
 const SettingsApp = () => {
-  const { theme, setTheme } = useWindowStore();
+  const { theme, setTheme, wallpaper, setWallpaper, soundOn, toggleSound } =
+    useWindowStore();
   const options = [
     { value: "auto", label: "Auto", icon: MonitorCog, note: "Match this device" },
-    { value: "light", label: "Light", icon: Sun, note: "Austin at golden hour" },
-    { value: "dark", label: "Dark", icon: Moon, note: "Austin after dark" },
+    { value: "light", label: "Light", icon: Sun, note: "Daytime, whichever wallpaper" },
+    { value: "dark", label: "Dark", icon: Moon, note: "After dark, whichever wallpaper" },
   ];
   return (
     <div className="m-scroll p-4">
@@ -289,6 +294,38 @@ const SettingsApp = () => {
             {theme === value && <Check className="ml-auto size-5 text-burnt" />}
           </li>
         ))}
+      </ul>
+
+      <p className="m-section-label">Wallpaper</p>
+      <ul className="m-settings">
+        {wallpapers.map((paper) => (
+          <li key={paper.id} onClick={() => setWallpaper(paper.id)}>
+            {/* both halves, same as the desktop swatch */}
+            <span className="m-swatch">
+              <img src={paper.light} alt="" />
+              <img src={paper.dark} alt="" />
+            </span>
+            <div>
+              <p className="title">{paper.name}</p>
+              <p className="sub">{paper.note}</p>
+            </div>
+            {wallpaper === paper.id && <Check className="ml-auto size-5 shrink-0 text-burnt" />}
+          </li>
+        ))}
+      </ul>
+
+      <p className="m-section-label">Sound</p>
+      <ul className="m-settings">
+        <li onClick={toggleSound}>
+          {soundOn ? <Volume2 className="size-5" /> : <VolumeX className="size-5" />}
+          <div>
+            <p className="title">Sound effects</p>
+            <p className="sub">Windows opening, closing and minimising</p>
+          </div>
+          <span className={clsx("cc-switch ml-auto shrink-0", soundOn && "on")}>
+            <span />
+          </span>
+        </li>
       </ul>
     </div>
   );

@@ -4,7 +4,7 @@ import useWindowStore from "#store/window.js";
 
 const DesktopMenu = () => {
   const [menu, setMenu] = useState(null);
-  const { addDesktopFolder, resetFolderPos, setTheme, openWindow } =
+  const { addDesktopFolder, resetFolderPos, setControlCenter, openWindow } =
     useWindowStore();
 
   useEffect(() => {
@@ -40,8 +40,6 @@ const DesktopMenu = () => {
     setMenu(null);
   };
 
-  const isDark = document.documentElement.classList.contains("dark");
-
   return (
     <div className="desktop-menu" style={{ left: menu.x, top: menu.y }}>
       <button
@@ -53,10 +51,10 @@ const DesktopMenu = () => {
       <button type="button" onClick={() => run(resetFolderPos)}>
         <LayoutGrid className="size-4" /> Clean Up
       </button>
-      <button
-        type="button"
-        onClick={() => run(() => setTheme(isDark ? "light" : "dark"))}
-      >
+      {/* it opens the picker now. It used to flip the theme, which changed the
+          wallpaper in the sense that the night version came up, and was the
+          one item in this menu that did not do what it said. */}
+      <button type="button" onClick={() => run(() => setControlCenter(true))}>
         <ImageIcon className="size-4" /> Change Wallpaper
       </button>
       <hr />

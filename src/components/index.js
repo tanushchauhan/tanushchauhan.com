@@ -8,8 +8,10 @@ import BootScreen from "./BootScreen.jsx";
 import Spotlight from "./Spotlight.jsx";
 import MobileExperience from "./MobileExperience.jsx";
 import DesktopMenu from "./DesktopMenu.jsx";
+import ControlCenter from "./ControlCenter.jsx";
 
 export {
+  ControlCenter,
   DesktopMenu,
   Navbar,
   Welcome,

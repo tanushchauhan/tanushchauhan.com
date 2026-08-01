@@ -7,8 +7,45 @@ export const navLinks = [
 export const navIcons = [
   { id: 1, img: "/icons/wifi.svg" },
   { id: 2, img: "/icons/search.svg" },
-  { id: 3, img: "/icons/mode.svg" },
 ];
+
+/**
+ * Each wallpaper is a pair, because light and dark are not a filter over one
+ * image here: the Austin one is the same hills at golden hour and after dark,
+ * and picking a wallpaper should not stop the theme from meaning anything.
+ * The first entry is the default and the one every visitor lands on.
+ */
+export const wallpapers = [
+  {
+    id: "austin",
+    name: "Austin",
+    note: "Hill country, golden hour and after dark",
+    light: "/images/wallpaper-austin.svg",
+    dark: "/images/wallpaper-austin-night.svg",
+  },
+  {
+    id: "bluebonnet",
+    name: "Bluebonnet",
+    note: "The same hills, in April",
+    light: "/images/wallpaper-bluebonnet.svg",
+    dark: "/images/wallpaper-bluebonnet-night.svg",
+  },
+  {
+    id: "graphite",
+    name: "Graphite",
+    note: "No scenery, for when the windows are the subject",
+    light: "/images/wallpaper-graphite.svg",
+    dark: "/images/wallpaper-graphite-night.svg",
+  },
+];
+
+export const DEFAULT_WALLPAPER = wallpapers[0].id;
+
+/** Falls back rather than throwing: a saved id can outlive its wallpaper. */
+export const wallpaperFor = (id, dark) => {
+  const paper = wallpapers.find((w) => w.id === id) ?? wallpapers[0];
+  return dark ? paper.dark : paper.light;
+};
 
 export const dockApps = [
   { id: "finder", name: "Projects", icon: "finder.png", canOpen: true },

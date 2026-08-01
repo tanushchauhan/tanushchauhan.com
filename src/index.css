@@ -30,13 +30,14 @@ body {
   @apply flex h-dvh w-dvw flex-col;
 }
 
+/* --wallpaper is set on the root by App, which is the only place that knows
+   both which wallpaper is chosen and whether the theme resolved to dark. The
+   fallback is the default pair, so the first paint has a sky before the effect
+   has run. */
 main {
   @apply relative w-full flex-1 overflow-hidden bg-cover bg-center;
-  background-image: url("/images/wallpaper-austin.svg");
-}
-
-.dark main {
-  background-image: url("/images/wallpaper-austin-night.svg");
+  background-image: var(--wallpaper, url("/images/wallpaper-austin.svg"));
+  transition: background-image 0.3s ease;
 }
 
 /* ---------------- navbar ---------------- */
@@ -72,21 +73,96 @@ nav time {
   @apply size-4 cursor-pointer opacity-70 transition-opacity hover:opacity-100 dark:invert;
 }
 
-/* appearance dropdown under the control-center icon */
-.theme-menu {
-  @apply absolute top-7 right-0 z-[7000] w-40 rounded-xl border border-black/10 bg-white/85 p-1 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-800/90;
+/* ---------------- control center ---------------- */
+.cc-trigger {
+  @apply flex cursor-pointer items-center justify-center rounded-md p-0.5 text-black/70 opacity-70 transition-opacity hover:opacity-100 dark:text-white/80;
 }
 
-.theme-menu .menu-title {
-  @apply px-2 pt-1 pb-1.5 text-[11px] font-semibold tracking-wide text-neutral-400 uppercase;
+.cc-trigger.on {
+  @apply bg-black/10 opacity-100 dark:bg-white/15;
 }
 
-.theme-menu button {
-  @apply flex w-full cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-neutral-700 hover:bg-black/5 dark:text-neutral-200 dark:hover:bg-white/10;
+.control-center {
+  @apply absolute top-7 right-0 z-[7000] w-72 space-y-2 rounded-2xl border border-black/10 bg-white/70 p-2 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-800/80;
 }
 
-.theme-menu button.active {
+.cc-tile {
+  @apply rounded-xl bg-white/60 p-2.5 dark:bg-white/5;
+}
+
+.cc-label {
+  @apply text-[11px] font-semibold tracking-wide text-neutral-500 uppercase dark:text-neutral-400;
+}
+
+/* appearance: three across, the chosen one filled */
+.cc-segmented {
+  @apply mt-2 grid grid-cols-3 gap-1;
+}
+
+.cc-segmented button {
+  @apply flex cursor-pointer flex-col items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-medium text-neutral-600 transition-colors hover:bg-black/5 dark:text-neutral-300 dark:hover:bg-white/10;
+}
+
+.cc-segmented button.on {
   @apply bg-burnt text-white hover:bg-burnt;
+}
+
+.cc-papers {
+  @apply mt-2 grid grid-cols-3 gap-2;
+}
+
+.cc-paper {
+  @apply flex cursor-pointer flex-col items-center gap-1;
+}
+
+/* the swatch is the light and dark halves side by side, split down the middle,
+   so a wallpaper is shown as the pair it is */
+.cc-paper .swatch {
+  @apply relative flex h-11 w-full overflow-hidden rounded-lg ring-1 ring-black/10 transition-all dark:ring-white/15;
+}
+
+.cc-paper .swatch img {
+  @apply h-full w-1/2 object-cover;
+}
+
+.cc-paper.on .swatch {
+  @apply ring-2 ring-burnt;
+}
+
+.cc-paper .tick {
+  @apply absolute right-1 bottom-1 rounded-full bg-burnt p-0.5 text-white;
+}
+
+.cc-paper .name {
+  @apply text-[11px] font-medium text-neutral-600 dark:text-neutral-300;
+}
+
+.cc-paper.on .name {
+  @apply text-neutral-900 dark:text-white;
+}
+
+.cc-row {
+  @apply flex w-full cursor-pointer items-center gap-2.5 text-neutral-700 dark:text-neutral-200;
+}
+
+.cc-row .cc-label {
+  @apply flex-1 text-left tracking-normal normal-case;
+}
+
+.cc-switch {
+  @apply flex h-5 w-9 shrink-0 items-center rounded-full bg-black/15 p-0.5 transition-colors dark:bg-white/20;
+}
+
+.cc-switch span {
+  @apply size-4 rounded-full bg-white shadow transition-transform;
+}
+
+.cc-switch.on {
+  @apply bg-burnt;
+}
+
+.cc-switch.on span {
+  @apply translate-x-4;
 }
 
 /* ---------------- welcome nameplate ----------------
@@ -837,13 +913,14 @@ body.resizing * {
 /* ---------------- mobile (iOS springboard) ---------------- */
 #mobile {
   @apply relative flex h-dvh w-dvw flex-col overflow-hidden bg-cover bg-center;
-  background-image: url("/images/wallpaper-austin.svg");
+  background-image: var(--wallpaper, url("/images/wallpaper-austin.svg"));
   padding-top: env(safe-area-inset-top);
 }
 
+/* keep the moon in frame on a narrow screen: every night wallpaper puts its
+   light source to the right of centre */
 .dark #mobile {
-  background-image: url("/images/wallpaper-austin-night.svg");
-  background-position: 72% center; /* keep the moon in frame on narrow screens */
+  background-position: 72% center;
 }
 
 #mobile .status-bar {
@@ -1144,6 +1221,16 @@ body.resizing * {
 
 .m-settings li .sub {
   @apply text-xs text-neutral-500 dark:text-neutral-400;
+}
+
+/* the wallpaper pair at row-icon size, split down the middle like the desktop
+   swatch so the two halves read as one wallpaper */
+.m-swatch {
+  @apply flex size-9 shrink-0 overflow-hidden rounded-lg ring-1 ring-black/10 dark:ring-white/15;
+}
+
+.m-swatch img {
+  @apply h-full w-1/2 object-cover;
 }
 
 /* ---------------- desktop widgets ----------------
