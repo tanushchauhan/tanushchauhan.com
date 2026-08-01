@@ -308,6 +308,9 @@ const APP_SCREENS = {
 
 /* ---------------- springboard ---------------- */
 
+/** Loosest first. Each rung gives up a little more of the home page's air. */
+const FIT_TIERS = ["", "tight", "compact", "bare"];
+
 const AppIcon = ({ app, onOpen }) => (
   <button type="button" className="m-app" onClick={() => onOpen(app.id)}>
     {app.icon ? (
@@ -325,9 +328,58 @@ const MobileExperience = () => {
   const [activeApp, setActiveApp] = useState(null);
   const app = APPS.find((a) => a.id === activeApp);
   const pagesRef = useRef(null);
+  const shellRef = useRef(null);
+  const homeRef = useRef(null);
   const [page, setPage] = useState(0);
   const authed = useAuthStore((s) => s.status === "authed");
   const pageCount = authed ? 3 : 2;
+
+  /*
+   * Safari's address bar and toolbar take about 190px of an iPhone's screen,
+   * and the home page was laid out for the height you only get once they hide.
+   * With them showing it overflowed by around 100px, which turns the page into
+   * something you scroll rather than something you swipe: the vertical gesture
+   * is right there under your thumb and the horizontal one is what you wanted.
+   *
+   * Rather than guess at breakpoints, measure. Tighten one rung at a time until
+   * the content fits the height that actually exists, and start again from the
+   * top every time that height changes, so hiding the toolbars gives the space
+   * back instead of leaving the page permanently squeezed.
+   */
+  useEffect(() => {
+    const shell = shellRef.current;
+    const home = homeRef.current;
+    if (!shell || !home) return;
+
+    const fit = () => {
+      for (const tier of FIT_TIERS) {
+        shell.dataset.fit = tier;
+        if (home.scrollHeight <= home.clientHeight + 1) return;
+      }
+    };
+
+    fit();
+
+    /* The widget data arrives after the first paint and changes the height, so
+     * this has to react to content as well as to the viewport. Watch the
+     * children rather than the page: the page is the fixed frame, its own box
+     * never moves when the content inside it grows, and observing it meant the
+     * first measurement was the only one that ever ran.
+     *
+     * Re-running is safe. The ladder always restarts from the top, so the same
+     * content lands on the same rung and the observer settles instead of
+     * oscillating. */
+    const observer = new ResizeObserver(fit);
+    for (const child of home.children) observer.observe(child);
+    window.addEventListener("resize", fit);
+    window.visualViewport?.addEventListener("resize", fit);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", fit);
+      window.visualViewport?.removeEventListener("resize", fit);
+    };
+  }, [authed]);
 
   // derive the active page from scroll position rather than tracking gestures:
   // works for swipes, dot taps, and keyboard scrolling alike
@@ -345,12 +397,12 @@ const MobileExperience = () => {
   const Screen = activeApp ? APP_SCREENS[activeApp] : null;
 
   return (
-    <div id="mobile">
+    <div id="mobile" ref={shellRef}>
       <StatusBar />
 
       <div className="springboard">
         <div className="m-pages" ref={pagesRef} onScroll={onPageScroll}>
-          <section className="m-page">
+          <section className="m-page" ref={homeRef}>
             <div className="m-widget">
               <p className="hello">Hey, I'm Tanush</p>
               <h1>tanushchauhan.com</h1>

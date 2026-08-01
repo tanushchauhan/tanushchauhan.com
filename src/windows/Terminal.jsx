@@ -841,8 +841,12 @@ export const TerminalBody = () => {
 
   /** Runs a command and returns whatever it produced, promise or not. */
   const dispatch = (cmd, nextCmdHistory) => {
-    const [name, ...args] = cmd.split(/\s+/);
-    const handler = commands[name.toLowerCase()];
+    const [word, ...args] = cmd.split(/\s+/);
+    // lowercased once, and used everywhere below: a phone keyboard capitalises
+    // the first word of the line, and `Sudo` was falling through to "command
+    // not found" while `Ls` already worked
+    const name = word.toLowerCase();
+    const handler = commands[name];
     if (handler) return handler(args, nextCmdHistory);
 
     if (name === "sudo") {
@@ -865,7 +869,8 @@ export const TerminalBody = () => {
       return auth.login().then((message) => print([message]));
     }
 
-    return print([`zsh: command not found: ${name}, type 'help'`]);
+    // echoes what was typed, not the folded form, so the message matches the line
+    return print([`zsh: command not found: ${word}, type 'help'`]);
   };
 
   /**
@@ -1041,6 +1046,12 @@ export const TerminalBody = () => {
             role="textbox"
             aria-label="terminal input"
             spellCheck={false}
+            /* iOS capitalises the first word of anything it thinks is a
+               sentence, including this, which turns `ls` into `Ls` and every
+               command into an error. Autocapitalize works on contenteditable
+               the same way it does on an input. */
+            autoCapitalize="none"
+            autoCorrect="off"
             onInput={(e) => setInput(e.currentTarget.textContent)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}

@@ -907,6 +907,53 @@ body.resizing * {
   @apply mt-1 text-[11px] leading-snug text-white/70;
 }
 
+/* ---- home page fit rungs ----
+   Chosen by measurement in MobileExperience, not by breakpoint: the height that
+   matters is whatever Safari has left after its toolbars, and that changes
+   while you are looking at it. Cumulative, loosest first. */
+
+#mobile:is([data-fit="tight"], [data-fit="compact"], [data-fit="bare"]) .m-widget {
+  @apply mb-2 px-3.5 py-2.5;
+}
+
+#mobile:is([data-fit="tight"], [data-fit="compact"], [data-fit="bare"]) .m-widgets {
+  @apply gap-2;
+}
+
+#mobile:is([data-fit="tight"], [data-fit="compact"], [data-fit="bare"]) .m-widgets .widget {
+  @apply p-3;
+}
+
+#mobile:is([data-fit="tight"], [data-fit="compact"], [data-fit="bare"]) .m-widgets .widget .big {
+  @apply mt-1.5 text-2xl;
+}
+
+/* the tagline is the first thing to go: the h1 above it already says the name,
+   and the same words are one tap away in About */
+#mobile:is([data-fit="compact"], [data-fit="bare"]) .m-widget .tagline {
+  @apply hidden;
+}
+
+#mobile:is([data-fit="compact"], [data-fit="bare"]) .m-widgets .widget {
+  @apply p-2.5;
+}
+
+#mobile:is([data-fit="compact"], [data-fit="bare"]) .m-widgets .widget header {
+  @apply mb-0.5;
+}
+
+#mobile[data-fit="bare"] .m-widget {
+  @apply mb-1.5 py-2;
+}
+
+#mobile[data-fit="bare"] .m-widget .hello {
+  @apply hidden;
+}
+
+#mobile[data-fit="bare"] .m-widget h1 {
+  @apply text-xl;
+}
+
 .m-grid {
   @apply grid grid-cols-4 gap-x-2 gap-y-5;
 }
