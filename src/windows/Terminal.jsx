@@ -6,6 +6,7 @@ import { techStack, locations } from "#constants";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { MatrixOverlay, SnakeOverlay } from "./TermOverlay.jsx";
+import { refreshWidgets } from "../utils/widgets.js";
 
 const USER = "tanush@tanushchauhan.com";
 
@@ -822,6 +823,9 @@ export const TerminalBody = () => {
           body: JSON.stringify({ text }),
         });
         const data = await res.json();
+        // the card polls on a quarter-hour timer, which is fine for data that
+        // changes on its own and useless for data I just changed
+        if (res.ok) refreshWidgets();
         print([res.ok ? `now building: ${data.text}` : `building: ${data.error}`]);
       } catch {
         print(["building: could not reach the server."]);

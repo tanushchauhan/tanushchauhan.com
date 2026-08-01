@@ -7,6 +7,7 @@ import clsx from "clsx";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { Bar, Heatmap, Sparkline } from "./Sparkline.jsx";
+import { onRefreshWidgets } from "../../utils/widgets.js";
 import { Sun, Moon, Grid3x3, GitCommitVertical, Box, Activity, Globe } from "lucide-react";
 
 gsap.registerPlugin(Draggable);
@@ -485,10 +486,14 @@ const useWidgetData = () => {
     load();
     const timer = setInterval(load, POLL_MS);
     document.addEventListener("visibilitychange", load);
+    // and immediately when I change something myself, rather than at whatever
+    // point in the next fifteen minutes the timer happens to come round
+    const stopListening = onRefreshWidgets(load);
     return () => {
       cancelled = true;
       clearInterval(timer);
       document.removeEventListener("visibilitychange", load);
+      stopListening();
     };
   }, []);
 
