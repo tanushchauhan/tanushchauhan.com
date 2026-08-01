@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Nothing here renders server side, so there is nothing for a crawler to find
+# under /api, and the enrollment and install paths are not pages.
+Disallow: /api/
+Disallow: /moontower/
+
+Sitemap: https://tanushchauhan.com/sitemap.xml
