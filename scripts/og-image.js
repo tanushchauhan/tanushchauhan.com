@@ -10,9 +10,11 @@
  * that:
  *
  * It shoots production by default. The dev server has no GITHUB_TOKEN and
- * nothing in `building`, so locally the widgets render their empty states and
- * the preview would advertise "Set GITHUB_TOKEN to light this up". Point it at
- * localhost only to check a layout change.
+ * nothing in `building`, so its widgets render empty states and the preview
+ * would advertise "Set GITHUB_TOKEN to light this up". Pointed at localhost it
+ * borrows the live site's widget responses instead, which is what you want when
+ * the copy has changed locally but has not deployed yet: the card then shows
+ * the new build with real numbers in it. Both endpoints are public.
  *
  * It shoots signed out, so the image is the desktop a visitor gets: no fleet
  * card, no server names, no disk numbers.
@@ -31,7 +33,8 @@ import { ensureServer, stopServer, chromeOptions } from "./dev-server.js";
 
 const run = promisify(execFile);
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const SITE = process.env.OG_URL ?? "https://tanushchauhan.com";
+const LIVE = "https://tanushchauhan.com";
+const SITE = process.env.OG_URL ?? LIVE;
 const OUT = path.join(ROOT, "public/images/og.png");
 
 /* 1200x630 is 1.905:1, so the viewport has to be that shape or the desktop
@@ -80,6 +83,24 @@ const main = async () => {
 
   await page.route("**/api/auth/me", (r) => r.fulfill({ json: { authenticated: false } }));
   await page.route("**/api/moontower/fleet", (r) => r.fulfill({ status: 401, json: {} }));
+
+  // a local dev server has neither a GITHUB_TOKEN nor a `building` row, so let
+  // the live site answer for the widgets and keep the local build's markup
+  if (SITE.includes("localhost")) {
+    await page.route("**/api/widgets/**", async (route) => {
+      const { pathname, search } = new URL(route.request().url());
+      try {
+        const live = await fetch(LIVE + pathname + search);
+        return route.fulfill({
+          status: live.status,
+          contentType: "application/json",
+          body: await live.text(),
+        });
+      } catch {
+        return route.continue(); // fall back to the empty state rather than fail
+      }
+    });
+  }
 
   await page.addInitScript((s) => {
     sessionStorage.setItem("booted", "1"); // skip the boot animation

@@ -8,7 +8,7 @@ const Text = () => {
 
   if (!data) return null;
 
-  const { name, subtitle, image, description = [] } = data;
+  const { name, subtitle, image, portrait, description = [] } = data;
 
   return (
     <>
@@ -19,7 +19,12 @@ const Text = () => {
 
       <div className="txt-body">
         {subtitle && <p className="subtitle">{subtitle}</p>}
-        {image && <img src={image} alt={name} />}
+        {/* Only the about-me photo is a face, and only a face survives being
+            cropped to a circle. The project images are 16:9 logos and product
+            shots, so the same treatment cut the GradeMate wordmark in half. */}
+        {image && (
+          <img src={image} alt={name} className={portrait ? "portrait" : "banner"} />
+        )}
         {description.map((paragraph, i) => (
           <p key={i}>{paragraph}</p>
         ))}

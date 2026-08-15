@@ -127,12 +127,12 @@ export const highlights = [
   {
     id: 4,
     tag: "Shipped",
-    title: "GradeMate · 900+ students and counting",
+    title: "GradeMate · 1,180+ installs and counting",
     description:
       "A cross-platform grade tracker and GPA predictor, live on the App Store and running on Oracle Cloud.",
     image: "/images/projects/grademate.jpg",
-    link: "https://github.com/tanushchauhan",
-    cta: "See it on GitHub",
+    link: "https://apps.apple.com/us/app/grademate-for-hac/id6705125322",
+    cta: "Get it on the App Store",
   },
 ];
 
@@ -373,13 +373,22 @@ export const locations = {
         },
         [
           {
-            id: "prism-gh",
+            id: "prism-devpost",
             name: "devpost.com",
             icon: "/icons/file.svg",
             kind: "link",
             fileType: "url",
             href: "https://devpost.com/software/prism-l2nb54",
             position: "top-4 left-32",
+          },
+          {
+            id: "prism-gh",
+            name: "github.com",
+            icon: "/icons/github.svg",
+            kind: "link",
+            fileType: "url",
+            href: "https://github.com/tanushchauhan/Prism",
+            position: "top-4 left-60",
           },
         ],
       ),
@@ -390,10 +399,10 @@ export const locations = {
         "top-40 left-32",
         {
           name: "GradeMate · about.txt",
-          subtitle: "900+ students · live on the App Store",
+          subtitle: "1,180+ installs · live on the App Store",
           image: "/images/projects/grademate.jpg",
           description: [
-            "GradeMate is a cross-platform application used by 900+ students to track grades, calculate GPA, and predict grades.",
+            "GradeMate is a cross-platform grade tracker and GPA predictor with 1,180+ installs, built for students stuck with Home Access Center.",
             "Built with Next.js and Flutter, deployed on Oracle Cloud, and shipped to the App Store.",
             "Stack: Next.js · React.js · Tailwind · Flutter · Oracle Cloud",
           ],
@@ -405,8 +414,17 @@ export const locations = {
             icon: "/icons/github.svg",
             kind: "link",
             fileType: "url",
-            href: "https://github.com/tanushchauhan",
+            href: "https://github.com/tanushchauhan/GradeMate",
             position: "top-4 left-32",
+          },
+          {
+            id: "grademate-app",
+            name: "apps.apple.com",
+            icon: "/icons/file.svg",
+            kind: "link",
+            fileType: "url",
+            href: "https://apps.apple.com/us/app/grademate-for-hac/id6705125322",
+            position: "top-4 left-60",
           },
         ],
       ),
@@ -428,12 +446,13 @@ export const locations = {
         position: "top-4 left-4",
         data: {
           name: "about-me.txt",
-          subtitle: "Hey, I'm Tanush",
+          subtitle: "Hey, I am Tanush",
           image: "/images/me.jpg",
+          portrait: true,
           description: [
-            "I'm a CS Honors + Math double major at UT Austin ('29, Dean's Scholars), minoring in Robotics. I build things that have to work in the physical world, where the hard part is never the code.",
-            "Right now I'm an undergraduate researcher at the Autonomous Mobile Robotics Lab, teaching robots to track and follow people by fusing LiDAR and RGB streams in ROS2. Before that I co-authored MemeQA, a 9,000 question benchmark for meme comprehension, published at ACL 2025.",
-            "Outside the lab I'm usually at a hackathon, building with Texas Convergent, or at ECLAIR Robotics, where we drive a robotic arm with eye movement alone.",
+            "I am a CS Honors + Math double major at UT Austin (Dean's Scholars), minoring in Robotics. I build things that have to work in the physical world, where the hard part is never the code.",
+            "Right now I am an undergraduate researcher at the Autonomous Mobile Robotics Lab, teaching robots to track and follow people by fusing LiDAR and RGB streams in ROS2. Before that I co-authored MemeQA, a 9,000 question benchmark for meme comprehension, published at ACL 2025.",
+            "Outside the lab I am usually at a hackathon, building with Texas Convergent, or at ECLAIR Robotics, where we drive a robotic arm with eye movement alone.",
             "Austin, TX · tanush@utexas.edu",
           ],
         },
@@ -447,7 +466,7 @@ export const locations = {
         position: "top-4 left-32",
         data: {
           name: "fun-facts.txt",
-          subtitle: "Things my résumé doesn't say",
+          subtitle: "Things my résumé does not say",
           description: [
             "I love exploring Austin. Most of my good ideas have come from random walks near campus with no destination in mind.",
             "I watch a lot of anime and I am always open to recommendations. All time favorites are Attack on Titan and Jujutsu Kaisen.",
@@ -514,7 +533,7 @@ export const locations = {
           subtitle: "My first one, kept as a baseline",
           description: [
             "<html>",
-            "  <h1>Hi, I'm Tanush.</h1>",
+            "  <h1>Hi, I am Tanush.</h1>",
             '  <img src="me.jpg" align="right" />',
             "  <p>Here are my projects. Please consider me.</p>",
             "</html>",

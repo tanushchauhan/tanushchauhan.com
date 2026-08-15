@@ -32,11 +32,11 @@ design does, and a test that pins them fails for the wrong reason.
 
 ## Layout
 
-- `run.js` — the runner: finds specs, ensures a server, opens one browser
-- `lib/fixtures.js` — canned API responses
-- `lib/harness.js` — page setup and the small helpers specs share
-- `specs/*.js` — one file per area, each exporting `name` and `run({ browser, t })`
-- `../scripts/dev-server.js` — starting Vite and finding Chrome, shared with `npm run og`
+- `run.js`: the runner. Finds specs, ensures a server, opens one browser
+- `lib/fixtures.js`: canned API responses
+- `lib/harness.js`: page setup and the small helpers specs share
+- `specs/*.js`: one file per area, each exporting `name` and `run({ browser, t })`
+- `../scripts/dev-server.js`: starting Vite and finding Chrome, shared with `npm run og`
 
 A spec calls `t.check(name, ok, detail)`. There are no assertions that throw:
 a spec runs to the end and reports everything it found, because the second

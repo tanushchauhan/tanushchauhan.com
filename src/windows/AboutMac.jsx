@@ -35,7 +35,7 @@ const AboutMac = () => {
       <div className="about-body">
         <img src="/images/avatar-tanush.svg" alt="Tanush Chauhan" />
         <h3>tanushchauhan.com</h3>
-        <p className="version">Version 1.0 (Zilker)</p>
+        <p className="version">Version 1.0</p>
 
         <dl>
           {SPECS.map(([label, value]) => (

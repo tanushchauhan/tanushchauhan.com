@@ -767,8 +767,15 @@ body.resizing * {
   @apply text-sm leading-relaxed text-neutral-700 dark:text-neutral-300;
 }
 
-#txtFile .txt-body img {
+#txtFile .txt-body img.portrait {
   @apply mx-auto size-28 rounded-full object-cover;
+}
+
+/* The source images are all 16:9, so a 16:9 frame with object-contain crops
+   nothing and letterboxes nothing. The dark mat only shows if a future image
+   is a different shape. */
+#txtFile .txt-body img.banner {
+  @apply aspect-video w-full rounded-lg bg-neutral-900 object-contain;
 }
 
 #imgFile {
@@ -1452,7 +1459,7 @@ body.resizing * {
    Without this step the gap between tiers was a whole card wide and a 1440x900
    window fell through it over a single pixel. --- */
 #widgets[data-fit="compact"] .w-system .stat svg,
-#widgets[data-fit="compact"] .w-system .stat .bar,
+#widgets[data-fit="compact"] .w-system .stat .capacity,
 #widgets[data-fit="compact"] .w-system .units,
 #widgets:is([data-fit="compact"], [data-fit="min"], [data-fit="core"]) .w-services .svc li.up {
   display: none;
@@ -1688,13 +1695,17 @@ body.resizing * {
   color: var(--accent);
 }
 
-/* the capacity bar, for disk. Same vertical rhythm as a sparkline so a
-   three-column row lines up whichever kind of stat is in it. */
-.bar {
+/* The capacity bar, for disk. Same vertical rhythm as a sparkline so a
+   three-column row lines up whichever kind of stat is in it.
+
+   Named `capacity` rather than `bar`: unscoped, this rule reached every other
+   `.bar` on the site, and the pill background and radius landed on the
+   Spotlight search field as a stray capsule inside the panel. */
+.capacity {
   @apply mt-[0.6rem] w-full overflow-hidden rounded-full bg-white/12;
 }
 
-.bar span {
+.capacity span {
   @apply block h-full rounded-full;
   background: var(--accent);
   transition: width 0.4s ease;
@@ -1707,7 +1718,7 @@ body.resizing * {
   @apply text-amber-300;
 }
 
-.w-system .stat.warn .bar span {
+.w-system .stat.warn .capacity span {
   @apply bg-amber-400;
 }
 

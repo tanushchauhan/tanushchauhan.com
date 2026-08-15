@@ -19,8 +19,7 @@ const Contact = () => {
         <div>
           <h3>Get in touch</h3>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-            Austin, TX. Email is the fastest way to reach me, and I answer:
-            research, robotics, or something you want built.
+            Austin, TX. Email is the fastest way to reach me.
           </p>
         </div>
 

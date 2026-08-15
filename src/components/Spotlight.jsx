@@ -8,7 +8,7 @@ const APP_ENTRIES = [
   { title: "Highlights", subtitle: "Safari", icon: "/images/safari.png", app: "safari" },
   { title: "Gallery", subtitle: "Photos", icon: "/images/photos.png", app: "photos" },
   { title: "Terminal", subtitle: "run some commands", icon: "/images/terminal.png", app: "terminal" },
-  { title: "Contact", subtitle: "let's connect", icon: "/images/contact.png", app: "contact" },
+  { title: "Contact", subtitle: "get in touch", icon: "/images/contact.png", app: "contact" },
   { title: "Guestbook", subtitle: "leave a note", icon: "/images/guestbook.svg", app: "guestbook" },
   { title: "Résumé", subtitle: "resume.pdf", icon: "/images/pdf.png", app: "resume" },
   { title: "About This Mac", subtitle: "system info", icon: "/images/avatar-tanush.svg", app: "about" },

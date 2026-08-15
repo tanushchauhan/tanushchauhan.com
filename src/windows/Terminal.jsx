@@ -13,9 +13,9 @@ const USER = "tanush@tanushchauhan.com";
 const NEOFETCH = `
          ◆               tanush @ tanushchauhan.com
   ─────────────────────────────────────────
-  OS        tanushchauhan.com 1.0 "Zilker"
+  OS        tanushchauhan.com 1.0
   Host      UT Austin, Dean's Scholars
-  Kernel    CS Honors + Math + Robotics '29
+  Kernel    CS Honors + Math + Robotics
   Shell     /bin/ros2
   Uptime    building since high school
   Packages  react, ros2, supabase, postgres
@@ -120,10 +120,10 @@ const FS_ROOT = {
       secret: [
         "you found the hidden file.",
         "fun fact: this entire OS exists because I refused to build",
-        "a portfolio that starts with \"Hi, I'm ___\" and a photo on the right.",
+        "a portfolio that starts with \"Hi, I am ___\" and a photo on the right.",
         "",
         "so obviously I hid one in here instead. run 'poster'.",
-        "then run 'open contact', let's build something.",
+        "then run 'open contact' and let us build something.",
       ],
     },
   ],
@@ -377,7 +377,7 @@ export const TerminalBody = () => {
         return print([`binary image data, try 'open ${node.name}'`]);
       if (item.fileType === "pdf")
         return print([`binary PDF, try 'open ${node.name}'`]);
-      print([`cat: can't read ${node.name}`]);
+      print([`cat: cannot read ${node.name}`]);
     },
 
     open: (args) => {
@@ -400,7 +400,7 @@ export const TerminalBody = () => {
 
     whoami: () =>
       print([
-        "Tanush Chauhan, CS Honors + Math @ UT Austin ('29), Robotics minor.",
+        "Tanush Chauhan, CS Honors + Math @ UT Austin, Robotics minor.",
         "Undergrad researcher at the Autonomous Mobile Robotics Lab, working on",
         "human tracking from LiDAR and RGB. Co-author on MemeQA, ACL 2025.",
         "",
@@ -812,7 +812,7 @@ export const TerminalBody = () => {
         return print([
           data?.text ? `currently: ${data.text}` : "nothing set.",
           "",
-          "usage: building <what you're working on>",
+          "usage: building <what you are working on>",
         ]);
       }
       if (auth.status !== "authed") {

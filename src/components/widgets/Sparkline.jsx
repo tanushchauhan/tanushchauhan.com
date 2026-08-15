@@ -56,7 +56,7 @@ export const Sparkline = ({ values = [], width = 220, height = 44, stroke = "cur
 export const Bar = ({ pct = 0, height = 4 }) => {
   const clamped = Math.min(100, Math.max(0, pct));
   return (
-    <div className="bar" style={{ height }} role="img" aria-label={`${Math.round(clamped)}% used`}>
+    <div className="capacity" style={{ height }} role="img" aria-label={`${Math.round(clamped)}% used`}>
       <span style={{ width: `${clamped}%` }} />
     </div>
   );
