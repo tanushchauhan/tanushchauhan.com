@@ -261,6 +261,38 @@ const System = ({ data }) => {
         </div>
       )}
 
+      {/*
+        The collapsed form, for when the block cannot afford the card.
+        Rendered always and shown by the fit ladder, so the tier stays a
+        question about CSS the way every other tier is.
+
+        Every machine at once rather than the selected one: the tabs are the
+        first thing the collapse gives up, so a summary of one server would be
+        a summary of whichever tab happened to be open.
+      */}
+      {fleet.length > 0 && (
+        <p className="glance">
+          {fleet.map((srv) => {
+            const down = srv.units?.filter((u) => u.a !== "active").length ?? 0;
+            return (
+              <span key={srv.slug} className={clsx((srv.stale || down) && "warn")}>
+                <b>{srv.name}</b>
+                {srv.stale
+                  ? " not reporting"
+                  : down
+                    ? ` ${down} unit${down === 1 ? "" : "s"} down`
+                    : [
+                        srv.sample?.cpuPct != null && ` ${srv.sample.cpuPct.toFixed(1)}% cpu`,
+                        srv.sample?.diskPct != null && ` · ${Math.round(srv.sample.diskPct)}% disk`,
+                      ]
+                        .filter(Boolean)
+                        .join("")}
+              </span>
+            );
+          })}
+        </p>
+      )}
+
       {server ? (
         <>
           <div className={clsx("stats", s?.diskPct != null && "three")}>
@@ -581,8 +613,11 @@ const cards = ({ github, building, system, authed }) => [
  * The last tier is the floor. If even that collides there is nothing further to
  * give, and running out of rungs has to leave the block at its smallest rather
  * than back at full size, so the loop falls through with `bare` still applied.
+ *
+ * A tier that buys nothing at the current width costs a measurement and is
+ * stepped over, which is how `min` behaves above 1360px: see the CSS.
  */
-const FIT_TIERS = ["", "tight", "compact", "min", "bare"];
+const FIT_TIERS = ["", "tight", "compact", "min", "core", "bare"];
 const DOCK_CLEARANCE = 20;
 
 /**

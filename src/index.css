@@ -1454,26 +1454,73 @@ body.resizing * {
 #widgets[data-fit="compact"] .w-system .stat svg,
 #widgets[data-fit="compact"] .w-system .stat .bar,
 #widgets[data-fit="compact"] .w-system .units,
-#widgets:is([data-fit="compact"], [data-fit="min"]) .w-services .svc li.up {
+#widgets:is([data-fit="compact"], [data-fit="min"], [data-fit="core"]) .w-services .svc li.up {
   display: none;
 }
 
-#widgets:is([data-fit="compact"], [data-fit="min"]) .w-services .healthy {
+#widgets:is([data-fit="compact"], [data-fit="min"], [data-fit="core"]) .w-services .healthy {
   @apply flex;
 }
 
-/* --- tier three: the fleet card goes, rather than the ones visitors came for
-   or services, which is the one that says whether anything is broken.
-   Below 1360px the two are stacked, so this buys a row. Above it they share a
-   row and it buys nothing, which needs no special case: the ladder measures
-   this tier, finds it no better, and carries on to the next. --- */
-#widgets:is([data-fit="min"], [data-fit="bare"]) .widget-slot[data-id="system"] {
+/* --- tier three: the fleet card collapses to one line per machine, keeping the
+   two numbers worth glancing at. Below 1360px the signed-in cards are stacked,
+   so shrinking this one shortens the block and this tier is where a laptop
+   window usually lands. Above 1360px they share a row whose height is the
+   taller of the two, so this buys nothing there and the ladder walks straight
+   past it, which is the same thing the old tier did and needs no special
+   case. --- */
+/* The tail goes with them. It reports the uptime, load and core count of the
+   selected tab, and the strip lists every machine at once, so left in place it
+   would attach one machine's numbers to all of them. */
+#widgets:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .w-system :is(.tabs, .stats, .units, .app-mem, .empty, header .tail) {
+  display: none;
+}
+
+/* A strip, not a shrunken card. Keeping the card's padding and radius around
+   one line of text cost 86px of block height, which is most of what removing
+   the card outright saves, so the tier would have been worth almost nothing.
+   Laid flat it costs about 34px and the tier earns its place.
+
+   It keeps a background: this sits over the bright band of the wallpaper, and
+   that is the whole reason the cards are not transparent either. */
+/* `.widget.w-system` and the extra attribute are load bearing: tier one sets
+   the padding through `#widgets[data-fit]:not([data-fit=""]) .widget`, which
+   outranks a plainer selector here and quietly kept the card's padding. */
+#widgets[data-fit]:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .widget.w-system {
+  @apply h-auto flex-row flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-transparent px-3 py-1.5 shadow-none;
+}
+
+/* the row is as tall as the taller card when the two share one, and a strip
+   has no business being stretched to a card's height */
+#widgets:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .widget-slot[data-id="system"] {
+  @apply self-start;
+}
+
+#widgets:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .w-system .glance {
+  @apply mt-0 flex;
+}
+
+/* --- tier four: the fleet card goes after all, rather than services, which is
+   the one that says whether anything is broken. This is the rung the collapsed
+   line was inserted above: a window that used to land here now stops one tier
+   earlier and keeps the numbers. --- */
+#widgets:is([data-fit="core"], [data-fit="bare"]) .widget-slot[data-id="system"] {
   display: none;
 }
 
 /* --- the floor: the whole signed-in row goes. --- */
 #widgets[data-fit="bare"] .widget-slot[data-id="services"] {
   display: none;
+}
+
+/* The collapsed fleet card. Hidden until the ladder asks for it, and laid out
+   as a wrapping row so a third machine costs a line rather than an overflow. */
+.w-system .glance {
+  @apply mt-2 hidden flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/55;
+}
+
+.w-system .glance b {
+  @apply font-medium text-white/85;
 }
 
 /* uptime and environment, pushed to the far end of the header row so they cost

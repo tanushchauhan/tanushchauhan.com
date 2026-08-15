@@ -36,7 +36,9 @@ export const run = async ({ browser, t }) => {
       return {
         clear: dock.getBoundingClientRect().top - block.getBoundingClientRect().bottom,
         tier: block.dataset.fit || "(full)",
-        system: !!document.querySelector(".w-system"),
+        // on screen, not merely in the DOM: the tiers hide cards with
+        // display:none, which querySelector is perfectly happy to find
+        system: document.querySelector(".w-system")?.getClientRects().length > 0,
       };
     });
     t.check(
@@ -45,6 +47,51 @@ export const run = async ({ browser, t }) => {
       measured ? `${Math.round(measured.clear)}px at "${measured.tier}"` : "no widget block"
     );
     t.check(`${width}x${height} still shows the system card`, measured?.system === true);
+    await page.close();
+  }
+
+  /* ---------- the fleet card collapses before it disappears ----------
+   * A signed-in desktop with no Moontower on it and nothing to say why was a
+   * real report. These sizes are the band where the whole card does not fit:
+   * the strip has to be there instead, and it has to name every machine, not
+   * whichever tab happened to be selected.
+   */
+  for (const [width, height] of [[1280, 800], [1100, 820], [1280, 780]]) {
+    const page = await openPage(browser, { viewport: { width, height } });
+    const seen = await page.evaluate(() => {
+      const block = document.querySelector("#widgets");
+      const strip = document.querySelector(".w-system .glance");
+      const dock = document.querySelector("#dock");
+      const shown = (el) => el?.getClientRects().length > 0;
+      return {
+        tier: block.dataset.fit || "(full)",
+        clear: dock.getBoundingClientRect().top - block.getBoundingClientRect().bottom,
+        strip: shown(strip) ? strip.innerText.replace(/\s+/g, " ") : "",
+        // the full card's furniture has to be gone, or the strip saved nothing
+        stats: shown(document.querySelector(".w-system .stats")),
+        // one machine's uptime and load, next to a line listing them all
+        tail: shown(document.querySelector(".w-system header .tail")),
+        services: shown(document.querySelector(".w-services")),
+      };
+    });
+
+    t.check(
+      `${width}x${height} collapses the fleet card instead of dropping it`,
+      seen.tier === "min" && seen.strip.length > 0,
+      `"${seen.tier}", ${Math.round(seen.clear)}px clear`
+    );
+    t.check(
+      `${width}x${height} names every machine in the strip`,
+      seen.strip.includes("Hub") && seen.strip.includes("VPS"),
+      seen.strip
+    );
+    t.check(`${width}x${height} drops the stats with it`, seen.stats === false);
+    t.check(
+      `${width}x${height} drops the header tail too`,
+      seen.tail === false,
+      "it reports the selected tab, and the strip lists them all"
+    );
+    t.check(`${width}x${height} keeps services`, seen.services === true);
     await page.close();
   }
 
