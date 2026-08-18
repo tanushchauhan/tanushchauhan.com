@@ -31,18 +31,17 @@ export const run = async ({ browser, t }) => {
   page = await openPage(browser, {
     state: seed({
       windows: {
-        txtFile: win({
-          data: {
-            name: "about-me.txt",
-            subtitle: "a subtitle",
-            description: ["A paragraph somebody might reasonably want to copy out of this window."],
-          },
-        }),
+        // fun-facts rather than about-me: the latter ends on an email address,
+        // and a double click in it selects a "@" rather than a word
+        txtFile: win({ data: { ref: "fun-facts", part: "data" } }),
       },
     }),
   });
   t.check("a text file is selectable", await isSelectable(page, "#txtFile .txt-body"));
-  const prose = await selectWord(page, "#txtFile .txt-body p:last-of-type");
+  /* An explicit offset: the default lands on the space after "really" in this
+     paragraph, and a double click on a space selects nothing, which reads as a
+     selection failure rather than as the aiming problem it is. */
+  const prose = await selectWord(page, "#txtFile .txt-body p:last-of-type", 70);
   t.check("a word of prose selects", prose.length > 2, JSON.stringify(prose));
   await page.close();
 

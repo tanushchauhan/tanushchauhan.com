@@ -28,6 +28,10 @@ export const win = (over = {}) => ({
 /**
  * The persisted store, as the app will find it on load. `version` has to match
  * the store's current version or the migration runs and drops things.
+ *
+ * A window's `data` is stored as a reference into src/constants, not as a copy
+ * of what it holds, so seeding one means `{ ref: "<node id>" }` for a folder
+ * and `{ ref: "<node id>", part: "data" }` for a file's contents.
  */
 export const seed = ({ windows = {}, ...rest } = {}) =>
   JSON.stringify({
@@ -42,7 +46,7 @@ export const seed = ({ windows = {}, ...rest } = {}) =>
       desktopFolders: [],
       ...rest,
     },
-    version: 2,
+    version: 3,
   });
 
 /* The page a spec is working in, so the runner can photograph a failure without

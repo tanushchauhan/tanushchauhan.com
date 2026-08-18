@@ -561,3 +561,51 @@ export const locations = {
     ],
   },
 };
+
+/* ---------------- window data, by reference ----------------
+ *
+ * A window's `data` is a node out of this file, and the window store persists
+ * it. A copy written to localStorage months ago then outlives the copy in the
+ * build: change a project's blurb and anyone who had that folder open still
+ * reads the old one, because nothing on a reload goes looking for a newer
+ * version. Clearing site data was the only cure.
+ *
+ * So the store saves a reference and resolves it against the current build on
+ * the way back in. Positions and sizes still persist; the words never do.
+ */
+const nodes = new Map(); // id -> node
+const owners = new Map(); // a file's payload -> the id of the node holding it
+
+const index = (node) => {
+  nodes.set(node.id, node);
+  if (node.data) owners.set(node.data, node.id);
+  node.children?.forEach(index);
+};
+
+Object.values(locations).forEach(index);
+
+/**
+ * What to persist for a window.
+ *
+ * A photo opened from the gallery is built on the fly and has no node behind
+ * it, so there is nothing to look up and it is kept whole. It is two fields
+ * and a path, which is about as little as a snapshot can go stale by.
+ */
+export const refFor = (data) => {
+  if (!data) return null;
+  const owner = owners.get(data);
+  if (owner) return { ref: owner, part: "data" };
+  if (data.id && nodes.has(data.id)) return { ref: data.id };
+  return data;
+};
+
+/**
+ * The other direction, run on hydrate. A reference this build no longer has
+ * resolves to null, and the store reads that as a window to leave shut.
+ */
+export const derefData = (saved) => {
+  if (!saved?.ref) return saved ?? null;
+  const node = nodes.get(saved.ref);
+  if (!node) return null;
+  return saved.part === "data" ? (node.data ?? null) : node;
+};

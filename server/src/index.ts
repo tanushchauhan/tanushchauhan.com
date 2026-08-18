@@ -43,6 +43,22 @@ app.route("/api", api);
 app.all("/api/*", (c) => c.json({ error: "not found" }, 404));
 
 /* ---------- static frontend ---------- */
+
+/* Everything under /assets carries a content hash in its filename, so a given
+   URL can never mean two different things and a year is as good as forever.
+   The shell that names those files must not be held at all: cached, it goes on
+   asking for the bundle it was built against long after that bundle is gone. */
+app.use("/*", async (c, next) => {
+  await next();
+  if (c.req.method !== "GET" || !c.res.ok) return;
+  c.res.headers.set(
+    "cache-control",
+    c.req.path.startsWith("/assets/")
+      ? "public, max-age=31536000, immutable"
+      : "no-cache"
+  );
+});
+
 app.use("/*", serveStatic({ root: DIST }));
 
 // A request for a file that does not exist must 404 rather than fall through

@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { play, setSoundEnabled } from "../utils/sound.js";
-import { DEFAULT_WALLPAPER } from "../constants/index.js";
+import { DEFAULT_WALLPAPER, derefData, refFor } from "../constants/index.js";
 
 const INITIAL_Z_INDEX = 1000;
 
@@ -230,7 +230,7 @@ const useWindowStore = create(
     })),
     {
       name: "tanushos-v1",
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
         // v0 had a light/dark toggle; "auto" (follow the system) is the default
         if (version < 1) persisted = { ...persisted, theme: "auto" };
@@ -239,6 +239,26 @@ const useWindowStore = create(
         // a card back at its home position is right, a card replaying a
         // measurement from a grid that no longer exists is not.
         if (version < 2) persisted = { ...persisted, widgetPos: {} };
+        /* v2 kept a copy of the constants node in each window's `data`, so a
+           browser went on rendering whatever the copy said on the day it was
+           opened. Anything carrying an id becomes a reference. The rest were
+           file contents with no way back to a node, so they go, and the window
+           holding one goes with them rather than opening as a blank frame. */
+        if (version < 3) {
+          persisted = {
+            ...persisted,
+            windows: Object.fromEntries(
+              Object.entries(persisted?.windows ?? {}).map(([key, win]) => {
+                const ref = win?.data?.id ? { ref: win.data.id } : null;
+                const dropped = win?.data != null && ref === null;
+                return [
+                  key,
+                  { ...win, data: ref, ...(dropped && { isOpen: false, isMinimized: false }) },
+                ];
+              })
+            ),
+          };
+        }
         return persisted;
       },
       // Saved state replaces defaults wholesale, so a browser holding an older
@@ -249,14 +269,26 @@ const useWindowStore = create(
         ...current,
         ...persisted,
         windows: Object.fromEntries(
-          Object.entries(current.windows).map(([key, defaults]) => [
-            key,
-            { ...defaults, ...(persisted?.windows?.[key] ?? {}) },
-          ])
+          Object.entries(current.windows).map(([key, defaults]) => {
+            const saved = persisted?.windows?.[key] ?? {};
+            const data = derefData(saved.data);
+            // a window pointing at a file this build no longer has stays shut
+            const lost = saved.data != null && data == null;
+            return [
+              key,
+              { ...defaults, ...saved, data, ...(lost && { isOpen: false, isMinimized: false }) },
+            ];
+          })
         ),
       }),
       partialize: (state) => ({
-        windows: state.windows,
+        // `data` is stored as a reference, never as a copy of the words in it
+        windows: Object.fromEntries(
+          Object.entries(state.windows).map(([key, win]) => [
+            key,
+            { ...win, data: refFor(win.data) },
+          ])
+        ),
         nextZIndex: state.nextZIndex,
         theme: state.theme,
         wallpaper: state.wallpaper,
