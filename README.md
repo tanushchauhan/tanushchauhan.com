@@ -46,5 +46,11 @@ and LinkedIn keep the old one for days unless you poke their URL debuggers.
 
 Almost everything personal lives in `src/constants/index.js`: projects,
 highlights, socials, tech stack, and the Finder file system. The gallery
-poster SVGs are in `public/images/posters/`, and the résumé is
-`public/files/resume.pdf`.
+poster SVGs are in `public/images/posters/`.
+
+In production the résumé is fetched from `resume.tanushchauhan.com` and cached
+for fifteen minutes, so replacing it there is the whole job: no commit, no
+build, no deploy. Point `RESUME_URL` somewhere else to change the source.
+`public/files/resume.pdf` is the fallback, served when that host is unreachable
+or answers with something that is not a PDF, and it is also what the dev server
+and the test suite use, since neither should depend on another host being up.
