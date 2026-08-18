@@ -45,19 +45,30 @@ app.all("/api/*", (c) => c.json({ error: "not found" }, 404));
 
 /* ---------- static frontend ---------- */
 
-/* Everything under /assets carries a content hash in its filename, so a given
+/* Three kinds of thing come out of dist and they want three different answers.
+   Everything under /assets carries a content hash in its filename, so a given
    URL can never mean two different things and a year is as good as forever.
-   The shell that names those files must not be held at all: cached, it goes on
-   asking for the bundle it was built against long after that bundle is gone. */
+   The shell that names those files must not be held at all, or it goes on
+   asking for a bundle that was deleted two deploys ago. Images, icons and the
+   rest are unhashed but change rarely, and an hour is short enough that
+   replacing one is not a mystery and long enough to be worth having.
+
+   Cloudflare has the last word on all of it. With Browser Cache TTL set to a
+   fixed value it rewrites these on the way out, so if the header a browser
+   receives does not match the one below, that setting is why. */
 app.use("/*", async (c, next) => {
   await next();
   if (c.req.method !== "GET" || !c.res.ok) return;
   if (c.res.headers.has("cache-control")) return; // a route that said so itself
+
+  const isHtml = c.res.headers.get("content-type")?.includes("text/html");
   c.res.headers.set(
     "cache-control",
-    c.req.path.startsWith("/assets/")
-      ? "public, max-age=31536000, immutable"
-      : "no-cache"
+    isHtml
+      ? "no-cache"
+      : c.req.path.startsWith("/assets/")
+        ? "public, max-age=31536000, immutable"
+        : "public, max-age=3600"
   );
 });
 
