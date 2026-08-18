@@ -451,9 +451,8 @@ export const locations = {
           portrait: true,
           description: [
             "I am a CS Honors + Math double major at UT Austin (Dean's Scholars), minoring in Robotics. I build things that have to work in the physical world, where the hard part is never the code.",
-            "Right now I am an undergraduate researcher at the Autonomous Mobile Robotics Lab, teaching robots to track and follow people by fusing LiDAR and RGB streams in ROS2. Before that I co-authored MemeQA, a 9,000 question benchmark for meme comprehension, published at ACL 2025.",
-            "Outside the lab I am usually at a hackathon, building with Texas Convergent, or at ECLAIR Robotics, where we drive a robotic arm with eye movement alone.",
-            "Austin, TX · tanush@utexas.edu",
+            "Right now I am an undergraduate researcher at the Autonomous Mobile Robotics Lab, working with ROS and Nvidia Deepstream.",
+            "tanush@utexas.edu",
           ],
         },
       },
