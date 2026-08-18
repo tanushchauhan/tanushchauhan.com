@@ -143,19 +143,36 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
           clamp(win.size.h, min.h, b.height)
         );
       }
+    }, []);
+
+    /* Draggable is created only once there is a header to grab, and this effect
+     * runs after every render until there is one.
+     *
+     * The text and image viewers render nothing at all until they are handed a
+     * file, so at mount they have no #window-header and the trigger used to
+     * fall back to the whole section. Pressing a resize handle then started a
+     * drag as well as a resize, and the grabbed edge ran at twice the pointer
+     * while the opposite one drifted along with it. */
+    useEffect(() => {
+      const el = ref.current;
+      if (!el || dragRef.current) return;
+      const header = el.querySelector("#window-header");
+      if (!header) return;
 
       const [instance] = Draggable.create(el, {
-        trigger: el.querySelector("#window-header") ?? el,
+        trigger: header,
         bounds: "main",
         onPress: () => focusWindow(windowKey),
         onDragEnd() {
           setWindowPos(windowKey, { x: this.x, y: this.y });
         },
       });
+      // the effect below has already run for this value and will not run again
+      if (isMaximized) instance.disable();
       dragRef.current = instance;
+    });
 
-      return () => instance?.kill();
-    }, []);
+    useEffect(() => () => dragRef.current?.kill(), []);
 
     // a maximized window fills the desktop; drag is suspended until restored
     useEffect(() => {

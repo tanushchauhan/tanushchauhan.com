@@ -277,8 +277,21 @@ nav time {
 
 /* ---------------- windows (generic) ---------------- */
 .window {
-  @apply absolute flex-col overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-black/10 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-white/10;
+  @apply absolute flex-col rounded-xl bg-white shadow-2xl ring-1 ring-black/10 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-white/10;
   display: none;
+
+  /* How far a resize handle reaches past the frame. Half the grab band: the
+     handles are twice this thick and centred on the edge. */
+  --rh-reach: 6px;
+
+  /* Clips the content to the rounded frame the way overflow-hidden did, but
+     leaves the handles a margin to hang out into. Both land on Safari 16.4,
+     which is already the floor for the rest of the stylesheet. Anything older
+     clips at the edge and gets an inside-only grab band: narrower than it
+     should be, but that is what it always was. */
+  overflow: clip;
+  overflow-clip-margin: var(--rh-reach);
+
   transition:
     width 0.25s ease,
     height 0.25s ease,
@@ -301,50 +314,77 @@ body.resizing * {
   user-select: none !important;
 }
 
-/* Resize handles. Inside the frame rather than straddling it, because .window
-   clips its overflow, and 6px is close to what macOS gives you anyway. */
+/* Resize handles, straddling the frame rather than sitting inside it. A band
+   that starts at the edge and only goes inward means aiming at the pixel row
+   where the window stops, and missing it by one lands you in the content. This
+   one is 12px wide with the edge down the middle, which is about what macOS
+   gives you. */
 .rh {
   @apply absolute z-20;
+  --out: calc(var(--rh-reach) * -1);
+  --band: calc(var(--rh-reach) * 2);
+}
+
+.rh-n,
+.rh-s {
+  left: var(--out);
+  right: var(--out);
+  height: var(--band);
+}
+
+.rh-e,
+.rh-w {
+  top: var(--out);
+  bottom: var(--out);
+  width: var(--band);
 }
 
 .rh-n {
-  @apply inset-x-0 top-0 h-1.5;
+  top: var(--out);
 }
 
 .rh-s {
-  @apply inset-x-0 bottom-0 h-1.5;
+  bottom: var(--out);
 }
 
 .rh-e {
-  @apply inset-y-0 right-0 w-1.5;
+  right: var(--out);
 }
 
 .rh-w {
-  @apply inset-y-0 left-0 w-1.5;
+  left: var(--out);
 }
 
-/* above the edges they overlap, so a corner drag wins over a straight one */
+/* Above the edges they overlap, so a corner drag wins over a straight one.
+   Three reaches square puts the inner edge 12px in, clear of the traffic
+   lights, which start 16px from the corner. */
 .rh-nw,
 .rh-ne,
 .rh-sw,
 .rh-se {
-  @apply z-30 size-3.5;
+  @apply z-30;
+  width: calc(var(--rh-reach) * 3);
+  height: calc(var(--rh-reach) * 3);
 }
 
 .rh-nw {
-  @apply top-0 left-0;
+  top: var(--out);
+  left: var(--out);
 }
 
 .rh-ne {
-  @apply top-0 right-0;
+  top: var(--out);
+  right: var(--out);
 }
 
 .rh-sw {
-  @apply bottom-0 left-0;
+  bottom: var(--out);
+  left: var(--out);
 }
 
 .rh-se {
-  @apply right-0 bottom-0;
+  right: var(--out);
+  bottom: var(--out);
 }
 
 .window.maximized {

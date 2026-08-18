@@ -129,6 +129,36 @@ export const run = async ({ browser, t }) => {
   // ---------- the panels that do not resize ----------
   t.check("About This Mac has no handles", (await page.$$("#about .rh")).length === 0);
 
+  /* A window that was empty at mount. The text and image viewers render nothing
+     until they are handed a file, so they had no header for Draggable to take
+     as its trigger and it fell back to the whole window: a press on a resize
+     handle started a drag as well, and the grabbed edge moved at twice the
+     pointer while the opposite one came with it. */
+  await page.click("#terminal #window-controls .close"); // it covers the panel by now
+  await page.waitForTimeout(400);
+  await page.click("#about .about-body button");
+  await page.waitForTimeout(900);
+  t.check("a text file opened after boot", await page.isVisible("#txtFile"));
+
+  before = await rect(page, "#txtFile");
+  await drag(page, { x: before.right - 2, y: before.y + before.h / 2 }, 100, 0);
+  after = await rect(page, "#txtFile");
+  t.check(
+    "resizing one of those does not drag it as well",
+    near(after.x, before.x) && near(after.w, before.w + 100),
+    `x ${Math.round(before.x)}->${Math.round(after.x)}, w ${Math.round(before.w)}->${Math.round(after.w)}`
+  );
+
+  // ---------- the grab band ----------
+  const edge = await rect(page, "#txtFile");
+  const grabbable = async (dx) =>
+    page.evaluate(
+      ([x, y]) => !!document.elementFromPoint(x, y)?.classList?.contains("rh"),
+      [edge.right + dx, edge.y + edge.h / 2]
+    );
+  t.check("the grab band reaches outside the frame", await grabbable(-4));
+  t.check("and inside it", await grabbable(4));
+
   t.check("no page errors", page.pageErrors.length === 0, page.pageErrors.join(" | "));
   await page.close();
 };
