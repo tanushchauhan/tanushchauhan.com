@@ -546,27 +546,6 @@ body.resizing * {
   @apply mt-1 inline-flex items-center gap-1 text-sm font-medium text-burnt hover:underline;
 }
 
-/* ---------------- resume ---------------- */
-#resume {
-  @apply flex w-[640px] flex-col;
-  top: 6vh;
-  left: 30vw;
-  max-height: 84vh;
-}
-
-#resume .pdf-scroll {
-  @apply min-h-0 flex-1 overflow-y-auto bg-neutral-200 p-4 dark:bg-neutral-900;
-}
-
-#resume .react-pdf__Document {
-  @apply mx-auto w-fit shadow-lg;
-}
-
-/* shown while the lazily loaded PDF viewer and its worker are fetched */
-.pdf-status {
-  @apply py-10 text-center text-sm text-neutral-500 dark:text-neutral-400;
-}
-
 /* ---------------- finder ---------------- */
 [id^="finder"] {
   @apply flex w-[760px] flex-col;
@@ -1270,10 +1249,6 @@ body.resizing * {
 
 .m-social {
   @apply flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold text-white;
-}
-
-.m-download {
-  @apply flex w-full items-center justify-center gap-2 rounded-xl bg-burnt px-4 py-2.5 text-sm font-semibold text-white;
 }
 
 .m-section-label {

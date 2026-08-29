@@ -11,15 +11,14 @@ operating system. Built by [Tanush Chauhan](https://github.com/tanushchauhan)
 - **Boot screen**: the site powers on like a Mac before the desktop fades in (once per session)
 - **Texas-sunset desktop**: custom SVG wallpaper, draggable project folders, live menu-bar clock
 - **Interactive terminal**: a real shell, not a mockup. Try `help`, `whoami`, `neofetch`, `projects`, or `sudo hire-tanush`
-- **Finder**: browse Projects / About Me / Résumé / Trash, open txt & image files
+- **Finder**: browse Projects / About Me / Trash, open txt & image files
 - **Safari**: "Highlights" reading list (ACL 2025 publication, hackathon wins, research)
 - **Gallery**: poster cards for every project and award
-- **Résumé viewer**: rendered PDF with a download button
 - **Real window management**: draggable, focusable, stackable windows via a Zustand store and a `WindowWrapper` HOC
 
 ## Stack
 
-React 19 · Vite · Tailwind CSS v4 · GSAP (+ Draggable) · Zustand + Immer · react-pdf · lucide-react
+React 19 · Vite · Tailwind CSS v4 · GSAP (+ Draggable) · Zustand + Immer · lucide-react
 
 ## Run it
 
@@ -47,10 +46,3 @@ and LinkedIn keep the old one for days unless you poke their URL debuggers.
 Almost everything personal lives in `src/constants/index.js`: projects,
 highlights, socials, tech stack, and the Finder file system. The gallery
 poster SVGs are in `public/images/posters/`.
-
-In production the résumé is fetched from `resume.tanushchauhan.com` and cached
-for fifteen minutes, so replacing it there is the whole job: no commit, no
-build, no deploy. Point `RESUME_URL` somewhere else to change the source.
-`public/files/resume.pdf` is the fallback, served when that host is unreachable
-or answers with something that is not a PDF, and it is also what the dev server
-and the test suite use, since neither should depend on another host being up.

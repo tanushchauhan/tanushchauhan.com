@@ -1,11 +1,10 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dayjs from "dayjs";
 import {
   Wifi,
   Signal,
   BatteryFull,
   ChevronLeft,
-  Download,
   MoveRight,
   Settings as SettingsIcon,
   Sun,
@@ -24,11 +23,6 @@ import { MobileWidgets, MobileSystem } from "./widgets/Widgets.jsx";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 
-// same lazy module as the desktop Resume window: the PDF worker is only
-// fetched once someone actually opens the résumé. Nothing may be imported
-// from it statically, or it lands back in the main chunk.
-const PdfView = lazy(() => import("#windows/PdfView.jsx"));
-
 /* ---------------- app registry ---------------- */
 const APPS = [
   { id: "projects", name: "Projects", icon: "/images/finder.png" },
@@ -37,12 +31,11 @@ const APPS = [
   { id: "terminal", name: "Terminal", icon: "/images/terminal.png" },
   { id: "contact", name: "Contact", icon: "/images/contact.png" },
   { id: "guestbook", name: "Guestbook", icon: "/images/guestbook.svg" },
-  { id: "resume", name: "Résumé", icon: "/images/pdf.png" },
   { id: "about", name: "About Me", icon: "/images/avatar-tanush.svg" },
   { id: "settings", name: "Settings", icon: null },
 ];
 
-const DOCK_APPS = ["projects", "terminal", "contact", "resume"];
+const DOCK_APPS = ["projects", "terminal", "contact"];
 
 const StatusBar = () => {
   const [now, setNow] = useState(dayjs());
@@ -75,7 +68,6 @@ const ProjectsApp = () => {
     if (item.kind === "folder") return setStack((s) => [...s, item]);
     if (["fig", "url"].includes(item.fileType) && item.href)
       return window.open(item.href, "_blank", "noopener,noreferrer");
-    if (item.fileType === "pdf") return window.open("/files/resume.pdf", "_blank");
     setFile(item);
   };
 
@@ -230,19 +222,6 @@ const ContactApp = () => (
   </div>
 );
 
-const ResumeApp = () => (
-  <div className="m-scroll bg-neutral-200 p-3 dark:bg-neutral-900">
-    <a href="/files/resume.pdf" download="Tanush_Chauhan_Resume.pdf" className="m-download">
-      <Download className="size-4" /> Download PDF
-    </a>
-    <div className="mt-3 overflow-hidden rounded-lg shadow-lg">
-      <Suspense fallback={<p className="pdf-status">Loading résumé…</p>}>
-        <PdfView width={Math.min(window.innerWidth - 24, 560)} />
-      </Suspense>
-    </div>
-  </div>
-);
-
 const AboutApp = () => {
   const about = locations.about.children.find((c) => c.id === "about-me").data;
   const facts = locations.about.children.find((c) => c.id === "fun-facts").data;
@@ -337,7 +316,6 @@ const APP_SCREENS = {
   terminal: TerminalBody,
   contact: ContactApp,
   guestbook: GuestbookBody,
-  resume: ResumeApp,
   about: AboutApp,
   settings: SettingsApp,
 };

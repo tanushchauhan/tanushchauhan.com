@@ -8,7 +8,6 @@ import { widgetRoutes } from "./routes/widgets.ts";
 import { moontowerRoutes } from "./routes/moontower.ts";
 import { startMetricsSampler } from "./lib/metrics.ts";
 import { startServiceProbes } from "./lib/probes.ts";
-import { resumePdf } from "./lib/resume.ts";
 
 const PORT = Number(Bun.env.PORT ?? 3001);
 
@@ -70,25 +69,6 @@ app.use("/*", async (c, next) => {
         ? "public, max-age=31536000, immutable"
         : "public, max-age=3600"
   );
-});
-
-/* The résumé comes from where it is maintained rather than from the repo. This
-   has to be registered ahead of the static handler or the committed copy wins,
-   and that copy is now only the fallback. In dev the Vite server answers this
-   path out of public/ and never reaches here, which is what the test suite and
-   `npm run og` want: neither should depend on another host being up. */
-app.get("/files/resume.pdf", async (c) => {
-  const pdf = await resumePdf();
-  if (!pdf) return c.text("Not found", 404);
-
-  return new Response(pdf.body, {
-    headers: {
-      "content-type": "application/pdf",
-      "content-disposition": 'inline; filename="Tanush_Chauhan_Resume.pdf"',
-      "cache-control": "public, max-age=900",
-      "x-resume-source": pdf.source, // cache, upstream, stale, or fallback
-    },
-  });
 });
 
 app.use("/*", serveStatic({ root: DIST }));

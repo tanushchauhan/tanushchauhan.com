@@ -102,12 +102,6 @@ const FS_ROOT = {
       children: locations.about.children.map(fileNode),
     },
     {
-      name: "resume",
-      kind: "dir",
-      loc: locations.resume,
-      children: locations.resume.children.map(fileNode),
-    },
-    {
       name: "trash",
       kind: "dir",
       loc: locations.trash,
@@ -277,10 +271,6 @@ export const TerminalBody = () => {
     if (node.secret) return print(node.secret);
 
     const item = node.item;
-    if (item.fileType === "pdf") {
-      openWindow("resume");
-      return print(["Opening resume.pdf…"]);
-    }
     if (["fig", "url"].includes(item.fileType) && item.href) {
       window.open(item.href, "_blank", "noopener,noreferrer");
       return print([`Opening ${item.href} in a new tab…`]);
@@ -297,7 +287,6 @@ export const TerminalBody = () => {
     highlights: "safari",
     safari: "safari",
     contact: "contact",
-    resume: "resume",
     about: "about",
   };
 
@@ -309,7 +298,7 @@ export const TerminalBody = () => {
         "  cd <dir>         change directory (try 'cd projects/crave')",
         "  cat <file>       view file contents",
         "  open <target>    open files, folders, or apps in a window",
-        "                   apps: projects · gallery · highlights · contact · resume",
+        "                   apps: projects · gallery · highlights · contact",
         "  pwd              print working directory",
         "  whoami           the short version",
         "  skills           tech stack, by category",
@@ -375,8 +364,6 @@ export const TerminalBody = () => {
       if (item.fileType === "url") return print([`-> ${item.href}`]);
       if (item.fileType === "img")
         return print([`binary image data, try 'open ${node.name}'`]);
-      if (item.fileType === "pdf")
-        return print([`binary PDF, try 'open ${node.name}'`]);
       print([`cat: cannot read ${node.name}`]);
     },
 

@@ -5,7 +5,7 @@ import { create } from "zustand";
  * person will ever log in here, so making every visitor download the WebAuthn
  * browser helpers would undo part of the bundle work for no one's benefit.
  * Nothing may import from this module statically or it lands back in the main
- * chunk, the same trap as the PDF worker in PdfView.jsx.
+ * chunk.
  */
 const webauthn = () => import("@simplewebauthn/browser");
 

@@ -13,8 +13,6 @@ const Finder = ({ windowKey }) => {
   const navigateTo = (item) => openWindow(windowKey, item);
 
   const openItem = (item) => {
-    if (item.fileType === "pdf") return openWindow("resume");
-
     if (item.kind === "folder") return navigateTo(item);
 
     if (["fig", "url"].includes(item.fileType) && item.href)

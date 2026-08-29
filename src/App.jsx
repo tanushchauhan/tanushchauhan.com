@@ -13,7 +13,6 @@ import {
 import {
   Terminal,
   Safari,
-  Resume,
   FinderWindows,
   Contact,
   Photos,
@@ -98,7 +97,6 @@ const App = () => {
         <Terminal />
         <Contact />
         <Guestbook />
-        <Resume />
         <Text />
         <ImageViewer />
         <AboutMac />

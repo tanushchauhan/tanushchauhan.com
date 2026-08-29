@@ -15,7 +15,6 @@ const WINDOW_KEYS = [
   "contact",
   "guestbook",
   "terminal",
-  "resume",
   "txtFile",
   "imgFile",
   "about",

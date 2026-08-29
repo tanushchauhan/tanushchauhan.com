@@ -10,7 +10,6 @@ const APP_ENTRIES = [
   { title: "Terminal", subtitle: "run some commands", icon: "/images/terminal.png", app: "terminal" },
   { title: "Contact", subtitle: "get in touch", icon: "/images/contact.png", app: "contact" },
   { title: "Guestbook", subtitle: "leave a note", icon: "/images/guestbook.svg", app: "guestbook" },
-  { title: "Résumé", subtitle: "resume.pdf", icon: "/images/pdf.png", app: "resume" },
   { title: "About This Mac", subtitle: "system info", icon: "/images/avatar-tanush.svg", app: "about" },
 ];
 
@@ -51,7 +50,6 @@ const Spotlight = () => {
         chip: item.kind === "link",
         kind: "Files",
         run: () => {
-          if (item.fileType === "pdf") return openWindow("resume");
           if (["fig", "url"].includes(item.fileType) && item.href)
             return window.open(item.href, "_blank", "noopener,noreferrer");
           openWindow(`${item.fileType}File`, item.data);

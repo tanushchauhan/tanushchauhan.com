@@ -16,7 +16,6 @@ const MIN_WINDOW_META = {
   terminal: { icon: "/images/terminal.png", name: "Terminal" },
   contact: { icon: "/images/contact.png", name: "Contact" },
   guestbook: { icon: "/images/guestbook.svg", name: "Guestbook" },
-  resume: { icon: "/images/pdf.png", name: "resume.pdf" },
   txtFile: { icon: "/images/txt.png", name: "Text" },
   imgFile: { icon: "/images/image.png", name: "Image" },
   about: { icon: "/images/avatar-tanush.svg", name: "About This Mac" },

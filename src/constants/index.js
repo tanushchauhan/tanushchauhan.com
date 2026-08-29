@@ -1,7 +1,6 @@
 export const navLinks = [
   { id: 1, name: "Projects", type: "finder" },
-  { id: 2, name: "Résumé", type: "resume" },
-  { id: 3, name: "Contact", type: "contact" },
+  { id: 2, name: "Contact", type: "contact" },
 ];
 
 export const navIcons = [
@@ -493,23 +492,6 @@ export const locations = {
           name: "get-to-know-me.png",
           imageUrl: "/images/poster-tanush.jpg",
         },
-      },
-    ],
-  },
-  resume: {
-    id: "resume",
-    type: "resume",
-    name: "Résumé",
-    icon: "/icons/file.svg",
-    kind: "folder",
-    children: [
-      {
-        id: "resume-pdf",
-        name: "resume.pdf",
-        icon: "/images/pdf.png",
-        kind: "file",
-        fileType: "pdf",
-        position: "top-4 left-4",
       },
     ],
   },
