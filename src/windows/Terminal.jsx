@@ -21,16 +21,6 @@ const NEOFETCH = `
   Packages  react, ros2, supabase, postgres
   Location  Austin, TX`;
 
-const CITATION = `
-  @inproceedings{memeqa2025,
-    title     = {MemeQA: Holistic Evaluation for Meme Understanding},
-    author    = {Chauhan, Tanush and others},
-    booktitle = {Proceedings of ACL},
-    year      = {2025}
-  }
-
-  yes, it is a peer-reviewed paper about memes.`;
-
 /*
  * Observations, not advertising. Three of these used to be the site plugging
  * its own author: a paper, a project, and a GPA, each delivered as a fortune so
@@ -164,7 +154,7 @@ const pwdString = (path) => "~" + (path.length ? "/" + path.join("/") : "");
 
 const COMMAND_NAMES = [
   "help", "ls", "cd", "cat", "open", "pwd", "whoami", "skills", "projects",
-  "contact", "neofetch", "echo", "date", "history", "cite", "clear",
+  "contact", "neofetch", "echo", "date", "history", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
   "login", "logout", "enroll", "passkeys", "building", "moontower", "services",
   "guestbook",
@@ -312,7 +302,6 @@ export const TerminalBody = () => {
         "  theme <mode>     light | dark | auto",
         "  cowsay <text>    a cow says it",
         "  fortune          questionable wisdom",
-        "  cite             bibtex for my ACL 2025 paper",
         "  matrix           green rain",
         "  snake            arrows to move, esc to quit",
         "  clear            clear terminal",
@@ -430,8 +419,6 @@ export const TerminalBody = () => {
 
     history: (_, allCmds) =>
       print(allCmds.map((c, i) => `  ${String(i + 1).padStart(3)}  ${c}`)),
-
-    cite: () => print([CITATION]),
 
     clear: () => setHistory([]),
 
