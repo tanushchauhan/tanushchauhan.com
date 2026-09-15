@@ -60,51 +60,73 @@ export const techStack = [
   {
     category: "Languages",
     items: [
-      "Java",
+      "TypeScript",
+      "JavaScript",
       "Python",
       "C/C++",
-      "SQL",
-      "JavaScript",
-      "TypeScript",
+      "Java",
       "Swift",
+      "SQL",
+      "Verilog",
     ],
   },
   {
     category: "Web",
-    items: ["React", "Next.js", "Tailwind CSS", "FastAPI"],
+    items: ["React", "Next.js", "Tailwind CSS", "FastAPI", "Node.js"],
   },
   {
     category: "Mobile",
-    items: ["React Native", "Flutter", "SwiftUI"],
+    items: ["React Native", "SwiftUI", "Flutter"],
   },
   {
     category: "AI / ML",
-    items: ["AWS Bedrock", "NVIDIA NIM", "Ollama", "pgvector", "OpenAI APIs"],
+    items: ["PyTorch", "OpenCV", "AWS Bedrock", "pgvector", "Optuna"],
   },
   {
     category: "Robotics",
-    items: ["ROS2", "NVIDIA DeepStream", "Docker", "LiDAR + RGB fusion"],
+    items: ["ROS2", "NVIDIA DeepStream", "Docker", "ESP32"],
   },
   {
     category: "Cloud & Data",
-    items: ["Supabase (PostgreSQL)", "AWS Lambda", "Oracle Cloud", "Git"],
+    items: ["Supabase (PostgreSQL)", "AWS Lambda", "Oracle Cloud", "Linux", "Git"],
   },
 ];
 
-// Safari "reading list": the four things I would point at first.
+// Safari "reading list": the things I would point at first.
 export const highlights = [
   {
     id: 1,
     tag: "Publication",
+    title:
+      "STARS: From Spatiotemporal Dynamics to Social Representations in Human-Robot Interaction · CoRL 2026",
+    description:
+      "A study of how robots can read social context from motion. I built the control baselines the learned representations were measured against, across 260 Optuna trials and 10-seed sweeps.",
+    image: "/images/posters/poster-corl.svg",
+    link: "https://scholar.google.com/scholar?q=STARS+Spatiotemporal+Dynamics+Social+Representations+Human-Robot+Interaction",
+    cta: "Read the paper",
+  },
+  {
+    id: 2,
+    tag: "Publication",
     title: "MemeQA: Holistic Evaluation for Meme Understanding · ACL 2025",
     description:
-      "Co-authored a 9,000+ question benchmark for meme comprehension, published at the 63rd Annual Meeting of the ACL.",
+      "Co-authored a 9,000+ question benchmark for meme comprehension with Prof. Vincent Ng's group at UT Dallas, published at the 63rd Annual Meeting of the ACL.",
     image: "/images/posters/poster-acl.svg",
     link: "https://scholar.google.com/scholar?q=MemeQA+Holistic+Evaluation+for+Meme+Understanding",
     cta: "Read the paper",
   },
   {
-    id: 2,
+    id: 3,
+    tag: "Research",
+    title: "Autonomous Mobile Robotics Lab @ UT Austin",
+    description:
+      "Tracking people in 3D across six hardware-synchronized cameras, with Dockerized ROS2 and NVIDIA DeepStream holding 60 FPS and 22 simultaneous tracks on a single GPU.",
+    image: "/images/posters/poster-robot.svg",
+    link: "https://www.linkedin.com/in/tanushchauhan",
+    cta: "More on LinkedIn",
+  },
+  {
+    id: 4,
     tag: "Hackathon Win",
     title: "Crave · Best Use of Supabase & Most Startup Ready",
     description:
@@ -114,17 +136,7 @@ export const highlights = [
     cta: "See it on Devpost",
   },
   {
-    id: 3,
-    tag: "Research",
-    title: "Autonomous Mobile Robotics Lab @ UT Austin",
-    description:
-      "Building ROS2 human-tracking pipelines, fusing LiDAR and RGB streams, SAM3 segmentation, and Dockerized DeepStream nodes for multi-view 3D person tracking.",
-    image: "/images/posters/poster-robot.svg",
-    link: "https://www.linkedin.com/in/tanushchauhan",
-    cta: "More on LinkedIn",
-  },
-  {
-    id: 4,
+    id: 5,
     tag: "Shipped",
     title: "GradeMate · 1,180+ installs and counting",
     description:
@@ -200,6 +212,18 @@ export const gallery = [
     name: "eye-tracker.png",
     group: "Research & Awards",
     image: "/images/posters/poster-eye.svg",
+  },
+  {
+    id: 11,
+    name: "stars-corl2026.png",
+    group: "Research & Awards",
+    image: "/images/posters/poster-corl.svg",
+  },
+  {
+    id: 12,
+    name: "cs429h.png",
+    group: "Projects",
+    image: "/images/posters/poster-systems.svg",
   },
   // `focus: "top"` anchors the thumbnail crop to the top of the source, so the
   // portrait keeps the face and the poster keeps its header instead of showing
@@ -297,10 +321,10 @@ export const locations = {
         "top-4 left-32",
         {
           name: "Shoo! · about.txt",
-          subtitle: "Edge-AI wildlife detection · Texas Convergent IoT Case",
+          subtitle: "Edge-AI wildlife deterrent · Texas Convergent IoT Case",
           image: "/images/projects/shoo.jpg",
           description: [
-            "Shoo! is an edge-AI wildlife detection product. Ultrasonic + GPS-triggered ESP32-CAM captures stream to an on-prem Python server running Qwen2.5-VL locally for species identification, then sync to a community mobile app via Supabase Realtime.",
+            "Shoo! is an edge-AI wildlife deterrent. Ultrasonic + GPS-triggered ESP32-CAM captures stream to an on-prem Python server running Qwen2.5-VL locally for species identification, then sync to a community mobile app via Supabase Realtime.",
             "Best Presentation, Texas Convergent IoT Case, Spring 2026.",
             "Stack: ESP32-CAM · C++ · Python · Qwen2.5-VL / Ollama · Supabase (Realtime/RLS/Storage) · React Native",
           ],
@@ -427,6 +451,70 @@ export const locations = {
           },
         ],
       ),
+      project(
+        "eye-tracker",
+        "Eye Tracker",
+        "top-[42vh] right-[10vw]",
+        "top-40 left-60",
+        {
+          name: "Eye Tracker · about.txt",
+          subtitle: "3D gaze control · Best Overall, ECLAIR Robotics",
+          image: "/images/posters/poster-eye.svg",
+          description: [
+            "A dual-camera eye tracker built in Python and OpenCV. Adaptive thresholding, contour filtering, and ellipse fitting find the pupil, vectorized down to 2.45 ms per frame on a single-eye benchmark clip.",
+            "Per-eye calibration turns pupil offsets into metric gaze rays, and the two eyes are triangulated into room coordinates with a confidence score based on how close the rays come to meeting.",
+            "The fused gaze yaw drives an ESP32 and PCA9685 servo controller over serial, with three-point calibration, EMA smoothing, and send-rate limiting to keep the motion steady.",
+            "Best Overall Project, ECLAIR Robotics, Spring 2026.",
+            "Stack: Python · OpenCV · ESP32 · PCA9685",
+          ],
+        },
+        [
+          {
+            id: "eye-tracker-img",
+            name: "poster.png",
+            icon: "/images/image.png",
+            kind: "file",
+            fileType: "img",
+            position: "top-4 left-32",
+            data: {
+              name: "eye tracker · poster.png",
+              imageUrl: "/images/posters/poster-eye.svg",
+            },
+          },
+        ],
+      ),
+      project(
+        "systems",
+        "CS 429H",
+        "top-[6vh] right-[18vw]",
+        "top-76 left-4",
+        {
+          name: "CS 429H · about.txt",
+          subtitle: "A processor, a compiler, and an emulator",
+          image: "/images/posters/poster-systems.svg",
+          description: [
+            "Three semester projects that go from gates up to threads.",
+            "A pipelined 16-bit processor in Verilog, with forwarding and hazard detection so instructions keep issuing through dependencies.",
+            "An optimizing x86-64 compiler in C++ for a statically typed subset of Python.",
+            "A multithreaded AArch64 emulator using lock-free synchronization across four OS threads.",
+            "Stack: Verilog · C · C++ · x86-64 and AArch64 assembly",
+          ],
+        },
+        [
+          {
+            id: "systems-img",
+            name: "poster.png",
+            icon: "/images/image.png",
+            kind: "file",
+            fileType: "img",
+            position: "top-4 left-32",
+            data: {
+              name: "cs 429h · poster.png",
+              imageUrl: "/images/posters/poster-systems.svg",
+            },
+          },
+        ],
+      ),
     ],
   },
   about: {
@@ -450,7 +538,8 @@ export const locations = {
           portrait: true,
           description: [
             "I am a CS Honors + Math double major at UT Austin (Dean's Scholars), minoring in Robotics. I build things that have to work in the physical world, where the hard part is never the code.",
-            "Right now I am an undergraduate researcher at the Autonomous Mobile Robotics Lab, working with ROS and Nvidia Deepstream.",
+            "Right now I am an undergraduate researcher at the Autonomous Mobile Robotics Lab, tracking people in 3D across six synchronized cameras with ROS2 and NVIDIA DeepStream.",
+            "On campus I coordinate the Agentic AI DiRP, build with Texas Convergent, and work on Longhorn Racing.",
             "tanush@utexas.edu",
           ],
         },
@@ -469,6 +558,7 @@ export const locations = {
             "I love exploring Austin. Most of my good ideas have come from random walks near campus with no destination in mind.",
             "I watch a lot of anime and I am always open to recommendations. All time favorites are Attack on Titan and Jujutsu Kaisen.",
             "I really like cooking. A few recipes I have iterated on for years, but most nights I am still getting my inspiration from YouTube and Instagram.",
+            "I play intramural volleyball, with more enthusiasm than technique.",
           ],
         },
       },

@@ -377,8 +377,9 @@ export const TerminalBody = () => {
     whoami: () =>
       print([
         "Tanush Chauhan, CS Honors + Math @ UT Austin, Robotics minor.",
-        "Undergrad researcher at the Autonomous Mobile Robotics Lab, working on",
-        "human tracking from LiDAR and RGB. Co-author on MemeQA, ACL 2025.",
+        "Undergrad researcher at the Autonomous Mobile Robotics Lab, tracking people",
+        "in 3D across six synchronized cameras. Co-author on STARS (CoRL 2026) and",
+        "MemeQA (ACL 2025).",
         "",
         auth.status === "authed"
           ? `session: authenticated via passkey '${auth.passkey}'.`

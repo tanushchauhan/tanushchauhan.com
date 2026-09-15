@@ -10,7 +10,7 @@
   <circle cx="120" cy="700" r="260" fill="#000000" opacity="0.10"/>
   <text x="80" y="330" font-size="170">🤖</text>
   <text x="80" y="500" font-family="Georama, -apple-system, sans-serif" font-size="76" font-weight="800" fill="#ffffff">AMRL @ UT</text>
-  <text x="80" y="565" font-family="Georama, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#ffffff" opacity="0.92">ROS2 human-tracking research</text>
+  <text x="80" y="565" font-family="Georama, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#ffffff" opacity="0.92">Multi-view 3D person tracking</text>
   <rect x="80" y="630" width="640" height="70" rx="35" fill="#ffffff" opacity="0.16"/>
-  <text x="110" y="676" font-family="Georama, -apple-system, sans-serif" font-size="27" font-weight="600" fill="#ffffff">LiDAR + RGB fusion · SAM3</text>
+  <text x="110" y="676" font-family="Georama, -apple-system, sans-serif" font-size="27" font-weight="600" fill="#ffffff">6 synced cameras · DeepStream</text>
 </svg>
