@@ -15,7 +15,8 @@ export const MatrixOverlay = ({ onExit }) => {
     const canvas = canvasRef.current;
     const { w, h } = sizeCanvas(canvas);
     const g = canvas.getContext("2d");
-    const CHARS = "アカサタナハマヤラワ0123456789TANUSH🤘";
+    // spread, not indexed: 🤘 is two UTF-16 units and half of one draws as �
+    const CHARS = [..."アカサタナハマヤラワ0123456789TANUSH🤘"];
     const col = 14;
     const drops = Array.from({ length: Math.ceil(w / col) }, () =>
       Math.floor(Math.random() * -40)

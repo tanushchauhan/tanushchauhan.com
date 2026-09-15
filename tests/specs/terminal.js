@@ -63,6 +63,52 @@ export const run = async ({ browser, t }) => {
     (await runCommand(page, "echo Keeps My Case")).includes("Keeps My Case")
   );
 
+  // ---------- the games, over output that has scrolled ----------
+  /* Everything above has pushed the prompt well down, which is the state the
+     games used to break in: the canvas was placed against the top of the
+     scrolled content and drew above the visible part of the window. */
+  const overlay = () =>
+    page.evaluate(() => {
+      const body = document.querySelector("#terminal .term-body");
+      const c = document.querySelector("#terminal .term-overlay");
+      if (!c) return null;
+      const b = body.getBoundingClientRect();
+      const r = c.getBoundingClientRect();
+      const px = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+      let lit = 0;
+      for (let i = 0; i < px.length; i += 4) if (px[i] > 60 || px[i + 1] > 60) lit++;
+      return { scrolled: body.scrollTop, top: r.top - b.top, h: r.height, bodyH: b.height, lit };
+    });
+
+  await runCommand(page, "matrix", 900);
+  const rain = await overlay();
+  t.check("matrix opens over a scrolled terminal", rain?.scrolled > 0, JSON.stringify(rain));
+  t.check(
+    "and covers what is on screen",
+    rain && Math.abs(rain.top) < 2 && Math.abs(rain.h - rain.bodyH) < 2,
+    JSON.stringify(rain)
+  );
+  t.check("and actually rains", rain?.lit > 200);
+  await page.keyboard.press("x");
+  await page.waitForTimeout(400);
+  t.check("any key ends it", !(await overlay()));
+
+  await runCommand(page, "snake", 600);
+  const game = await overlay();
+  t.check(
+    "snake covers what is on screen",
+    game && Math.abs(game.top) < 2 && Math.abs(game.h - game.bodyH) < 2,
+    JSON.stringify(game)
+  );
+  t.check("and draws a board", game?.lit > 100);
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(500);
+  t.check("escape quits", (await page.$eval(".term-body", (el) => el.innerText)).includes("snake: quit"));
+  t.check(
+    "and hands the prompt back",
+    (await runCommand(page, "echo back again")).includes("back again")
+  );
+
   t.check("no page errors", page.pageErrors.length === 0, page.pageErrors.join(" | "));
   await page.close();
 

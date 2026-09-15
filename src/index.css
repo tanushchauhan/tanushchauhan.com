@@ -447,8 +447,13 @@ body.resizing * {
   @apply text-neutral-300;
 }
 
+/* holds the scroller and, over it, the matrix and snake canvases */
+.term-frame {
+  @apply relative flex min-h-0 flex-1 flex-col;
+}
+
 .term-body {
-  @apply relative min-h-0 flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100;
+  @apply min-h-0 flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100;
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 

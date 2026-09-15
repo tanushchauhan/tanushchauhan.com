@@ -1003,19 +1003,24 @@ export const TerminalBody = () => {
   };
 
   return (
-    <div
-      ref={bodyRef}
-      className="term-body"
-      // A click that ends a drag is someone selecting output, not asking for
-      // the prompt. Focusing the input would collapse the selection on mouseup,
-      // so it never survived long enough to copy.
-      onClick={() => {
-        if (!document.getSelection()?.isCollapsed) return;
-        inputRef.current?.focus();
-      }}
-    >
+    /* The games sit beside the scroller rather than inside it. Inside, an
+       absolute overlay is placed against the top of the scrolled content, so
+       once any output had pushed the prompt down the canvas was drawn above
+       the visible area and the game ran where nobody could see it. */
+    <div className="term-frame">
       {overlay === "matrix" && <MatrixOverlay onExit={exitOverlay} />}
       {overlay === "snake" && <SnakeOverlay onExit={exitOverlay} />}
+      <div
+        ref={bodyRef}
+        className="term-body"
+        // A click that ends a drag is someone selecting output, not asking for
+        // the prompt. Focusing the input would collapse the selection on mouseup,
+        // so it never survived long enough to copy.
+        onClick={() => {
+          if (!document.getSelection()?.isCollapsed) return;
+          inputRef.current?.focus();
+        }}
+      >
         {history.map((entry, i) =>
           entry.type === "cmd" ? (
             <p key={i}>
@@ -1051,6 +1056,7 @@ export const TerminalBody = () => {
             onPaste={handlePaste}
           />
         </div>
+      </div>
     </div>
   );
 };
