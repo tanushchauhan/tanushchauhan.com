@@ -539,7 +539,7 @@ export const locations = {
           description: [
             "I am a CS Honors + Math double major at UT Austin (Dean's Scholars), minoring in Robotics. I build things that have to work in the physical world, where the hard part is never the code.",
             "Right now I am an undergraduate researcher at the Autonomous Mobile Robotics Lab, tracking people in 3D across six synchronized cameras with ROS2 and NVIDIA DeepStream.",
-            "On campus I coordinate the Agentic AI DiRP, build with Texas Convergent, and work on Longhorn Racing.",
+            "On campus I build with Texas Convergent and work on Longhorn Racing, and I used to coordinate the Agentic AI DiRP.",
             "tanush@utexas.edu",
           ],
         },
