@@ -85,6 +85,12 @@ const FS_ROOT = {
       })),
     },
     {
+      name: "publications",
+      kind: "dir",
+      loc: locations.publications,
+      children: locations.publications.children.map(fileNode),
+    },
+    {
       name: "about",
       kind: "dir",
       loc: locations.about,

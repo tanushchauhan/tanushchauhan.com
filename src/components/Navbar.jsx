@@ -40,10 +40,13 @@ const Navbar = () => {
           {navLinks.map(({ id, name, type }) => (
             <li
               key={id}
+              // a nav entry is either a Finder location or a window of its own
               onClick={() =>
                 type === "finder"
                   ? openFinderWindow(locations.work)
-                  : openWindow(type)
+                  : locations[type]
+                    ? openFinderWindow(locations[type])
+                    : openWindow(type)
               }
             >
               <p>{name}</p>

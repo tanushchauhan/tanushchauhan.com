@@ -1,6 +1,7 @@
 export const navLinks = [
   { id: 1, name: "Projects", type: "finder" },
-  { id: 2, name: "Contact", type: "contact" },
+  { id: 2, name: "Papers", type: "publications" },
+  { id: 3, name: "Contact", type: "contact" },
 ];
 
 export const navIcons = [
@@ -515,6 +516,71 @@ export const locations = {
           },
         ],
       ),
+    ],
+  },
+  publications: {
+    id: "publications",
+    type: "publications",
+    name: "Publications",
+    icon: "/icons/file.svg",
+    kind: "folder",
+    children: [
+      {
+        id: "stars-corl-2026",
+        name: "stars-corl-2026.txt",
+        icon: "/images/txt.png",
+        kind: "file",
+        fileType: "txt",
+        position: "top-4 left-4",
+        data: {
+          name: "stars-corl-2026.txt",
+          subtitle: "Accepted at CoRL 2026",
+          image: "/images/posters/poster-corl.svg",
+          description: [
+            "STARS: From Spatiotemporal Dynamics to Social Representations in Human-Robot Interaction.",
+            "Tsoi, N., Munje, M. J., Oberoi, T., Maheshwari, R., Zheng, P., Chauhan, T., Stone, P., Biswas, J.",
+            "Conference on Robot Learning (CoRL), 2026.",
+            "How a robot can read social context from the way people move. I built the control baselines the learned representations were measured against: a raw-feature probe and a frozen MLP-autoencoder encoder, over 260 Optuna trials and 10-seed sweeps.",
+          ],
+        },
+      },
+      {
+        id: "memeqa-acl-2025",
+        name: "memeqa-acl-2025.txt",
+        icon: "/images/txt.png",
+        kind: "file",
+        fileType: "txt",
+        position: "top-4 left-32",
+        data: {
+          name: "memeqa-acl-2025.txt",
+          subtitle: "Published at ACL 2025",
+          image: "/images/posters/poster-acl.svg",
+          description: [
+            "MemeQA: Holistic Evaluation for Meme Understanding.",
+            "Nguyen, K. P. N., Li, T., Zhou, D. L., ..., Chauhan, T., et al.",
+            "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (ACL), 2025.",
+            "A 9,000+ question multiple-choice benchmark for meme comprehension, built with Prof. Vincent Ng's group at UT Dallas. We benchmarked multimodal models against human baselines to measure the gap the dataset exists to close.",
+          ],
+        },
+      },
+      {
+        id: "stars-link",
+        name: "STARS on Scholar",
+        icon: "/icons/file.svg",
+        kind: "link",
+        fileType: "url",
+        href: "https://scholar.google.com/scholar?q=STARS+Spatiotemporal+Dynamics+Social+Representations+Human-Robot+Interaction",
+        position: "top-32 left-4",
+      },
+      {
+        id: "memeqa-link",
+        name: "MemeQA on Scholar",
+        icon: "/icons/file.svg",
+        kind: "link",
+        fileType: "url",
+        href: "https://scholar.google.com/scholar?q=MemeQA+Holistic+Evaluation+for+Meme+Understanding",
+        position: "top-32 left-32",
+      },
     ],
   },
   about: {
