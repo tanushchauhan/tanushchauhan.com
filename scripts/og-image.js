@@ -67,7 +67,7 @@ const state = JSON.stringify({
     widgetPos: {},
     soundOn: false,
   },
-  version: 2,
+  version: 3,
 });
 
 const main = async () => {
