@@ -51,7 +51,7 @@ const AboutMac = () => {
         </button>
 
         <p className="fine-print">
-          ™ and © 2026 Tanush Chauhan. Built in Austin.
+          ™ and © 2026 Tanush Chauhan.
         </p>
       </div>
     </>

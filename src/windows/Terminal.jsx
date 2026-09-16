@@ -17,7 +17,6 @@ const NEOFETCH = `
   Host      UT Austin, Dean's Scholars
   Kernel    CS Honors + Math + Robotics
   Shell     /bin/ros2
-  Uptime    building since high school
   Packages  react, ros2, supabase, postgres
   Location  Austin, TX`;
 
