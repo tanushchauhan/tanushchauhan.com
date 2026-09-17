@@ -178,3 +178,9 @@ Beyond that file, the names to change are `GITHUB_USER` in
 `server/src/auth/webauthn.ts`, the hub address at the top of
 `public/moontower/install.sh`, and the metadata in `index.html`,
 `public/sitemap.xml` and `public/robots.txt`.
+
+## License
+
+The code is MIT licensed, see `LICENSE`. The photos, the poster art, the
+wallpapers and the words are mine and are not covered by it: build your own
+desktop with this, but put your own things in it.
