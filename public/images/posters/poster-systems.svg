@@ -9,8 +9,8 @@
   <circle cx="660" cy="120" r="220" fill="#ffffff" opacity="0.08"/>
   <circle cx="120" cy="700" r="260" fill="#000000" opacity="0.10"/>
   <text x="80" y="330" font-size="170">🧩</text>
-  <text x="80" y="500" font-family="Georama, -apple-system, sans-serif" font-size="76" font-weight="800" fill="#ffffff">CS 429H</text>
+  <text x="80" y="500" font-family="Georama, -apple-system, sans-serif" font-size="76" font-weight="800" fill="#ffffff">Gates to Threads</text>
   <text x="80" y="565" font-family="Georama, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#ffffff" opacity="0.92">Processor, compiler, emulator</text>
   <rect x="80" y="630" width="640" height="70" rx="35" fill="#ffffff" opacity="0.16"/>
-  <text x="110" y="676" font-family="Georama, -apple-system, sans-serif" font-size="27" font-weight="600" fill="#ffffff">Verilog · C++ · AArch64</text>
+  <text x="110" y="676" font-family="Georama, -apple-system, sans-serif" font-size="27" font-weight="600" fill="#ffffff">CS 429H · Verilog · C++ · AArch64</text>
 </svg>

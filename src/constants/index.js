@@ -223,7 +223,7 @@ export const gallery = [
   },
   {
     id: 12,
-    name: "cs429h.png",
+    name: "gates-to-threads.png",
     group: "Projects",
     image: "/images/posters/poster-systems.svg",
   },
@@ -487,15 +487,15 @@ export const locations = {
       ),
       project(
         "systems",
-        "CS 429H",
+        "Gates to Threads",
         "top-[6vh] right-[18vw]",
         "top-76 left-4",
         {
-          name: "CS 429H · about.txt",
-          subtitle: "A processor, a compiler, and an emulator",
+          name: "Gates to Threads · about.txt",
+          subtitle: "A processor, a compiler, and an emulator · CS 429H",
           image: "/images/posters/poster-systems.svg",
           description: [
-            "Three semester projects that go from gates up to threads.",
+            "Three projects for CS 429H, the honors architecture course, that go from gates up to threads.",
             "A pipelined 16-bit processor in Verilog, with forwarding and hazard detection so instructions keep issuing through dependencies.",
             "An optimizing x86-64 compiler in C++ for a statically typed subset of Python.",
             "A multithreaded AArch64 emulator using lock-free synchronization across four OS threads.",
@@ -511,7 +511,7 @@ export const locations = {
             fileType: "img",
             position: "top-4 left-32",
             data: {
-              name: "cs 429h · poster.png",
+              name: "gates to threads · poster.png",
               imageUrl: "/images/posters/poster-systems.svg",
             },
           },
