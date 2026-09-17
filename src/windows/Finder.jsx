@@ -2,6 +2,7 @@ import { Search } from "lucide-react";
 import clsx from "clsx";
 import WindowWrapper from "#hoc/WindowWrapper.jsx";
 import { WindowControls } from "#components";
+import AppIcon from "#components/AppIcon.jsx";
 import { locations } from "#constants";
 import useWindowStore, { FINDER_KEYS } from "#store/window.js";
 
@@ -33,7 +34,7 @@ const Finder = ({ windowKey }) => {
             )}
             onClick={() => navigateTo(item)}
           >
-            <img src={item.icon} className="w-4" alt={item.name} />
+            <AppIcon icon={item.icon} className="w-4" alt={item.name} />
             <p>{item.name}</p>
           </li>
         ))}
@@ -62,8 +63,8 @@ const Finder = ({ windowKey }) => {
               className={item.position}
               onClick={() => openItem(item)}
             >
-              <img
-                src={item.icon}
+              <AppIcon
+                icon={item.icon}
                 alt={item.name}
                 className={clsx(item.kind === "link" && "link-chip")}
               />

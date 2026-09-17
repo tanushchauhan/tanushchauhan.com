@@ -23,12 +23,24 @@ const THEMES = [
   { value: "dark", label: "Dark", icon: Moon },
 ];
 
+/* How much of the desktop shows through the chrome, the way the slider in
+   macOS 27 runs from clear glass to fully tinted. The chip on each button is
+   drawn at the opacity that choice gives the glass, so the row previews
+   itself. */
+const GLASS = [
+  { value: "clear", label: "Clear", chip: 0.24 },
+  { value: "regular", label: "Regular", chip: 0.5 },
+  { value: "tinted", label: "Tinted", chip: 0.84 },
+];
+
 const ControlCenter = () => {
   const {
     controlCenterOpen,
     setControlCenter,
     theme,
     setTheme,
+    glass,
+    setGlass,
     wallpaper,
     setWallpaper,
     soundOn,
@@ -79,6 +91,24 @@ const ControlCenter = () => {
               onClick={() => setTheme(value)}
             >
               <Icon className="size-4" />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="cc-tile">
+        <p className="cc-label">Liquid Glass</p>
+        <div className="cc-glass">
+          {GLASS.map(({ value, label, chip }) => (
+            <button
+              key={value}
+              type="button"
+              className={clsx(glass === value && "on")}
+              aria-pressed={glass === value}
+              onClick={() => setGlass(value)}
+            >
+              <span className="chip" style={{ "--chip": chip }} aria-hidden="true" />
               <span>{label}</span>
             </button>
           ))}

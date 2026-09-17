@@ -5,6 +5,7 @@ import { useGSAP } from "@gsap/react";
 import clsx from "clsx";
 import { locations } from "#constants";
 import useWindowStore from "#store/window.js";
+import AppIcon from "./AppIcon.jsx";
 
 gsap.registerPlugin(Draggable);
 
@@ -17,7 +18,7 @@ const Home = () => {
     openFinderWindow({
       id: folder.id,
       name: folder.name,
-      icon: "/images/folder.png",
+      icon: "folder",
       kind: "folder",
       children: [],
     });
@@ -55,7 +56,7 @@ const Home = () => {
             className={clsx("group folder", project.windowPosition)}
             onClick={() => openFinderWindow(project)}
           >
-            <img src="/images/folder.png" alt={project.name} />
+            <AppIcon icon="folder" />
             <p>{project.name}</p>
           </li>
         ))}
@@ -68,7 +69,7 @@ const Home = () => {
             style={{ left: folder.x, top: folder.y }}
             onClick={() => openUserFolder(folder)}
           >
-            <img src="/images/folder.png" alt={folder.name} />
+            <AppIcon icon="folder" />
             <p>{folder.name}</p>
           </li>
         ))}

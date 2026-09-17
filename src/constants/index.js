@@ -36,25 +36,33 @@ export const wallpapers = [
     note: "No scenery, for when the windows are the subject",
     light: "/images/wallpaper-graphite.svg",
     dark: "/images/wallpaper-graphite-night.svg",
+    // the one daytime sky that is pale at the top, so the menu bar over it
+    // takes dark ink; every night version is dark up there
+    paleSky: true,
   },
 ];
 
 export const DEFAULT_WALLPAPER = wallpapers[0].id;
 
+const wallpaperById = (id) => wallpapers.find((w) => w.id === id) ?? wallpapers[0];
+
 /** Falls back rather than throwing: a saved id can outlive its wallpaper. */
 export const wallpaperFor = (id, dark) => {
-  const paper = wallpapers.find((w) => w.id === id) ?? wallpapers[0];
+  const paper = wallpaperById(id);
   return dark ? paper.dark : paper.light;
 };
 
+/** Whether the resolved wallpaper is light where the menu bar sits. */
+export const paleSky = (id, dark) => !dark && Boolean(wallpaperById(id).paleSky);
+
 export const dockApps = [
-  { id: "finder", name: "Projects", icon: "finder.png", canOpen: true },
-  { id: "safari", name: "Highlights", icon: "safari.png", canOpen: true },
-  { id: "photos", name: "Gallery", icon: "photos.png", canOpen: true },
-  { id: "terminal", name: "Terminal", icon: "terminal.png", canOpen: true },
-  { id: "contact", name: "Contact", icon: "contact.png", canOpen: true },
-  { id: "guestbook", name: "Guestbook", icon: "guestbook.svg", canOpen: true },
-  { id: "trash", name: "Trash", icon: "trash.png", canOpen: true },
+  { id: "finder", name: "Projects", icon: "finder", canOpen: true },
+  { id: "safari", name: "Highlights", icon: "safari", canOpen: true },
+  { id: "photos", name: "Gallery", icon: "photos", canOpen: true },
+  { id: "terminal", name: "Terminal", icon: "terminal", canOpen: true },
+  { id: "contact", name: "Contact", icon: "contact", canOpen: true },
+  { id: "guestbook", name: "Guestbook", icon: "guestbook", canOpen: true },
+  { id: "trash", name: "Trash", icon: "trash", canOpen: true },
 ];
 
 export const techStack = [
@@ -250,7 +258,7 @@ const project = (id, name, windowPosition, position, about, links = []) => ({
   id,
   type: id,
   name,
-  icon: "/images/folder.png",
+  icon: "folder",
   kind: "folder",
   windowPosition,
   position,
@@ -258,7 +266,7 @@ const project = (id, name, windowPosition, position, about, links = []) => ({
     {
       id: `${id}-about`,
       name: "about.txt",
-      icon: "/images/txt.png",
+      icon: "txt",
       kind: "file",
       fileType: "txt",
       position: "top-4 left-4",
@@ -305,7 +313,7 @@ export const locations = {
           {
             id: "crave-img",
             name: "preview.jpg",
-            icon: "/images/image.png",
+            icon: "image",
             kind: "file",
             fileType: "img",
             position: "top-4 left-60",
@@ -344,7 +352,7 @@ export const locations = {
           {
             id: "shoo-img",
             name: "preview.jpg",
-            icon: "/images/image.png",
+            icon: "image",
             kind: "file",
             fileType: "img",
             position: "top-4 left-60",
@@ -474,7 +482,7 @@ export const locations = {
           {
             id: "eye-tracker-img",
             name: "poster.png",
-            icon: "/images/image.png",
+            icon: "image",
             kind: "file",
             fileType: "img",
             position: "top-4 left-32",
@@ -506,7 +514,7 @@ export const locations = {
           {
             id: "systems-img",
             name: "poster.png",
-            icon: "/images/image.png",
+            icon: "image",
             kind: "file",
             fileType: "img",
             position: "top-4 left-32",
@@ -529,7 +537,7 @@ export const locations = {
       {
         id: "stars-corl-2026",
         name: "stars-corl-2026.txt",
-        icon: "/images/txt.png",
+        icon: "txt",
         kind: "file",
         fileType: "txt",
         position: "top-4 left-4",
@@ -549,7 +557,7 @@ export const locations = {
       {
         id: "memeqa-acl-2025",
         name: "memeqa-acl-2025.txt",
-        icon: "/images/txt.png",
+        icon: "txt",
         kind: "file",
         fileType: "txt",
         position: "top-4 left-32",
@@ -595,7 +603,7 @@ export const locations = {
       {
         id: "about-me",
         name: "about-me.txt",
-        icon: "/images/txt.png",
+        icon: "txt",
         kind: "file",
         fileType: "txt",
         position: "top-4 left-4",
@@ -615,7 +623,7 @@ export const locations = {
       {
         id: "fun-facts",
         name: "fun-facts.txt",
-        icon: "/images/txt.png",
+        icon: "txt",
         kind: "file",
         fileType: "txt",
         position: "top-4 left-32",
@@ -633,7 +641,7 @@ export const locations = {
       {
         id: "avatar-img",
         name: "me.png",
-        icon: "/images/image.png",
+        icon: "image",
         kind: "file",
         fileType: "img",
         position: "top-4 left-60",
@@ -642,7 +650,7 @@ export const locations = {
       {
         id: "poster",
         name: "get-to-know-me.png",
-        icon: "/images/image.png",
+        icon: "image",
         kind: "file",
         fileType: "img",
         position: "top-32 left-4",
@@ -663,7 +671,7 @@ export const locations = {
       {
         id: "old-portfolio",
         name: "boring_portfolio_v1.txt",
-        icon: "/images/txt.png",
+        icon: "txt",
         kind: "file",
         fileType: "txt",
         position: "top-4 left-4",
@@ -683,7 +691,7 @@ export const locations = {
       {
         id: "centering-div",
         name: "how_to_center_a_div.txt",
-        icon: "/images/txt.png",
+        icon: "txt",
         kind: "file",
         fileType: "txt",
         position: "top-4 left-32",

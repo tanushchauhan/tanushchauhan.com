@@ -2,8 +2,9 @@ import { openPage, seed, storedState, settled } from "../lib/harness.js";
 
 export const name = "control center: appearance, wallpaper, sound";
 
+// the wallpaper is painted on the root so the transparent menu bar sits on it
 const wallpaperOf = (page) =>
-  page.$eval("main", (el) => getComputedStyle(el).backgroundImage);
+  page.$eval("#root", (el) => getComputedStyle(el).backgroundImage);
 const isDark = (page) =>
   page.evaluate(() => document.documentElement.classList.contains("dark"));
 
@@ -35,6 +36,25 @@ export const run = async ({ browser, t }) => {
   await page.waitForTimeout(400);
   t.check("light applies", !(await isDark(page)));
   t.check("and swaps back to the day one", (await wallpaperOf(page)).includes("austin.svg"));
+
+  // ---------- glass ----------
+  const glassOf = () => page.evaluate(() => document.documentElement.dataset.glass);
+  t.check("three glass levels are offered", (await page.$$(".cc-glass button")).length === 3);
+  t.check("regular is the default", (await glassOf()) === "regular");
+  await page.click(".cc-glass button:nth-child(1)"); // Clear
+  await page.waitForTimeout(300);
+  t.check("clear applies to the root", (await glassOf()) === "clear");
+  t.check(
+    "and the chrome gets thinner",
+    parseFloat(await page.$eval(".dock-container", (el) => getComputedStyle(el).getPropertyValue("--glass-alpha"))) < 0.3
+  );
+  await page.click(".cc-glass button:nth-child(3)"); // Tinted
+  await page.waitForTimeout(300);
+  t.check("tinted applies", (await glassOf()) === "tinted");
+  t.check(
+    "and the menu bar grows a band",
+    (await page.$eval("nav", (el) => getComputedStyle(el).backdropFilter)) !== "none"
+  );
 
   // ---------- wallpaper ----------
   t.check("every wallpaper is offered", (await page.$$(".cc-paper")).length === 3);
@@ -120,6 +140,7 @@ export const run = async ({ browser, t }) => {
   const after = await storedState(page);
   t.check("the wallpaper is remembered", after.wallpaper === "graphite", after.wallpaper);
   t.check("the theme is remembered", after.theme === before.theme);
+  t.check("the glass level is remembered", after.glass === "tinted", after.glass);
   t.check("the panel does not reopen itself", !(await page.isVisible(".control-center")));
   t.check("and the desktop comes back with the chosen wallpaper", (await wallpaperOf(page)).includes("graphite"));
 

@@ -13,6 +13,11 @@ Austin), and live at [tanushchauhan.com](https://tanushchauhan.com).
 **The desktop**
 
 - A boot screen, once per session, with a chime if sound is on
+- Liquid Glass chrome, the way macOS has looked since Tahoe: a transparent
+  menu bar, a glass dock, windows with a frosted toolbar and a solid body,
+  and app icons drawn as layered tiles. Control Center has the same slider
+  macOS 27 added, from clear glass to fully tinted, and the tinted look is
+  what anyone who has asked their OS for less transparency gets.
 - Wallpapers that come in light and dark pairs, chosen from a Control Center
   that also holds the theme and the sound switch
 - Windows you can drag by the title bar, resize from any edge or corner,
@@ -174,7 +179,9 @@ tests/          the browser suite
 Almost everything personal lives in `src/constants/index.js`: projects,
 publications, highlights, socials, tech stack, and the Finder file system. The
 poster SVGs are in `public/images/posters/` and the wallpapers in
-`public/images/`.
+`public/images/`. The app icons are not images: each is a tile drawn in CSS
+with a small SVG glyph in `src/components/AppIcon.jsx`, and the glass tokens
+that every surface reads sit at the top of `src/index.css`.
 
 Beyond that file, the names to change are `GITHUB_USER` in
 `server/src/routes/widgets.ts`, the relying party name and user in

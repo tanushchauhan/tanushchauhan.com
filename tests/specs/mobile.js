@@ -84,7 +84,7 @@ export const run = async ({ browser, t }) => {
   // ---------- settings ----------
   await page.evaluate(() => document.querySelector(".m-pages").scrollTo({ left: 9999, behavior: "instant" }));
   await page.waitForTimeout(500);
-  await page.click(".m-app:has(.settings-tile)");
+  await page.click('.m-app:has([data-icon="settings"])');
   await page.waitForTimeout(900);
 
   // the section labels are uppercased in CSS and innerText reports the
@@ -98,7 +98,8 @@ export const run = async ({ browser, t }) => {
   const paper = () => page.$eval("#mobile", (el) => getComputedStyle(el).backgroundImage);
   t.check("it starts on austin", (await paper()).includes("austin"));
 
-  await page.click(".m-settings:nth-of-type(2) li:nth-child(2)");
+  // the lists, in order: appearance, glass, wallpaper, sound
+  await page.click(".m-settings:nth-of-type(3) li:nth-child(2)");
   await page.waitForTimeout(700);
   t.check("picking one changes the phone wallpaper", (await paper()).includes("bluebonnet"));
 
@@ -106,8 +107,15 @@ export const run = async ({ browser, t }) => {
   await page.waitForTimeout(700);
   t.check("dark uses the night half of the same one", (await paper()).includes("bluebonnet-night"));
 
+  await page.click(".m-settings:nth-of-type(2) li:nth-child(1)");
+  await page.waitForTimeout(400);
+  t.check(
+    "the glass row applies to the root",
+    (await page.evaluate(() => document.documentElement.dataset.glass)) === "clear"
+  );
+
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem("tanushos-v1")).state.soundOn);
-  await page.click(".m-settings:nth-of-type(3) li");
+  await page.click(".m-settings:nth-of-type(4) li");
   await page.waitForTimeout(400);
   const after = await page.evaluate(() => JSON.parse(localStorage.getItem("tanushos-v1")).state.soundOn);
   t.check("the sound row toggles", after === !before);

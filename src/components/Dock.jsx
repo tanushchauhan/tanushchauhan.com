@@ -6,18 +6,19 @@ import clsx from "clsx";
 import { dockApps } from "#constants";
 import useWindowStore, { FINDER_KEYS } from "#store/window.js";
 import { locations } from "#constants";
+import AppIcon from "./AppIcon.jsx";
 
 const MIN_WINDOW_META = {
-  finder: { icon: "/images/finder.png", name: "Projects" },
-  finder2: { icon: "/images/finder.png", name: "Projects" },
-  finder3: { icon: "/images/finder.png", name: "Projects" },
-  safari: { icon: "/images/safari.png", name: "Highlights" },
-  photos: { icon: "/images/photos.png", name: "Gallery" },
-  terminal: { icon: "/images/terminal.png", name: "Terminal" },
-  contact: { icon: "/images/contact.png", name: "Contact" },
-  guestbook: { icon: "/images/guestbook.svg", name: "Guestbook" },
-  txtFile: { icon: "/images/txt.png", name: "Text" },
-  imgFile: { icon: "/images/image.png", name: "Image" },
+  finder: { icon: "finder", name: "Projects" },
+  finder2: { icon: "finder", name: "Projects" },
+  finder3: { icon: "finder", name: "Projects" },
+  safari: { icon: "safari", name: "Highlights" },
+  photos: { icon: "photos", name: "Gallery" },
+  terminal: { icon: "terminal", name: "Terminal" },
+  contact: { icon: "contact", name: "Contact" },
+  guestbook: { icon: "guestbook", name: "Guestbook" },
+  txtFile: { icon: "txt", name: "Text" },
+  imgFile: { icon: "image", name: "Image" },
   about: { icon: "/images/avatar-tanush.svg", name: "About This Mac" },
 };
 
@@ -113,12 +114,7 @@ const Dock = () => {
               disabled={!app.canOpen}
               onClick={() => toggleApp(app)}
             >
-              <img
-                src={`/images/${app.icon}`}
-                alt={app.name}
-                loading="lazy"
-                className={clsx(!app.canOpen && "opacity-60")}
-              />
+              <AppIcon icon={app.icon} alt={app.name} className={clsx(!app.canOpen && "opacity-60")} />
             </button>
             {(app.id === "finder"
               ? FINDER_KEYS.some((k) => windows[k].isOpen)
@@ -128,7 +124,7 @@ const Dock = () => {
 
         {minimized.length > 0 && <span className="dock-divider" />}
         {minimized.map(([key, win]) => {
-          const meta = MIN_WINDOW_META[key] ?? { icon: "/images/txt.png", name: key };
+          const meta = MIN_WINDOW_META[key] ?? { icon: "txt", name: key };
           const name = win.data?.name ?? meta.name;
           return (
             <div key={key} className="relative flex justify-center">
@@ -147,7 +143,7 @@ const Dock = () => {
                   <i />
                   <i />
                 </span>
-                <img src={meta.icon} alt={name} />
+                <AppIcon icon={meta.icon} alt={name} />
               </button>
             </div>
           );

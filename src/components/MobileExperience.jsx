@@ -6,7 +6,6 @@ import {
   BatteryFull,
   ChevronLeft,
   MoveRight,
-  Settings as SettingsIcon,
   Sun,
   Moon,
   MonitorCog,
@@ -20,19 +19,20 @@ import { locations, highlights, gallery, techStack, socials, wallpapers } from "
 import { TerminalBody } from "#windows/Terminal.jsx";
 import { GuestbookBody } from "#windows/Guestbook.jsx";
 import { MobileWidgets, MobileSystem } from "./widgets/Widgets.jsx";
+import AppIcon from "./AppIcon.jsx";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 
 /* ---------------- app registry ---------------- */
 const APPS = [
-  { id: "projects", name: "Projects", icon: "/images/finder.png" },
-  { id: "highlights", name: "Highlights", icon: "/images/safari.png" },
-  { id: "gallery", name: "Gallery", icon: "/images/photos.png" },
-  { id: "terminal", name: "Terminal", icon: "/images/terminal.png" },
-  { id: "contact", name: "Contact", icon: "/images/contact.png" },
-  { id: "guestbook", name: "Guestbook", icon: "/images/guestbook.svg" },
+  { id: "projects", name: "Projects", icon: "finder" },
+  { id: "highlights", name: "Highlights", icon: "safari" },
+  { id: "gallery", name: "Gallery", icon: "photos" },
+  { id: "terminal", name: "Terminal", icon: "terminal" },
+  { id: "contact", name: "Contact", icon: "contact" },
+  { id: "guestbook", name: "Guestbook", icon: "guestbook" },
   { id: "about", name: "About Me", icon: "/images/avatar-tanush.svg" },
-  { id: "settings", name: "Settings", icon: null },
+  { id: "settings", name: "Settings", icon: "settings" },
 ];
 
 const DOCK_APPS = ["projects", "terminal", "contact"];
@@ -111,8 +111,8 @@ const ProjectsApp = () => {
       <ul className="m-list">
         {items.map((item) => (
           <li key={item.id} onClick={() => openItem(item)}>
-            <img
-              src={item.icon}
+            <AppIcon
+              icon={item.icon}
               alt={item.name}
               className={clsx(item.kind === "link" && "link-chip")}
             />
@@ -251,12 +251,17 @@ const AboutApp = () => {
 /* The phone's half of the Control Center. Same three settings, in the shape a
    phone expects them: a list of rows rather than a panel of tiles. */
 const SettingsApp = () => {
-  const { theme, setTheme, wallpaper, setWallpaper, soundOn, toggleSound } =
+  const { theme, setTheme, glass, setGlass, wallpaper, setWallpaper, soundOn, toggleSound } =
     useWindowStore();
   const options = [
     { value: "auto", label: "Auto", icon: MonitorCog, note: "Match this device" },
     { value: "light", label: "Light", icon: Sun, note: "Daytime, whichever wallpaper" },
     { value: "dark", label: "Dark", icon: Moon, note: "After dark, whichever wallpaper" },
+  ];
+  const glassOptions = [
+    { value: "clear", label: "Clear", note: "The wallpaper shows through", chip: 0.24 },
+    { value: "regular", label: "Regular", note: "Frosted, the default", chip: 0.5 },
+    { value: "tinted", label: "Tinted", note: "Nearly solid, easiest to read", chip: 0.84 },
   ];
   return (
     <div className="m-scroll p-4">
@@ -270,6 +275,20 @@ const SettingsApp = () => {
               <p className="sub">{note}</p>
             </div>
             {theme === value && <Check className="ml-auto size-5 text-burnt" />}
+          </li>
+        ))}
+      </ul>
+
+      <p className="m-section-label">Liquid Glass</p>
+      <ul className="m-settings">
+        {glassOptions.map(({ value, label, note, chip }) => (
+          <li key={value} onClick={() => setGlass(value)}>
+            <span className="m-glass-chip" style={{ "--chip": chip }} aria-hidden="true" />
+            <div>
+              <p className="title">{label}</p>
+              <p className="sub">{note}</p>
+            </div>
+            {glass === value && <Check className="ml-auto size-5 shrink-0 text-burnt" />}
           </li>
         ))}
       </ul>
@@ -325,15 +344,9 @@ const APP_SCREENS = {
 /** Loosest first. Each rung gives up a little more of the home page's air. */
 const FIT_TIERS = ["", "tight", "compact", "bare"];
 
-const AppIcon = ({ app, onOpen }) => (
+const SpringboardIcon = ({ app, onOpen }) => (
   <button type="button" className="m-app" onClick={() => onOpen(app.id)}>
-    {app.icon ? (
-      <img src={app.icon} alt={app.name} />
-    ) : (
-      <span className="settings-tile">
-        <SettingsIcon className="size-8 text-white" />
-      </span>
-    )}
+    <AppIcon icon={app.icon} alt={app.name} />
     <p>{app.name}</p>
   </button>
 );
@@ -431,7 +444,7 @@ const MobileExperience = () => {
           <section className="m-page">
             <div className="m-grid">
               {APPS.filter((a) => !DOCK_APPS.includes(a.id)).map((a) => (
-                <AppIcon key={a.id} app={a} onOpen={setActiveApp} />
+                <SpringboardIcon key={a.id} app={a} onOpen={setActiveApp} />
               ))}
             </div>
           </section>
@@ -461,7 +474,7 @@ const MobileExperience = () => {
 
         <div className="m-dock">
           {APPS.filter((a) => DOCK_APPS.includes(a.id)).map((a) => (
-            <AppIcon key={a.id} app={a} onOpen={setActiveApp} />
+            <SpringboardIcon key={a.id} app={a} onOpen={setActiveApp} />
           ))}
         </div>
       </div>

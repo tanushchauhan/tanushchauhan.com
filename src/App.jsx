@@ -25,12 +25,13 @@ import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { setSoundEnabled } from "./utils/sound.js";
 import { registerVisit } from "./utils/visit.js";
-import { wallpaperFor } from "#constants";
+import { paleSky, wallpaperFor } from "#constants";
 
 const MOBILE_QUERY = "(max-width: 767px)";
 
 const App = () => {
   const theme = useWindowStore((state) => state.theme);
+  const glass = useWindowStore((state) => state.glass);
   const wallpaper = useWindowStore((state) => state.wallpaper);
   const soundOn = useWindowStore((state) => state.soundOn);
 
@@ -57,21 +58,23 @@ const App = () => {
 
   // theme and wallpaper together, because the wallpaper depends on which one
   // won: every wallpaper is a light/dark pair, and this is the only place that
-  // knows whether "auto" resolved to dark on this device right now
+  // knows whether "auto" resolved to dark on this device right now. The menu
+  // bar is transparent, so its ink is picked here too, from whether the
+  // resolved wallpaper is pale at the top.
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
       const dark = theme === "dark" || (theme === "auto" && media.matches);
-      document.documentElement.classList.toggle("dark", dark);
-      document.documentElement.style.setProperty(
-        "--wallpaper",
-        `url("${wallpaperFor(wallpaper, dark)}")`
-      );
+      const root = document.documentElement;
+      root.classList.toggle("dark", dark);
+      root.dataset.glass = glass;
+      root.dataset.bar = paleSky(wallpaper, dark) ? "dark" : "light";
+      root.style.setProperty("--wallpaper", `url("${wallpaperFor(wallpaper, dark)}")`);
     };
     apply();
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
-  }, [theme, wallpaper]);
+  }, [theme, glass, wallpaper]);
 
   if (isMobile) {
     return (

@@ -7,6 +7,133 @@
   --font-georama: "Georama", sans-serif;
   --color-burnt: #bf5700;
   --color-burnt-light: #ff8a3d;
+
+  /* One radius per kind of thing, and every window shares the first. The
+     panels and menus are a little rounder than the windows, the dock is a
+     pill, and anything inset takes its container's radius minus the gap. */
+  --radius-window: 20px;
+  --radius-panel: 22px;
+  --radius-dock: 30px;
+  --radius-menu: 14px;
+}
+
+/* Ink is whatever reads on glass: black over a light tint, white over a dark
+   one. `text-ink/60` and friends follow the theme without a dark: variant.
+   Inline, so a surface that sets its own --glass-ink gets matching text. */
+@theme inline {
+  --color-ink: rgb(var(--glass-ink));
+}
+
+/* ---------------- glass ----------------
+   The chrome is glass: a tint over a blur, a bright rim where the light
+   catches the edge, and a soft shadow lifting it off the desktop. Every
+   surface reads the same handful of variables, so the theme swaps the tint
+   and the Control Center's glass setting swaps how much shows through.
+
+   Content is not glass. Text sits on --surface, which is nearly solid, the
+   way a window's body stays readable however busy the wallpaper is. */
+:root {
+  --glass-tint: 255 255 255;
+  --glass-ink: 0 0 0;
+  --glass-alpha: 0.5;
+  --glass-blur: 36px;
+  --glass-rim: 0.65; /* the 1px highlight along the top edge */
+  --glass-edge: 0.45; /* the gradient ring around the whole frame */
+  --glass-fg: rgb(var(--glass-ink) / 0.85);
+  --glass-fg-2: rgb(var(--glass-ink) / 0.55);
+  --glass-line: rgb(var(--glass-ink) / 0.08);
+  --surface: rgb(255 255 255 / 0.94);
+  --surface-2: rgb(0 0 0 / 0.045);
+
+  /* the menu bar has no background of its own, so its ink is chosen by the
+     wallpaper under it; App sets data-bar from the wallpaper's own note */
+  --bar-fg: rgb(255 255 255 / 0.92);
+  --bar-invert: 1;
+}
+
+:root[data-glass="clear"] {
+  --glass-alpha: 0.24;
+  --glass-blur: 24px;
+}
+
+:root[data-glass="tinted"] {
+  --glass-alpha: 0.84;
+  --glass-blur: 40px;
+}
+
+.dark {
+  --glass-tint: 30 30 34;
+  --glass-ink: 255 255 255;
+  --glass-alpha: 0.56;
+  --glass-rim: 0.22;
+  --glass-edge: 0.2;
+  --glass-fg: rgb(var(--glass-ink) / 0.9);
+  --glass-fg-2: rgb(var(--glass-ink) / 0.6);
+  --glass-line: rgb(var(--glass-ink) / 0.1);
+  --surface: rgb(28 28 30 / 0.94);
+  --surface-2: rgb(255 255 255 / 0.06);
+}
+
+.dark[data-glass="clear"] {
+  --glass-alpha: 0.32;
+}
+
+.dark[data-glass="tinted"] {
+  --glass-alpha: 0.88;
+}
+
+:root[data-bar="dark"] {
+  --bar-fg: rgb(0 0 0 / 0.85);
+  --bar-invert: 0;
+}
+
+/* tinted glass gives the menu bar a band of its own, so the ink follows the
+   theme rather than the wallpaper */
+:root[data-glass="tinted"] {
+  --bar-fg: var(--glass-fg);
+  --bar-invert: 0;
+}
+
+.dark[data-glass="tinted"] {
+  --bar-invert: 1;
+}
+
+/* the system setting wins over ours: someone who has asked their OS for less
+   transparency gets the tinted look whatever the Control Center says */
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  :root[data-glass],
+  .dark,
+  .dark[data-glass] {
+    --glass-alpha: 0.92;
+    --glass-blur: 40px;
+  }
+}
+
+/* The recipe. The tint is painted on the padding box and the rim on the
+   border box, so the 1px border shows the blurred backdrop through a gradient
+   that is brightest at the top left, where the light comes from. A surface
+   can dim or brighten itself with --alpha without touching the theme. */
+@utility glass {
+  --glass-fill: rgb(var(--glass-tint) / var(--alpha, var(--glass-alpha)));
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--glass-fill) 0 0) padding-box,
+    linear-gradient(
+        135deg,
+        rgb(255 255 255 / calc(var(--glass-edge) + 0.3)),
+        rgb(255 255 255 / calc(var(--glass-edge) * 0.35)) 35%,
+        rgb(255 255 255 / calc(var(--glass-edge) * 0.2)) 65%,
+        rgb(255 255 255 / var(--glass-edge))
+      )
+      border-box;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / var(--glass-rim)),
+    0 1px 2px rgb(0 0 0 / 0.08),
+    0 14px 40px rgb(0 0 0 / 0.22);
+  color: var(--glass-fg);
 }
 
 html,
@@ -26,23 +153,43 @@ body {
   @apply bg-[#0b0c1e];
 }
 
-#root {
-  @apply flex h-dvh w-dvw flex-col;
-}
-
 /* --wallpaper is set on the root by App, which is the only place that knows
    both which wallpaper is chosen and whether the theme resolved to dark. The
    fallback is the default pair, so the first paint has a sky before the effect
-   has run. */
-main {
-  @apply relative w-full flex-1 overflow-hidden bg-cover bg-center;
+   has run. It is painted on the root rather than on main so the menu bar,
+   which has no background of its own, sits on the wallpaper too. */
+#root {
+  @apply flex h-dvh w-dvw flex-col bg-cover bg-center;
   background-image: var(--wallpaper, url("/images/wallpaper-austin.svg"));
   transition: background-image 0.3s ease;
 }
 
-/* ---------------- navbar ---------------- */
+main {
+  @apply relative w-full flex-1 overflow-hidden;
+}
+
+/* ---------------- navbar ----------------
+   Transparent, the way the Tahoe menu bar is: the wallpaper runs right up to
+   the top of the screen and the text sits on it with a shadow for legibility.
+   The ink comes from --bar-fg, which follows the wallpaper. */
 nav {
-  @apply relative z-[5000] flex items-center justify-between bg-white/40 px-5 py-1.5 shadow-sm backdrop-blur-2xl dark:bg-[#1c1c20]/80;
+  @apply relative z-[5000] flex items-center justify-between px-5 py-1.5;
+  color: var(--bar-fg);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+}
+
+:root[data-bar="dark"] nav {
+  text-shadow: none;
+}
+
+/* tinted glass: a frosted band, which is what macOS draws when the menu bar
+   background is switched on */
+:root[data-glass="tinted"] nav {
+  background: rgb(var(--glass-tint) / 0.72);
+  -webkit-backdrop-filter: blur(30px) saturate(1.4);
+  backdrop-filter: blur(30px) saturate(1.4);
+  box-shadow: 0 1px 0 var(--glass-line);
+  text-shadow: none;
 }
 
 nav .nav-left {
@@ -54,7 +201,7 @@ nav .nav-left ul {
 }
 
 nav .nav-left ul li {
-  @apply cursor-pointer text-sm font-medium text-black/80 transition-colors hover:text-black dark:text-white/80 dark:hover:text-white;
+  @apply cursor-pointer text-sm font-medium opacity-85 transition-opacity hover:opacity-100;
 }
 
 nav .nav-right {
@@ -66,45 +213,68 @@ nav .nav-right ul {
 }
 
 nav time {
-  @apply text-sm font-medium text-black/80 tabular-nums dark:text-white/80;
+  @apply text-sm font-medium tabular-nums opacity-85;
+}
+
+/* black glyphs in the SVGs; inverted whenever the bar's ink is white */
+.bar-glyph {
+  filter: invert(var(--bar-invert)) drop-shadow(0 1px 1px rgb(0 0 0 / 0.2));
 }
 
 .icon-hover {
-  @apply size-4 cursor-pointer opacity-70 transition-opacity hover:opacity-100 dark:invert;
+  @apply size-4 cursor-pointer opacity-80 transition-opacity hover:opacity-100;
 }
 
 /* ---------------- control center ---------------- */
 .cc-trigger {
-  @apply flex cursor-pointer items-center justify-center rounded-md p-0.5 text-black/70 opacity-70 transition-opacity hover:opacity-100 dark:text-white/80;
+  @apply flex cursor-pointer items-center justify-center rounded-md p-0.5 opacity-80 transition-opacity hover:opacity-100;
 }
 
 .cc-trigger.on {
-  @apply bg-black/10 opacity-100 dark:bg-white/15;
+  @apply bg-ink/10 opacity-100;
 }
 
 .control-center {
-  @apply absolute top-7 right-0 z-[7000] w-72 space-y-2 rounded-2xl border border-black/10 bg-white/70 p-2 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-800/80;
+  @apply absolute top-7 right-0 z-[7000] w-72 space-y-2 rounded-panel p-2;
+  @apply glass;
 }
 
+/* concentric: the panel's radius less the padding around the tile */
 .cc-tile {
-  @apply rounded-xl bg-white/60 p-2.5 dark:bg-white/5;
+  @apply rounded-[14px] p-2.5;
+  background: var(--surface-2);
 }
 
 .cc-label {
-  @apply text-[11px] font-semibold tracking-wide text-neutral-500 uppercase dark:text-neutral-400;
+  @apply text-[11px] font-semibold tracking-wide text-ink/55 uppercase;
 }
 
-/* appearance: three across, the chosen one filled */
-.cc-segmented {
+/* appearance and glass: three across, the chosen one filled */
+.cc-segmented,
+.cc-glass {
   @apply mt-2 grid grid-cols-3 gap-1;
 }
 
-.cc-segmented button {
-  @apply flex cursor-pointer flex-col items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-medium text-neutral-600 transition-colors hover:bg-black/5 dark:text-neutral-300 dark:hover:bg-white/10;
+.cc-segmented button,
+.cc-glass button {
+  @apply flex cursor-pointer flex-col items-center gap-1 rounded-lg px-1 py-2 text-[11px] font-medium text-ink/70 transition-colors hover:bg-ink/5;
 }
 
-.cc-segmented button.on {
+.cc-segmented button.on,
+.cc-glass button.on {
   @apply bg-burnt text-white hover:bg-burnt;
+}
+
+/* the glass buttons show their own setting: a small tile that is the amount
+   of see-through each choice gives */
+.cc-glass .chip {
+  @apply size-5 rounded-md;
+  border: 1px solid rgb(var(--glass-ink) / 0.2);
+  background: rgb(var(--glass-tint) / var(--chip));
+}
+
+.cc-glass button.on .chip {
+  border-color: rgb(255 255 255 / 0.6);
 }
 
 .cc-papers {
@@ -118,7 +288,7 @@ nav time {
 /* the swatch is the light and dark halves side by side, split down the middle,
    so a wallpaper is shown as the pair it is */
 .cc-paper .swatch {
-  @apply relative flex h-11 w-full overflow-hidden rounded-lg ring-1 ring-black/10 transition-all dark:ring-white/15;
+  @apply relative flex h-11 w-full overflow-hidden rounded-lg ring-1 ring-ink/15 transition-all;
 }
 
 .cc-paper .swatch img {
@@ -134,15 +304,15 @@ nav time {
 }
 
 .cc-paper .name {
-  @apply text-[11px] font-medium text-neutral-600 dark:text-neutral-300;
+  @apply text-[11px] font-medium text-ink/65;
 }
 
 .cc-paper.on .name {
-  @apply text-neutral-900 dark:text-white;
+  @apply text-ink;
 }
 
 .cc-row {
-  @apply flex w-full cursor-pointer items-center gap-2.5 text-neutral-700 dark:text-neutral-200;
+  @apply flex w-full cursor-pointer items-center gap-2.5 text-ink/80;
 }
 
 .cc-row .cc-label {
@@ -150,7 +320,7 @@ nav time {
 }
 
 .cc-switch {
-  @apply flex h-5 w-9 shrink-0 items-center rounded-full bg-black/15 p-0.5 transition-colors dark:bg-white/20;
+  @apply flex h-5 w-9 shrink-0 items-center rounded-full bg-ink/15 p-0.5 transition-colors;
 }
 
 .cc-switch span {
@@ -186,39 +356,55 @@ nav time {
   @apply pointer-events-none mt-3 max-w-xs text-xs leading-relaxed font-medium tracking-wide text-white/60;
 }
 
+/* the nameplate follows the menu bar's ink: dark on the one pale wallpaper */
+:root[data-bar="dark"] #welcome :is(h1, p) {
+  @apply text-black/85;
+}
+
+:root[data-bar="dark"] #welcome .hint {
+  @apply text-black/55;
+}
+
 /* ---------------- dock ---------------- */
 #dock {
   @apply absolute bottom-3 left-1/2 z-[6000] -translate-x-1/2;
 }
 
 .dock-container {
-  @apply flex items-end gap-3 rounded-2xl border border-white/20 bg-white/30 px-3 py-2 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-black/30;
+  @apply flex items-end gap-3 rounded-dock px-3 py-2;
+  @apply glass;
 }
 
 .dock-icon {
   @apply block size-12 cursor-pointer;
   transform-origin: bottom center;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.25));
 }
 
-.dock-icon img {
+.dock-icon img,
+.dock-icon .app-icon {
   @apply size-full object-contain;
 }
 
 .dock-divider {
-  @apply mx-1 h-10 w-px self-center bg-black/20 dark:bg-white/20;
+  @apply mx-1 h-10 w-px self-center bg-ink/20;
 }
 
 .running-dot {
-  @apply absolute -bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-black/60 dark:bg-white/70;
+  @apply absolute -bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-ink/70;
 }
 
 /* minimized-window tiles: tiny window mockups on the right side of the dock */
 .dock-icon.min-tile {
-  @apply flex flex-col items-stretch overflow-hidden rounded-lg bg-white shadow-md ring-1 ring-black/15 dark:bg-neutral-700 dark:ring-white/15;
+  @apply flex flex-col items-stretch overflow-hidden rounded-lg;
+  background: rgb(var(--glass-tint) / 0.75);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.25),
+    0 1px 3px rgb(0 0 0 / 0.2);
 }
 
 .min-tile .mini-bar {
-  @apply flex shrink-0 items-center gap-[3px] bg-neutral-200 px-1.5 py-[3px] dark:bg-neutral-600;
+  @apply flex shrink-0 items-center gap-[3px] bg-ink/10 px-1.5 py-[3px];
 }
 
 .min-tile .mini-bar i {
@@ -237,12 +423,114 @@ nav time {
   @apply bg-[#28c840];
 }
 
-.min-tile img {
+.min-tile img,
+.min-tile .app-icon {
   @apply m-auto size-7 object-contain;
 }
 
+/* ---------------- app icons ----------------
+   A tile and a glyph. The tile is a rounded square with a gradient, a sheen
+   across the top half and a rim, which is the layered look of a Tahoe icon
+   done in CSS so the glass setting can restyle it: clear turns every tile
+   into frosted white with a white glyph, tinted into the site's orange.
+   Each app sets its two gradient stops below; folders and documents are
+   shapes with no tile at all. */
+.app-icon {
+  @apply relative block aspect-square shrink-0 overflow-hidden;
+  border-radius: 22.37%;
+  background: linear-gradient(180deg, var(--ic-a, #a0a0a8), var(--ic-b, #64646c));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    inset 0 0 0 1px rgb(255 255 255 / 0.14),
+    inset 0 -3px 6px rgb(0 0 0 / 0.14),
+    0 1px 2px rgb(0 0 0 / 0.2);
+  color: var(--ic-glyph, #fff);
+}
+
+.app-icon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.38),
+    rgb(255 255 255 / 0.1) 46%,
+    rgb(255 255 255 / 0) 52%
+  );
+}
+
+.app-icon svg {
+  @apply relative block size-full;
+}
+
+.app-icon[data-shape="bare"] {
+  @apply overflow-visible rounded-none bg-none shadow-none;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.25));
+}
+
+.app-icon[data-shape="bare"]::before {
+  display: none;
+}
+
+.app-icon[data-icon="finder"] {
+  --ic-a: #66c3ff;
+  --ic-b: #1e7de6;
+}
+
+.app-icon[data-icon="safari"] {
+  --ic-a: #62bcff;
+  --ic-b: #1565d8;
+}
+
+.app-icon[data-icon="photos"] {
+  --ic-a: #ffffff;
+  --ic-b: #e6e6ec;
+}
+
+.app-icon[data-icon="terminal"] {
+  --ic-a: #4b4b53;
+  --ic-b: #131317;
+}
+
+.app-icon[data-icon="contact"] {
+  --ic-a: #dcb47c;
+  --ic-b: #8a5f34;
+}
+
+.app-icon[data-icon="guestbook"] {
+  --ic-a: #70e98b;
+  --ic-b: #1c9f47;
+}
+
+.app-icon[data-icon="settings"] {
+  --ic-a: #a3a3aa;
+  --ic-b: #5a5a61;
+}
+
+/* the whole set, monochrome: frosted white tiles over the wallpaper */
+:root[data-glass="clear"] .app-icon:not([data-shape]) {
+  --ic-a: rgb(255 255 255 / 0.62);
+  --ic-b: rgb(255 255 255 / 0.3);
+  --ic-glyph: #fff;
+  --ic-line: #fff;
+  --ic-needle: #fff;
+  --ic-mono: #fff;
+  -webkit-backdrop-filter: blur(10px) saturate(1.4);
+  backdrop-filter: blur(10px) saturate(1.4);
+}
+
+/* and tinted: dark tiles in the site's own orange */
+:root[data-glass="tinted"] .app-icon:not([data-shape]) {
+  --ic-a: #a3541f;
+  --ic-b: #57280a;
+  --ic-glyph: #ffe2c6;
+  --ic-line: #ffe2c6;
+  --ic-needle: #ffc999;
+  --ic-mono: #ffe2c6;
+}
+
 .tooltip {
-  @apply !rounded-md !bg-black/75 !px-2 !py-1 !text-xs !text-white;
+  @apply !rounded-lg !bg-black/75 !px-2 !py-1 !text-xs !text-white;
 }
 
 /* ---------------- selection ----------------
@@ -276,8 +564,12 @@ nav time {
 }
 
 /* ---------------- windows (generic) ---------------- */
+/* Glass frame, solid body. The frame is what shows around the edges and
+   behind the toolbar; every window body paints itself on --surface, so the
+   words inside never sit on the wallpaper. One radius for all of them. */
 .window {
-  @apply absolute flex-col rounded-xl bg-white shadow-2xl ring-1 ring-black/10 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-white/10;
+  @apply absolute flex-col rounded-window;
+  @apply glass;
   display: none;
 
   /* How far a resize handle reaches past the frame. Half the grab band: the
@@ -398,12 +690,17 @@ body.resizing * {
   border-radius: 0;
 }
 
+/* The uniform toolbar: a frosted band across the top of every window, a
+   little denser than the frame so the controls read against a busy backdrop,
+   and no hairline under it. */
 #window-header {
-  @apply relative flex h-11 shrink-0 cursor-grab items-center gap-3 border-b border-black/10 bg-neutral-100 px-4 active:cursor-grabbing dark:border-white/10 dark:bg-neutral-800;
+  @apply relative flex h-11 shrink-0 cursor-grab items-center gap-3 px-4 active:cursor-grabbing;
+  background: rgb(var(--glass-tint) / 0.3);
 }
 
 #window-header h2 {
-  @apply pointer-events-none absolute left-1/2 max-w-[60%] -translate-x-1/2 truncate text-sm font-semibold text-neutral-700 dark:text-neutral-300;
+  @apply pointer-events-none absolute left-1/2 max-w-[60%] -translate-x-1/2 truncate text-sm font-semibold;
+  color: var(--glass-fg);
 }
 
 #window-controls {
@@ -427,24 +724,30 @@ body.resizing * {
 }
 
 .icon {
-  @apply size-4 cursor-pointer text-neutral-500 dark:text-neutral-400;
+  @apply size-4 cursor-pointer;
+  color: var(--glass-fg-2);
 }
 
-/* ---------------- terminal ---------------- */
+/* ---------------- terminal ----------------
+   Dark glass whatever the theme: the body is a black terminal and the frame
+   around it takes the same tint, so the toolbar is smoked rather than milky. */
 #terminal {
   @apply flex w-[620px] flex-col;
+  --glass-tint: 22 22 26;
+  --glass-ink: 255 255 255;
+  --glass-rim: 0.18;
+  --glass-edge: 0.18;
   top: 12vh;
   left: 8vw;
   height: 460px;
 }
 
 #terminal #window-header {
-  @apply bg-neutral-800 text-neutral-200;
-  border-color: rgb(255 255 255 / 0.08);
+  background: rgb(var(--glass-tint) / 0.55);
 }
 
 #terminal #window-header h2 {
-  @apply text-neutral-300;
+  color: rgb(255 255 255 / 0.85);
 }
 
 /* holds the scroller and, over it, the matrix and snake canvases */
@@ -482,15 +785,18 @@ body.resizing * {
 
 /* ---------------- desktop context menu ---------------- */
 .desktop-menu {
-  @apply fixed z-[9000] w-52 rounded-xl border border-black/10 bg-white/85 p-1 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-800/90;
+  @apply fixed z-[9000] w-52 rounded-menu p-1;
+  @apply glass;
 }
 
+/* concentric with the menu: 14px less the 4px of padding */
 .desktop-menu button {
-  @apply flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-neutral-700 hover:bg-burnt hover:text-white dark:text-neutral-200;
+  @apply flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-2.5 py-1.5 text-sm font-medium text-ink/85 hover:bg-burnt hover:text-white;
 }
 
 .desktop-menu hr {
-  @apply my-1 border-black/10 dark:border-white/10;
+  @apply my-1;
+  border-color: var(--glass-line);
 }
 
 /* ---------------- safari ---------------- */
@@ -502,17 +808,19 @@ body.resizing * {
 }
 
 #safari .search {
-  @apply flex flex-1 items-center gap-2 rounded-lg bg-black/5 px-3 py-1.5 dark:bg-white/10;
+  @apply flex flex-1 items-center gap-2 rounded-lg bg-ink/8 px-3 py-1.5;
 }
 
 #safari .search input {
-  @apply flex-1 border-none bg-transparent text-sm outline-none dark:text-neutral-100 dark:placeholder:text-neutral-500;
+  @apply flex-1 border-none bg-transparent text-sm outline-none placeholder:text-ink/45;
+  color: var(--glass-fg);
 }
 
 /* flex-1 min-h-0 so the body is the part that takes up the slack when the
    window is resized, and the part that shrinks and scrolls when it runs out */
 #safari .blog {
-  @apply min-h-0 flex-1 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
+  @apply min-h-0 flex-1 overflow-y-auto p-6;
+  background: var(--surface);
 }
 
 #safari .blog h2 {
@@ -571,15 +879,20 @@ body.resizing * {
 }
 
 [id^="finder"] .finder-body {
-  @apply flex h-full flex-1 overflow-hidden bg-white dark:bg-neutral-800;
+  @apply flex h-full flex-1 overflow-hidden;
 }
 
+/* The sidebar is glass and runs to the window's edge, so the desktop shows
+   through it; the content pane beside it is solid. Only the selected row's
+   icon keeps its colour, the rest are grey, which is how Golden Gate quietens
+   a sidebar. */
 .sidebar {
-  @apply w-48 shrink-0 space-y-5 overflow-y-auto border-r border-black/10 bg-neutral-100/80 p-3 backdrop-blur dark:border-white/5 dark:bg-neutral-900/70;
+  @apply w-48 shrink-0 space-y-5 overflow-y-auto p-3;
+  background: rgb(var(--glass-tint) / 0.12);
 }
 
 .sidebar h3 {
-  @apply mb-1 px-2 text-[11px] font-semibold tracking-wide text-neutral-400 uppercase;
+  @apply mb-1 px-2 text-[11px] font-semibold tracking-wide text-ink/45 uppercase;
 }
 
 .sidebar ul {
@@ -591,26 +904,32 @@ body.resizing * {
 }
 
 .sidebar li.active {
-  @apply bg-black/10 dark:bg-white/15;
+  @apply bg-ink/10;
 }
 
 .sidebar li.not-active {
-  @apply hover:bg-black/5 dark:hover:bg-white/10;
+  @apply hover:bg-ink/5;
+}
+
+.sidebar li.not-active :is(img, .app-icon) {
+  @apply opacity-60 grayscale;
 }
 
 .sidebar li p {
-  @apply truncate text-sm font-medium text-neutral-700 dark:text-neutral-300;
+  @apply truncate text-sm font-medium text-ink/80;
 }
 
 [id^="finder"] ul.content {
   @apply relative flex-1 overflow-y-auto p-4;
+  background: var(--surface);
 }
 
 [id^="finder"] ul.content li {
-  @apply absolute flex w-24 cursor-pointer flex-col items-center gap-1 rounded-lg p-2 text-center hover:bg-black/5 dark:hover:bg-white/10;
+  @apply absolute flex w-24 cursor-pointer flex-col items-center gap-1 rounded-lg p-2 text-center hover:bg-ink/5;
 }
 
-[id^="finder"] ul.content li img {
+[id^="finder"] ul.content li img,
+[id^="finder"] ul.content li .app-icon {
   @apply size-14 object-contain;
 }
 
@@ -620,7 +939,7 @@ body.resizing * {
 }
 
 [id^="finder"] ul.content li p {
-  @apply w-full text-xs leading-tight font-medium break-words text-neutral-700 dark:text-neutral-300;
+  @apply w-full text-xs leading-tight font-medium break-words text-ink/80;
 }
 
 /* ---------------- contact ---------------- */
@@ -634,18 +953,20 @@ body.resizing * {
 }
 
 .guestbook-body {
-  @apply flex min-h-0 flex-1 flex-col bg-white dark:bg-neutral-800;
+  @apply flex min-h-0 flex-1 flex-col;
+  background: var(--surface);
 }
 
 .gb-form {
-  @apply space-y-2 border-b border-black/10 p-4 dark:border-white/10;
+  @apply space-y-2 border-b p-4;
+  border-color: var(--glass-line);
 }
 
 .gb-name,
 .gb-row textarea {
-  @apply w-full rounded-lg border border-black/10 bg-neutral-100 px-3 py-2 text-sm
-    outline-none placeholder:text-neutral-400 focus:border-blue-500
-    dark:border-white/10 dark:bg-neutral-900 dark:text-white;
+  @apply w-full rounded-lg border border-ink/10 bg-ink/5 px-3 py-2 text-sm
+    outline-none placeholder:text-ink/40 focus:border-blue-500;
+  color: var(--glass-fg);
 }
 
 .gb-row {
@@ -675,7 +996,7 @@ body.resizing * {
 }
 
 .gb-entry {
-  @apply rounded-xl bg-neutral-100 px-3.5 py-2.5 dark:bg-neutral-900;
+  @apply rounded-xl bg-ink/5 px-3.5 py-2.5;
 }
 
 .gb-entry header {
@@ -703,6 +1024,7 @@ body.resizing * {
 
 #contact .body {
   @apply space-y-5 p-6;
+  background: var(--surface);
 }
 
 #contact h3 {
@@ -742,7 +1064,8 @@ body.resizing * {
 }
 
 #photos .photos-body {
-  @apply min-h-0 flex-1 space-y-7 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
+  @apply min-h-0 flex-1 space-y-7 overflow-y-auto p-6;
+  background: var(--surface);
 }
 
 #photos .photos-body h3 {
@@ -776,7 +1099,8 @@ body.resizing * {
 }
 
 #txtFile .txt-body {
-  @apply min-h-0 flex-1 space-y-4 overflow-y-auto bg-white p-6 dark:bg-neutral-900;
+  @apply min-h-0 flex-1 space-y-4 overflow-y-auto p-6;
+  background: var(--surface);
 }
 
 #txtFile .txt-body h3 {
@@ -812,7 +1136,8 @@ body.resizing * {
 /* the body scrolls rather than the image shrinking, so a tall document-shaped
    image (the get-to-know-me poster) stays readable instead of being squeezed */
 #imgFile .img-body {
-  @apply min-h-0 flex-1 overflow-y-auto bg-neutral-100 p-4 dark:bg-neutral-900;
+  @apply min-h-0 flex-1 overflow-y-auto p-4;
+  background: var(--surface);
 }
 
 #imgFile .img-body img {
@@ -830,8 +1155,10 @@ body.resizing * {
   left: 40vw;
 }
 
+/* one sheet of glass, no toolbar band: the panel is small enough to be a
+   single surface, as it is on a Mac */
 #about #window-header {
-  @apply border-none bg-white dark:bg-neutral-800;
+  background: none;
 }
 
 #about .about-body {
@@ -867,7 +1194,7 @@ body.resizing * {
 }
 
 #about .about-body button {
-  @apply mt-5 cursor-pointer rounded-lg bg-neutral-200 px-4 py-1 text-sm font-medium transition-colors hover:bg-neutral-300 dark:bg-neutral-700 dark:hover:bg-neutral-600;
+  @apply mt-5 cursor-pointer rounded-lg bg-ink/10 px-4 py-1 text-sm font-medium transition-colors hover:bg-ink/15;
 }
 
 #about .fine-print {
@@ -876,11 +1203,26 @@ body.resizing * {
 
 /* ---------------- spotlight ---------------- */
 #spotlight {
-  @apply fixed inset-0 z-[8000] flex justify-center bg-black/10 pt-[24vh];
+  @apply fixed inset-0 z-[8000] flex justify-center bg-black/25 pt-[24vh];
 }
 
 #spotlight .panel {
-  @apply h-fit w-[560px] max-w-[90vw] overflow-hidden rounded-2xl border border-white/40 bg-white/80 shadow-2xl backdrop-blur-2xl dark:border-white/10 dark:bg-neutral-900/80 dark:text-neutral-100;
+  @apply h-fit w-[560px] max-w-[90vw] overflow-hidden rounded-panel;
+  @apply glass;
+  --alpha: max(var(--glass-alpha), 0.6);
+  transform-origin: top center;
+  animation: spotlight-in 0.16s ease-out;
+}
+
+@keyframes spotlight-in {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 #spotlight .bar {
@@ -888,26 +1230,29 @@ body.resizing * {
 }
 
 #spotlight .bar input {
-  @apply flex-1 border-none bg-transparent text-xl outline-none placeholder:text-neutral-400 dark:text-neutral-100 dark:placeholder:text-neutral-500;
+  @apply flex-1 border-none bg-transparent text-xl outline-none placeholder:text-ink/40;
+  color: var(--glass-fg);
 }
 
 #spotlight .bar kbd {
-  @apply rounded bg-black/10 px-1.5 py-0.5 text-[10px] font-medium text-neutral-500 dark:bg-white/10 dark:text-neutral-400;
+  @apply rounded bg-ink/10 px-1.5 py-0.5 text-[10px] font-medium text-ink/55;
 }
 
 #spotlight ul {
-  @apply border-t border-black/10 py-1 dark:border-white/10;
+  @apply border-t py-1;
+  border-color: var(--glass-line);
 }
 
 #spotlight li {
-  @apply mx-1 grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-x-3 rounded-lg px-3 py-1.5;
+  @apply mx-1 grid cursor-pointer grid-cols-[auto_1fr_auto] items-center gap-x-3 rounded-xl px-3 py-1.5;
 }
 
 #spotlight li.selected {
   @apply bg-burnt text-white;
 }
 
-#spotlight li img {
+#spotlight li img,
+#spotlight li .app-icon {
   @apply row-span-2 size-8 object-contain;
 }
 
@@ -928,7 +1273,8 @@ body.resizing * {
 }
 
 #spotlight .empty {
-  @apply border-t border-black/10 px-4 py-3 text-sm text-neutral-500 dark:border-white/10 dark:text-neutral-400;
+  @apply border-t px-4 py-3 text-sm text-ink/55;
+  border-color: var(--glass-line);
 }
 
 /* ---------------- desktop folders ---------------- */
@@ -940,8 +1286,8 @@ body.resizing * {
   @apply pointer-events-auto absolute flex w-28 cursor-pointer flex-col items-center gap-1 rounded-lg p-2 text-center;
 }
 
-#home li.folder img {
-  @apply size-16 object-contain drop-shadow-md transition-transform group-hover:scale-105;
+#home li.folder .app-icon {
+  @apply size-16 transition-transform group-hover:scale-105;
 }
 
 #home li.folder p {
@@ -1026,11 +1372,13 @@ body.resizing * {
 }
 
 .m-widget {
-  @apply mb-3 rounded-3xl border border-white/20 bg-white/15 px-4 py-3.5 text-white shadow-lg backdrop-blur-xl;
+  @apply mb-3 rounded-panel px-4 py-3.5 text-ink/90;
+  @apply glass;
+  --alpha: max(var(--glass-alpha), 0.6);
 }
 
 .m-widget .hello {
-  @apply text-sm font-medium text-white/80;
+  @apply text-sm font-medium text-ink/75;
 }
 
 .m-widget h1 {
@@ -1038,7 +1386,7 @@ body.resizing * {
 }
 
 .m-widget .tagline {
-  @apply mt-1 text-[11px] leading-snug text-white/70;
+  @apply mt-1 text-[11px] leading-snug text-ink/65;
 }
 
 /* ---- home page fit rungs ----
@@ -1096,13 +1444,12 @@ body.resizing * {
   @apply flex cursor-pointer flex-col items-center gap-1.5;
 }
 
-.m-app img,
-.m-app .settings-tile {
+.m-app img {
   @apply size-15 rounded-2xl object-contain shadow-md;
 }
 
-.m-app .settings-tile {
-  @apply flex items-center justify-center bg-gradient-to-b from-neutral-500 to-neutral-700;
+.m-app .app-icon {
+  @apply size-15;
 }
 
 .m-app p {
@@ -1110,8 +1457,10 @@ body.resizing * {
   text-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
 }
 
+/* a floating pill, off the bottom edge the way the iOS dock is */
 .m-dock {
-  @apply mx-auto mt-auto flex w-full max-w-sm items-start justify-around rounded-[2rem] border border-white/20 bg-white/20 px-2 pt-3 pb-2 backdrop-blur-2xl;
+  @apply mx-auto mt-auto flex w-full max-w-sm items-start justify-around rounded-[2rem] px-2 pt-3 pb-2;
+  @apply glass;
 }
 
 .m-dock .m-app p {
@@ -1120,7 +1469,9 @@ body.resizing * {
 
 /* ---------------- full-screen app sheet ---------------- */
 .m-sheet {
-  @apply absolute inset-0 z-50 flex flex-col bg-white dark:bg-neutral-900 dark:text-neutral-200;
+  @apply absolute inset-0 z-50 flex flex-col;
+  background: var(--surface);
+  color: var(--glass-fg);
   padding-top: env(safe-area-inset-top);
   animation: m-zoom-in 0.28s ease-out;
 }
@@ -1136,8 +1487,12 @@ body.resizing * {
   }
 }
 
+/* the toolbar is a frosted band like the desktop windows' toolbar, and the
+   Done button is a glass pill, which is how iOS 26 draws its controls */
 .m-sheet-header {
-  @apply flex shrink-0 items-center justify-between border-b border-black/10 px-4 py-3 dark:border-white/10;
+  @apply flex shrink-0 items-center justify-between px-4 py-2.5;
+  background: rgb(var(--glass-tint) / 0.5);
+  box-shadow: 0 1px 0 var(--glass-line);
 }
 
 .m-sheet-header h2 {
@@ -1145,15 +1500,18 @@ body.resizing * {
 }
 
 .m-sheet-header button {
-  @apply cursor-pointer text-base font-semibold text-burnt;
+  @apply cursor-pointer rounded-full bg-ink/8 px-3.5 py-1 text-sm font-semibold text-burnt;
 }
 
 .m-sheet.is-terminal {
-  @apply bg-neutral-900;
+  --glass-tint: 22 22 26;
+  --glass-ink: 255 255 255;
+  background: #171717;
 }
 
 .m-sheet.is-terminal .m-sheet-header {
-  @apply border-white/10 bg-neutral-800 text-neutral-200;
+  @apply text-neutral-200;
+  background: rgb(38 38 38);
 }
 
 .m-sheet .term-body {
@@ -1161,7 +1519,7 @@ body.resizing * {
 }
 
 .home-indicator {
-  @apply mx-auto mb-2 h-1.5 w-32 shrink-0 cursor-pointer rounded-full bg-black/30 dark:bg-white/40;
+  @apply mx-auto mb-2 h-1.5 w-32 shrink-0 cursor-pointer rounded-full bg-ink/35;
   margin-bottom: calc(0.5rem + env(safe-area-inset-bottom));
 }
 
@@ -1179,14 +1537,15 @@ body.resizing * {
 }
 
 .m-list {
-  @apply mx-4 my-3 divide-y divide-black/5 overflow-hidden rounded-2xl bg-neutral-100 dark:divide-white/5 dark:bg-neutral-800;
+  @apply mx-4 my-3 divide-y divide-ink/5 overflow-hidden rounded-2xl bg-ink/5;
 }
 
 .m-list li {
-  @apply flex cursor-pointer items-center gap-3 px-4 py-3 active:bg-black/5 dark:active:bg-white/10;
+  @apply flex cursor-pointer items-center gap-3 px-4 py-3 active:bg-ink/5;
 }
 
-.m-list li img {
+.m-list li img,
+.m-list li .app-icon {
   @apply size-9 object-contain;
 }
 
@@ -1225,7 +1584,7 @@ body.resizing * {
 }
 
 .m-card {
-  @apply overflow-hidden rounded-2xl bg-neutral-100 dark:bg-neutral-800;
+  @apply overflow-hidden rounded-2xl bg-ink/5;
 }
 
 .m-card > img {
@@ -1261,7 +1620,7 @@ body.resizing * {
 }
 
 .m-settings {
-  @apply divide-y divide-black/5 overflow-hidden rounded-2xl bg-neutral-100 dark:divide-white/5 dark:bg-neutral-800;
+  @apply divide-y divide-ink/5 overflow-hidden rounded-2xl bg-ink/5;
 }
 
 .m-settings li {
@@ -1276,10 +1635,17 @@ body.resizing * {
   @apply text-xs text-neutral-500 dark:text-neutral-400;
 }
 
+/* the glass row's preview: a tile at the opacity that choice gives the glass */
+.m-glass-chip {
+  @apply size-9 shrink-0 rounded-lg;
+  border: 1px solid rgb(var(--glass-ink) / 0.2);
+  background: rgb(var(--glass-tint) / var(--chip));
+}
+
 /* the wallpaper pair at row-icon size, split down the middle like the desktop
    swatch so the two halves read as one wallpaper */
 .m-swatch {
-  @apply flex size-9 shrink-0 overflow-hidden rounded-lg ring-1 ring-black/10 dark:ring-white/15;
+  @apply flex size-9 shrink-0 overflow-hidden rounded-lg ring-1 ring-ink/15;
 }
 
 .m-swatch img {
@@ -1297,22 +1663,28 @@ body.resizing * {
   @apply pointer-events-auto cursor-grab active:cursor-grabbing;
 }
 
-/* bg-black/40 rather than /30: the wallpaper has a bright orange band running
-   straight through the widget column, and at /30 it bleached the heatmap's
-   empty cells until the grid read as blotchy rather than as a grid */
+/* Glass like the rest of the chrome, but never clearer than 0.6: the wallpaper
+   has a bright orange band running straight through the widget column, and
+   any thinner than that it bleached the heatmap's empty cells until the grid
+   read as blotchy rather than as a grid. Light glass and dark ink in the day
+   theme, the reverse at night, the way the widgets on a Mac desktop go. */
 .widget {
-  @apply flex h-full flex-col rounded-3xl border border-white/15 bg-black/55 p-5 text-white shadow-xl backdrop-blur-xl;
-  transition: border-color 0.25s ease;
+  @apply flex h-full flex-col rounded-panel p-5 text-ink/90;
+  @apply glass;
+  --alpha: max(var(--glass-alpha), 0.6);
+  transition: outline-color 0.25s ease;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
 }
 
 /* every card carries its own --accent, so one rule tints the glyph chip, the
    live dot and the sha pill without any of them naming a colour */
 .widget-slot:hover .widget {
-  border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .widget header {
-  @apply flex items-center gap-2 text-xs font-semibold tracking-wide text-white/55 uppercase;
+  @apply flex items-center gap-2 text-xs font-semibold tracking-wide text-ink/55 uppercase;
 }
 
 .widget header .ico {
@@ -1338,15 +1710,15 @@ body.resizing * {
 }
 
 .widget .sub a {
-  @apply text-white/70 underline decoration-white/25 underline-offset-2 hover:text-white;
+  @apply text-ink/70 underline decoration-ink/25 underline-offset-2 hover:text-ink/90;
 }
 
 .widget .big .unit {
-  @apply ml-2 text-xs font-medium tracking-wide text-white/50 uppercase;
+  @apply ml-2 text-xs font-medium tracking-wide text-ink/50 uppercase;
 }
 
 .widget .sub {
-  @apply mt-2 text-xs text-white/50;
+  @apply mt-2 text-xs text-ink/50;
 }
 
 /* a footer, not a third paragraph: mt-auto pins it to the bottom edge, since
@@ -1373,27 +1745,27 @@ body.resizing * {
 }
 
 .widget .repo {
-  @apply mt-3 text-lg font-semibold text-white;
+  @apply mt-3 text-lg font-semibold text-ink/90;
 }
 
 .widget .msg {
-  @apply mt-1.5 text-sm leading-snug text-white/85;
+  @apply mt-1.5 text-sm leading-snug text-ink/85;
 }
 
 /* "Now building" is one short line in an otherwise empty card, so it gets to
    be the headline rather than body copy */
 .widget .msg.lead {
-  @apply mt-3 text-base leading-snug font-medium text-white;
+  @apply mt-3 text-base leading-snug font-medium text-ink/90;
 }
 
 .widget .empty {
-  @apply mt-3 text-sm leading-snug text-white/45;
+  @apply mt-3 text-sm leading-snug text-ink/45;
 }
 
 /* the command to type, on its own line: backticks in a rendered card read as
    punctuation someone forgot to remove */
 .widget .empty code {
-  @apply mt-1.5 block rounded-md bg-black/25 px-2 py-1 text-[12px] text-white/70;
+  @apply mt-1.5 block rounded-md bg-black/25 px-2 py-1 text-[12px] text-ink/70;
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -1514,7 +1886,7 @@ body.resizing * {
    the padding through `#widgets[data-fit]:not([data-fit=""]) .widget`, which
    outranks a plainer selector here and quietly kept the card's padding. */
 #widgets[data-fit]:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .widget.w-system {
-  @apply h-auto flex-row flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border-transparent px-3 py-1.5 shadow-none;
+  @apply h-auto flex-row flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-1.5 shadow-none;
 }
 
 /* the row is as tall as the taller card when the two share one, and a strip
@@ -1543,17 +1915,17 @@ body.resizing * {
 /* The collapsed fleet card. Hidden until the ladder asks for it, and laid out
    as a wrapping row so a third machine costs a line rather than an overflow. */
 .w-system .glance {
-  @apply mt-2 hidden flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/55;
+  @apply mt-2 hidden flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink/55;
 }
 
 .w-system .glance b {
-  @apply font-medium text-white/85;
+  @apply font-medium text-ink/85;
 }
 
 /* uptime and environment, pushed to the far end of the header row so they cost
    no vertical space; dropped rather than wrapped when the card is too narrow */
 .w-system header .tail {
-  @apply ml-auto truncate pl-2 text-[10px] font-medium tracking-normal text-white/40 normal-case;
+  @apply ml-auto truncate pl-2 text-[10px] font-medium tracking-normal text-ink/40 normal-case;
 }
 
 /* one tab per reporting machine; only rendered when there is more than one, so
@@ -1568,11 +1940,11 @@ body.resizing * {
 }
 
 .w-system .tabs button {
-  @apply flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium whitespace-nowrap text-white/50 transition-colors;
+  @apply flex shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium whitespace-nowrap text-ink/50 transition-colors;
 }
 
 .w-system .tabs button:hover {
-  @apply text-white/80;
+  @apply text-ink/80;
 }
 
 .w-system .tabs button.on {
@@ -1581,7 +1953,7 @@ body.resizing * {
 }
 
 .w-system .tabs button.stale {
-  @apply text-white/35;
+  @apply text-ink/35;
 }
 
 /* amber, not the card accent: a server that stopped reporting should not look
@@ -1596,7 +1968,7 @@ body.resizing * {
 
 /* the unit summary line, between the stats and the footer */
 .w-system .units {
-  @apply mt-2 flex items-center gap-1.5 text-[11px] text-white/50;
+  @apply mt-2 flex items-center gap-1.5 text-[11px] text-ink/50;
 }
 
 .w-system .units .dot-ok,
@@ -1622,14 +1994,14 @@ body.resizing * {
 
 .w-services .svc li,
 .w-services .healthy {
-  @apply flex items-center gap-2 text-xs text-white/70;
+  @apply flex items-center gap-2 text-xs text-ink/70;
 }
 
 /* the everything-is-fine line: the whole healthy set on one row, dimmer than a
    failure and truncated rather than wrapped, since its job is to be scanned and
    not read. Hidden while the rows themselves fit; see the fit tiers. */
 .w-services .healthy {
-  @apply mt-2 hidden text-[11px] text-white/45;
+  @apply mt-2 hidden text-[11px] text-ink/45;
 }
 
 .w-services .healthy .n {
@@ -1652,7 +2024,7 @@ body.resizing * {
 }
 
 .w-services .svc .d-wait {
-  @apply bg-white/30;
+  @apply bg-ink/30;
 }
 
 .w-services .svc .n {
@@ -1662,12 +2034,12 @@ body.resizing * {
 /* the timing pushes right and never wraps: a slow response should not be able
    to reflow the name next to it */
 .w-services .svc .t {
-  @apply ml-auto shrink-0 text-[11px] whitespace-nowrap text-white/40 tabular-nums;
+  @apply ml-auto shrink-0 text-[11px] whitespace-nowrap text-ink/40 tabular-nums;
 }
 
 /* a down row is the only thing on this card that gets full-strength text */
 .w-services .svc li.bad .n {
-  @apply text-white;
+  @apply text-ink/90;
 }
 
 .w-services .svc li.bad .t {
@@ -1675,11 +2047,11 @@ body.resizing * {
 }
 
 .w-services .svc li.up .n {
-  @apply text-white/65;
+  @apply text-ink/65;
 }
 
 .w-services header .tail {
-  @apply ml-auto truncate pl-2 text-[10px] font-medium tracking-normal text-white/40 normal-case;
+  @apply ml-auto truncate pl-2 text-[10px] font-medium tracking-normal text-ink/40 normal-case;
 }
 
 .w-system .stats {
@@ -1693,7 +2065,7 @@ body.resizing * {
 }
 
 .w-system .stat .k {
-  @apply text-[10px] font-medium tracking-wide text-white/45 uppercase;
+  @apply text-[10px] font-medium tracking-wide text-ink/45 uppercase;
 }
 
 .w-system .stat .v {
@@ -1707,7 +2079,7 @@ body.resizing * {
 }
 
 .w-system .stat .v .unit {
-  @apply ml-1 text-[11px] font-medium text-white/50;
+  @apply ml-1 text-[11px] font-medium text-ink/50;
 }
 
 .w-system .stat svg {
@@ -1722,7 +2094,7 @@ body.resizing * {
    `.bar` on the site, and the pill background and radius landed on the
    Spotlight search field as a stray capsule inside the panel. */
 .capacity {
-  @apply mt-[0.6rem] w-full overflow-hidden rounded-full bg-white/12;
+  @apply mt-[0.6rem] w-full overflow-hidden rounded-full bg-ink/12;
 }
 
 .capacity span {
@@ -1745,7 +2117,7 @@ body.resizing * {
 /* one line, truncated: this is a footnote, and letting it wrap to a second line
    makes the whole grid row taller for the least important text on the card */
 .w-system .app-mem {
-  @apply mt-2 truncate text-[11px] text-white/40;
+  @apply mt-2 truncate text-[11px] text-ink/40;
 }
 
 /* contribution grid: burnt orange rather than GitHub green, to match the site */
@@ -1754,7 +2126,7 @@ body.resizing * {
 }
 
 .heatmap rect {
-  fill: rgb(255 255 255 / 0.12);
+  fill: rgb(var(--glass-ink) / 0.1);
 }
 .heatmap rect.lvl-1 {
   fill: rgb(191 87 0 / 0.45);

@@ -31,11 +31,11 @@ const Navbar = () => {
         <img
           src="/images/logo.svg"
           alt="About This Mac"
-          className="h-4 cursor-pointer dark:invert"
+          className="bar-glyph h-4 cursor-pointer"
           title="About This Mac"
           onClick={() => openWindow("about")}
         />
-        <p className="text-sm font-bold dark:text-white">Tanush's Portfolio</p>
+        <p className="text-sm font-bold">Tanush's Portfolio</p>
         <ul>
           {navLinks.map(({ id, name, type }) => (
             <li
@@ -65,7 +65,7 @@ const Navbar = () => {
               <li key={id}>
                 <img
                   src={img}
-                  className="icon-hover"
+                  className="icon-hover bar-glyph"
                   alt={`icon-${id}`}
                   onClick={action}
                 />

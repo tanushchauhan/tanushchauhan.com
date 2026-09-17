@@ -43,6 +43,7 @@ const useWindowStore = create(
       spotlightOpen: false,
       controlCenterOpen: false, // like spotlight, not worth persisting
       theme: "auto", // "auto" | "light" | "dark"
+      glass: "regular", // "clear" | "regular" | "tinted": how much the chrome shows through
       wallpaper: DEFAULT_WALLPAPER,
       folderPos: {}, // desktop folder drag offsets, keyed by project id
       // Desktop widget drag offsets, keyed first by layout signature and only
@@ -162,6 +163,11 @@ const useWindowStore = create(
       setWallpaper: (wallpaper) =>
         set((state) => {
           state.wallpaper = wallpaper;
+        }),
+
+      setGlass: (glass) =>
+        set((state) => {
+          state.glass = glass;
         }),
 
       setControlCenter: (open) =>
@@ -290,6 +296,7 @@ const useWindowStore = create(
         ),
         nextZIndex: state.nextZIndex,
         theme: state.theme,
+        glass: state.glass,
         wallpaper: state.wallpaper,
         folderPos: state.folderPos,
         widgetPos: state.widgetPos,
