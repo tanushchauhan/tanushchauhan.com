@@ -13,3 +13,4 @@ dist
 
 # photographs of failing assertions, rewritten every run
 tests/screenshots
+

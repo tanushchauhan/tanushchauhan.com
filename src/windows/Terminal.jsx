@@ -522,8 +522,6 @@ export const TerminalBody = () => {
       }
     },
 
-    // edits the "now building" widget in place, so saying what I'm working on
-    // is a sentence in a terminal rather than a commit and a redeploy
     /**
      * Fleet management from the site's own terminal, which beats a docker exec
      * for the common case. The CLI script stays for when logging in is the
@@ -784,6 +782,8 @@ export const TerminalBody = () => {
       }
     },
 
+    // edits the "now building" widget in place, so saying what I am working on
+    // is a sentence in a terminal rather than a commit and a redeploy
     building: async (args) => {
       const text = args.join(" ").trim();
       if (!text) {

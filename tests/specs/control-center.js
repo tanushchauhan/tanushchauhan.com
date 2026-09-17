@@ -1,4 +1,4 @@
-import { openPage, seed, win, storedState, settled } from "../lib/harness.js";
+import { openPage, seed, storedState, settled } from "../lib/harness.js";
 
 export const name = "control center: appearance, wallpaper, sound";
 

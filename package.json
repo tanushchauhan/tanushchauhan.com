@@ -1,5 +1,11 @@
 {
   "name": "tanush-os-portfolio",
+  "description": "A personal site that boots like a Mac: windows, a real terminal, live widgets, and a small fleet monitor behind a passkey.",
+  "homepage": "https://tanushchauhan.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tanushchauhan/tanushchauhan.com.git"
+  },
   "private": true,
   "version": "1.0.0",
   "type": "module",

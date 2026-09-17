@@ -171,7 +171,7 @@ const NowBuilding = ({ data }) => (
  * hiding a card in the client would be decoration, not a boundary.
  */
 const duration = (seconds) => {
-  if (!Number.isFinite(seconds)) return "—";
+  if (!Number.isFinite(seconds)) return "n/a";
   const d = Math.floor(seconds / 86400);
   const h = Math.floor((seconds % 86400) / 3600);
   const m = Math.floor((seconds % 3600) / 60);
@@ -298,13 +298,13 @@ const System = ({ data }) => {
           <div className={clsx("stats", s?.diskPct != null && "three")}>
             <Stat
               label="CPU"
-              value={s?.cpuPct ?? "—"}
+              value={s?.cpuPct ?? "n/a"}
               unit={s?.cpuPct == null ? "" : "%"}
               values={history.map((h) => h.cpuPct)}
             />
             <Stat
               label="Memory"
-              value={s?.memUsedMb != null ? gbValue(s.memUsedMb) : "—"}
+              value={s?.memUsedMb != null ? gbValue(s.memUsedMb) : "n/a"}
               unit={
                 s?.memUsedMb == null
                   ? ""

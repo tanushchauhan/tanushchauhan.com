@@ -1,4 +1,4 @@
-import { openPage, seed, settled } from "../lib/harness.js";
+import { openPage, settled } from "../lib/harness.js";
 
 export const name = "mobile: the home page fits, and swipes";
 

@@ -43,7 +43,7 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
 
   const Wrapped = (props) => {
     const { focusWindow, setWindowPos, setWindowSize, windows } = useWindowStore();
-    const { isOpen, isMinimized, isMaximized, zIndex, pos } = windows[windowKey];
+    const { isOpen, isMinimized, isMaximized, zIndex } = windows[windowKey];
     const ref = useRef(null);
     const dragRef = useRef(null);
     const minTargetRef = useRef(null); // where the window flew when minimized
