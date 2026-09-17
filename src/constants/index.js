@@ -103,8 +103,9 @@ export const highlights = [
     description:
       "A study of how robots can read social context from motion. I built the control baselines the learned representations were measured against, across 260 Optuna trials and 10-seed sweeps.",
     image: "/images/posters/poster-corl.svg",
-    link: "https://scholar.google.com/scholar?q=STARS+Spatiotemporal+Dynamics+Social+Representations+Human-Robot+Interaction",
-    cta: "Read the paper",
+    // no page to link yet: the proceedings appear with the conference
+    link: "https://www.corl.org/",
+    cta: "CoRL 2026, in Austin this November",
   },
   {
     id: 2,
@@ -113,7 +114,7 @@ export const highlights = [
     description:
       "Co-authored a 9,000+ question benchmark for meme comprehension with Prof. Vincent Ng's group at UT Dallas, published at the 63rd Annual Meeting of the ACL.",
     image: "/images/posters/poster-acl.svg",
-    link: "https://scholar.google.com/scholar?q=MemeQA+Holistic+Evaluation+for+Meme+Understanding",
+    link: "https://aclanthology.org/2025.acl-long.927/",
     cta: "Read the paper",
   },
   {
@@ -541,6 +542,7 @@ export const locations = {
             "Tsoi, N., Munje, M. J., Oberoi, T., Maheshwari, R., Zheng, P., Chauhan, T., Stone, P., Biswas, J.",
             "Conference on Robot Learning (CoRL), 2026.",
             "How a robot can read social context from the way people move. I built the control baselines the learned representations were measured against: a raw-feature probe and a frozen MLP-autoencoder encoder, over 260 Optuna trials and 10-seed sweeps.",
+            "The paper is not online yet. The proceedings are published with the conference, November 9 to 12 in Austin.",
           ],
         },
       },
@@ -564,21 +566,21 @@ export const locations = {
         },
       },
       {
-        id: "stars-link",
-        name: "STARS on Scholar",
+        id: "memeqa-link",
+        name: "aclanthology.org",
         icon: "/icons/file.svg",
         kind: "link",
         fileType: "url",
-        href: "https://scholar.google.com/scholar?q=STARS+Spatiotemporal+Dynamics+Social+Representations+Human-Robot+Interaction",
+        href: "https://aclanthology.org/2025.acl-long.927/",
         position: "top-32 left-4",
       },
       {
-        id: "memeqa-link",
-        name: "MemeQA on Scholar",
-        icon: "/icons/file.svg",
+        id: "memeqa-dataset",
+        name: "github.com",
+        icon: "/icons/github.svg",
         kind: "link",
         fileType: "url",
-        href: "https://scholar.google.com/scholar?q=MemeQA+Holistic+Evaluation+for+Meme+Understanding",
+        href: "https://github.com/npnkhoi/memeqa",
         position: "top-32 left-32",
       },
     ],
