@@ -179,6 +179,13 @@ Beyond that file, the names to change are `GITHUB_USER` in
 `public/moontower/install.sh`, and the metadata in `index.html`,
 `public/sitemap.xml` and `public/robots.txt`.
 
+## Credits
+
+The starting point was JavaScript Mastery's video
+[Build and Deploy a MacOS style Portfolio with React, GSAP & Tailwind](https://www.youtube.com/watch?v=j9ZD_hlyHOA).
+The nameplate's per-character hover and the shape of the dock still come from
+it. Nearly everything else has been rebuilt since, but that is where this began.
+
 ## License
 
 The code is MIT licensed, see `LICENSE`. The photos, the poster art, the
