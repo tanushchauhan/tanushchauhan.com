@@ -112,6 +112,22 @@ export const siteStatus = pgTable("site_status", {
 export type SiteStatus = typeof siteStatus.$inferSelect;
 
 /**
+ * One row per visitor, keyed by the same salted hash the guestbook uses, so the
+ * terminal can tell someone which number they are. Nothing else about them is
+ * kept: no path, no user agent, only a first and a last time. The number is
+ * the row id, assigned on the first visit, so it never moves under them.
+ */
+export const visitors = pgTable("visitors", {
+  id: serial("id").primaryKey(),
+  ipHash: text("ip_hash").notNull().unique(),
+  firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  visits: integer("visits").notNull().default(1),
+});
+
+export type Visitor = typeof visitors.$inferSelect;
+
+/**
  * A rolling day of CPU and memory readings, taken every 30 seconds. Kept in
  * Postgres rather than in memory so the sparklines survive a redeploy, which
  * is exactly when I am most likely to be looking at them.

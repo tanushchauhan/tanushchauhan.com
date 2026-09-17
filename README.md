@@ -28,13 +28,16 @@ Austin), and live at [tanushchauhan.com](https://tanushchauhan.com).
 
 A real shell over a virtual filesystem that mirrors the Finder. `ls`, `cd`,
 `cat`, `grep`, `open` (which opens the real window), tab completion, history,
-and a session that survives reloads. Also `neofetch`, `cowsay`, `fortune`,
-`matrix` and `snake`, because it would be a poor terminal without them.
+and a session that survives reloads. `visitor` tells you which number you
+are. Also `neofetch`, `cowsay`, `fortune`, `matrix` and `snake`, because it
+would be a poor terminal without them.
 
 **Things that talk to a server**
 
 - A guestbook anyone can write in. Rate limited by a salted hash of the
   address, with a honeypot field for bots and moderation from the terminal.
+- A visitor counter keyed by that same hash, which stores nothing else about
+  anyone
 - Live widgets: the time in Austin, GitHub contributions and the latest
   commit (proxied and cached so the token never leaves the server), and a
   "now building" line I can change with one terminal command

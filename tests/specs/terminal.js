@@ -109,6 +109,11 @@ export const run = async ({ browser, t }) => {
     (await runCommand(page, "echo back again")).includes("back again")
   );
 
+  t.check(
+    "visitor says which number you are",
+    (await runCommand(page, "visitor")).includes("visitor number 1,204")
+  );
+
   t.check("no page errors", page.pageErrors.length === 0, page.pageErrors.join(" | "));
   await page.close();
 

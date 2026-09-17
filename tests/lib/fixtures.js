@@ -156,4 +156,7 @@ export const installFixtures = async (page, { authed = true, building } = {}) =>
   await page.route("**/api/guestbook", (r) =>
     r.fulfill({ json: { entries: guestbookEntries } })
   );
+  await page.route("**/api/visit", (r) =>
+    r.fulfill({ json: { number: 1204, visits: 1, since: "2026-09-01T00:00:00Z", total: 1204 } })
+  );
 };

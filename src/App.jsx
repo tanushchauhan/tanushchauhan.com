@@ -24,6 +24,7 @@ import {
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { setSoundEnabled } from "./utils/sound.js";
+import { registerVisit } from "./utils/visit.js";
 import { wallpaperFor } from "#constants";
 
 const MOBILE_QUERY = "(max-width: 767px)";
@@ -41,6 +42,7 @@ const App = () => {
   // the page cannot inspect for itself
   useEffect(() => {
     useAuthStore.getState().refresh();
+    registerVisit(); // counted once per load, whatever the terminal asks later
   }, []);
   const [isMobile, setIsMobile] = useState(
     () => window.matchMedia(MOBILE_QUERY).matches

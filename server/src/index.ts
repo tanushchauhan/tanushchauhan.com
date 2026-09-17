@@ -6,6 +6,7 @@ import { authRoutes } from "./routes/auth.ts";
 import { guestbookRoutes } from "./routes/guestbook.ts";
 import { widgetRoutes } from "./routes/widgets.ts";
 import { moontowerRoutes } from "./routes/moontower.ts";
+import { visitRoutes } from "./routes/visit.ts";
 import { startMetricsSampler } from "./lib/metrics.ts";
 import { startServiceProbes } from "./lib/probes.ts";
 
@@ -36,6 +37,7 @@ api.route("/auth", authRoutes);
 api.route("/guestbook", guestbookRoutes);
 api.route("/widgets", widgetRoutes);
 api.route("/moontower", moontowerRoutes);
+api.route("/visit", visitRoutes);
 
 app.route("/api", api);
 

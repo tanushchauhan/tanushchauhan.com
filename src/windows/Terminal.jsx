@@ -7,6 +7,7 @@ import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { MatrixOverlay, SnakeOverlay } from "./TermOverlay.jsx";
 import { refreshWidgets } from "../utils/widgets.js";
+import { registerVisit } from "../utils/visit.js";
 
 const USER = "tanush@tanushchauhan.com";
 
@@ -159,7 +160,7 @@ const pwdString = (path) => "~" + (path.length ? "/" + path.join("/") : "");
 
 const COMMAND_NAMES = [
   "help", "ls", "cd", "cat", "open", "pwd", "whoami", "skills", "projects",
-  "contact", "neofetch", "echo", "date", "history", "clear",
+  "contact", "visitor", "neofetch", "echo", "date", "history", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
   "login", "logout", "enroll", "passkeys", "building", "moontower", "services",
   "guestbook",
@@ -299,6 +300,7 @@ export const TerminalBody = () => {
         "  skills           tech stack, by category",
         "  projects         what I have built, one line each",
         "  contact          how to reach me",
+        "  visitor          which number you are",
         "  neofetch         system information",
         "  echo <text>      print text",
         "  date             current date & time",
@@ -416,6 +418,20 @@ export const TerminalBody = () => {
         "",
         "'open contact' for the window version.",
       ]),
+
+    // one request per page load, shared with App.jsx, so asking twice does not
+    // count as coming back twice
+    visitor: async () => {
+      const visit = await registerVisit();
+      if (!visit) return print(["visitor: could not reach the server."]);
+      const back = visit.visits - 1;
+      print([
+        `you are visitor number ${visit.number.toLocaleString()}.`,
+        back
+          ? `${visit.total.toLocaleString()} people have been here, and you have come back ${back} time${back === 1 ? "" : "s"}.`
+          : `${visit.total.toLocaleString()} people have been here, and this is your first time.`,
+      ]);
+    },
 
     neofetch: () => print([NEOFETCH]),
 
