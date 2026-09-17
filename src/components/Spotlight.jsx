@@ -10,6 +10,7 @@ const APP_ENTRIES = [
   { title: "Terminal", subtitle: "run some commands", icon: "/images/terminal.png", app: "terminal" },
   { title: "Contact", subtitle: "get in touch", icon: "/images/contact.png", app: "contact" },
   { title: "Guestbook", subtitle: "leave a note", icon: "/images/guestbook.svg", app: "guestbook" },
+  { title: "Publications", subtitle: "the papers", icon: "/icons/file.svg", location: "publications" },
   { title: "About This Mac", subtitle: "system info", icon: "/images/avatar-tanush.svg", app: "about" },
 ];
 
@@ -27,6 +28,7 @@ const Spotlight = () => {
       kind: "Applications",
       run: () => {
         if (e.app === "finder") return openFinderWindow(locations.work);
+        if (e.location) return openFinderWindow(locations[e.location]);
         openWindow(e.app);
       },
     }));
