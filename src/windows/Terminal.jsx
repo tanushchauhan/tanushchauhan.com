@@ -89,7 +89,12 @@ const FS_ROOT = {
       name: "publications",
       kind: "dir",
       loc: locations.publications,
-      children: locations.publications.children.map(fileNode),
+      children: locations.publications.children.map((paper) => ({
+        name: paper.id,
+        kind: "dir",
+        loc: paper,
+        children: paper.children.map(fileNode),
+      })),
     },
     {
       name: "about",

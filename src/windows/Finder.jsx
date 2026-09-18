@@ -1,9 +1,10 @@
-import { Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import clsx from "clsx";
 import WindowWrapper from "#hoc/WindowWrapper.jsx";
 import { WindowControls } from "#components";
 import AppIcon from "#components/AppIcon.jsx";
-import { locations } from "#constants";
+import { locations, parentOf } from "#constants";
 import useWindowStore, { FINDER_KEYS } from "#store/window.js";
 
 const Finder = ({ windowKey }) => {
@@ -11,7 +12,40 @@ const Finder = ({ windowKey }) => {
   // each Finder window carries its own location in its window data
   const activeLocation = windows[windowKey].data ?? locations.work;
 
-  const navigateTo = (item) => openWindow(windowKey, item);
+  // Visits made in this window. When there is nothing to go back to, Back
+  // climbs to the enclosing folder instead, so a project opened from the
+  // desktop can still reach the list it came from.
+  const [history, setHistory] = useState({ back: [], forward: [] });
+  const isOpen = windows[windowKey].isOpen;
+  useEffect(() => {
+    if (!isOpen) setHistory({ back: [], forward: [] });
+  }, [isOpen]);
+  const backTo = history.back.at(-1) ?? parentOf(activeLocation.id);
+  const forwardTo = history.forward.at(-1);
+
+  const navigateTo = (item) => {
+    if (item.id === activeLocation.id) return;
+    setHistory((h) => ({ back: [...h.back, activeLocation], forward: [] }));
+    openWindow(windowKey, item);
+  };
+
+  const goBack = () => {
+    if (!backTo) return;
+    setHistory((h) => ({
+      back: h.back.slice(0, -1),
+      forward: [...h.forward, activeLocation],
+    }));
+    openWindow(windowKey, backTo);
+  };
+
+  const goForward = () => {
+    if (!forwardTo) return;
+    setHistory((h) => ({
+      back: [...h.back, activeLocation],
+      forward: h.forward.slice(0, -1),
+    }));
+    openWindow(windowKey, forwardTo);
+  };
 
   const openItem = (item) => {
     if (item.kind === "folder") return navigateTo(item);
@@ -46,6 +80,14 @@ const Finder = ({ windowKey }) => {
     <>
       <div id="window-header">
         <WindowControls target={windowKey} />
+        <div className="finder-nav">
+          <button type="button" aria-label="Back" disabled={!backTo} onClick={goBack}>
+            <ChevronLeft />
+          </button>
+          <button type="button" aria-label="Forward" disabled={!forwardTo} onClick={goForward}>
+            <ChevronRight />
+          </button>
+        </div>
         <h2>{activeLocation.name}</h2>
         <Search className="icon ml-auto" />
       </div>
