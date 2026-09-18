@@ -102,7 +102,9 @@ const Dock = () => {
     <section id="dock">
       <div ref={dockRef} className="dock-container">
         {dockApps.map((app, i) => (
-          <div key={app.id} className="relative flex justify-center">
+          // the slot takes the click, not the button: the button rises as it
+          // magnifies, and a pointer resting where it was should still open it
+          <div key={app.id} className="dock-slot" onClick={() => toggleApp(app)}>
             {i === dockApps.length - 1 && <span className="dock-divider" />}
             <button
               type="button"
@@ -112,9 +114,10 @@ const Dock = () => {
               data-tooltip-content={app.name}
               data-tooltip-delay-show={150}
               disabled={!app.canOpen}
-              onClick={() => toggleApp(app)}
             >
-              <AppIcon icon={app.icon} alt={app.name} className={clsx(!app.canOpen && "opacity-60")} />
+              <AppIcon
+                icon={app.id === "trash" && locations.trash.children.length ? "trash-full" : app.icon}
+                alt={app.name} className={clsx(!app.canOpen && "opacity-60")} />
             </button>
             {(app.id === "finder"
               ? FINDER_KEYS.some((k) => windows[k].isOpen)
@@ -127,7 +130,7 @@ const Dock = () => {
           const meta = MIN_WINDOW_META[key] ?? { icon: "txt", name: key };
           const name = win.data?.name ?? meta.name;
           return (
-            <div key={key} className="relative flex justify-center">
+            <div key={key} className="dock-slot" onClick={() => restoreWindow(key)}>
               <button
                 type="button"
                 className="dock-icon min-tile"
@@ -136,7 +139,6 @@ const Dock = () => {
                 data-tooltip-id="dock-tooltip"
                 data-tooltip-content={name}
                 data-tooltip-delay-show={150}
-                onClick={() => restoreWindow(key)}
               >
                 <span className="mini-bar">
                   <i />

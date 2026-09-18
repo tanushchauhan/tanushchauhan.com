@@ -185,7 +185,7 @@ const SHAPES = {
     </>
   ),
   /* a frosted bin, darker at the top where the rim shades it */
-  trash: (id) => (
+  trash: (id, full) => (
     <>
       <defs>
         <linearGradient id={`${id}-body`} x1="0" y1="0" x2="0" y2="1">
@@ -203,6 +203,15 @@ const SHAPES = {
       />
       <rect x="8.6" y="7" width="46.8" height="9" rx="4.5" fill="#f5f5f7" />
       <rect x="10" y="8.3" width="44" height="6.4" rx="3.2" fill={`url(#${id}-well)`} />
+      {/* with something in it, crumpled paper sits in the well and over the rim */}
+      {full && (
+        <g stroke="#b9b9c0" strokeWidth=".5" strokeLinejoin="round">
+          <path d="M14.5 13.6c-.6-3.4 1.3-6.8 4.9-7.6 2.1-2.6 6.4-2.4 8.2.3 2.8-.4 5 1.7 5 4.4l.4 2.9z" fill="#fbfbfc" />
+          <path d="M31.4 13.6c-.5-4.2 1.6-8.4 5.6-9.4 3-.8 5.6.6 6.7 2.9 3.2-.2 5.7 2.4 5.5 5.3l-.2 1.2z" fill="#f2f2f4" />
+          <path d="M24.8 13.6c.2-3 2.6-5 5.4-4.7 2.2.2 3.9 2 4.1 4.2l.1.5z" fill="#e9e9ee" />
+          <path d="M21 6.8l2.4 2.1M39.2 6.2l-1.1 3.3M44.6 8.8l-2.7 1.8" fill="none" />
+        </g>
+      )}
     </>
   ),
 };
@@ -215,21 +224,24 @@ const AppIcon = ({ icon, alt = "", className }) => {
   if (!icon) return null;
   if (icon.includes("/")) return <img src={icon} alt={alt} className={className} />;
 
-  const shape = SHAPES[icon];
-  const draw = shape ?? GLYPHS[icon];
+  // "trash-full" is the bin with paper in it
+  const full = icon === "trash-full";
+  const name = full ? "trash" : icon;
+  const shape = SHAPES[name];
+  const draw = shape ?? GLYPHS[name];
   if (!draw) return null;
 
   return (
     <span
       className={clsx("app-icon", className)}
-      data-icon={icon}
+      data-icon={name}
       data-shape={shape ? "bare" : undefined}
       role={alt ? "img" : undefined}
       aria-label={alt || undefined}
       aria-hidden={alt ? undefined : true}
     >
       <svg viewBox="0 0 64 64" focusable="false">
-        {draw(id)}
+        {draw(id, full)}
       </svg>
     </span>
   );
