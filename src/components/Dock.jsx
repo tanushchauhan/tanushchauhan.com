@@ -24,26 +24,29 @@ const MIN_WINDOW_META = {
 
 const Dock = () => {
   const dockRef = useRef(null);
-  const { windows, openWindow, closeWindow, restoreWindow, openFinderWindow } =
+  const { windows, openWindow, focusWindow, restoreWindow, openFinderWindow } =
     useWindowStore();
 
   const minimized = Object.entries(windows).filter(
     ([, win]) => win.isOpen && win.isMinimized
   );
 
-  const toggleApp = (app) => {
+  // As on a Mac: clicking a running app brings it forward rather than
+  // quitting it. Closing is the red button's job.
+  const activateApp = (app) => {
     if (!app.canOpen) return;
 
     // Trash is a Finder shortcut straight into the junk drawer.
     if (app.id === "trash") return openFinderWindow(locations.trash);
 
     if (app.id === "finder") {
-      const minimizedKey = FINDER_KEYS.find(
-        (k) => windows[k].isOpen && windows[k].isMinimized
-      );
-      if (minimizedKey) return restoreWindow(minimizedKey);
-      if (FINDER_KEYS.some((k) => windows[k].isOpen))
-        return FINDER_KEYS.forEach((k) => windows[k].isOpen && closeWindow(k));
+      const open = FINDER_KEYS.filter((k) => windows[k].isOpen);
+      const shown = open
+        .filter((k) => !windows[k].isMinimized)
+        .sort((a, b) => windows[a].zIndex - windows[b].zIndex);
+      // raise them all, keeping their order, with the frontmost last
+      if (shown.length) return shown.forEach(focusWindow);
+      if (open.length) return restoreWindow(open[0]);
       return openFinderWindow(locations.work);
     }
 
@@ -51,7 +54,7 @@ const Dock = () => {
     if (!win) return;
 
     if (win.isOpen && win.isMinimized) restoreWindow(app.id);
-    else if (win.isOpen) closeWindow(app.id);
+    else if (win.isOpen) focusWindow(app.id);
     else openWindow(app.id);
   };
 
@@ -104,7 +107,7 @@ const Dock = () => {
         {dockApps.map((app, i) => (
           // the slot takes the click, not the button: the button rises as it
           // magnifies, and a pointer resting where it was should still open it
-          <div key={app.id} className="dock-slot" onClick={() => toggleApp(app)}>
+          <div key={app.id} className="dock-slot" onClick={() => activateApp(app)}>
             {i === dockApps.length - 1 && <span className="dock-divider" />}
             <button
               type="button"
