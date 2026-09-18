@@ -375,6 +375,13 @@ nav time {
   @apply glass;
 }
 
+/* Reaches down through the dock's padding and halfway across each gap, so the
+   whole column under an icon is its target. */
+.dock-slot {
+  @apply relative -mx-1.5 -my-2 flex cursor-pointer justify-center self-stretch px-1.5 py-2;
+  align-items: flex-end;
+}
+
 .dock-icon {
   @apply block size-12 cursor-pointer;
   transform-origin: bottom center;
@@ -391,7 +398,7 @@ nav time {
 }
 
 .running-dot {
-  @apply absolute -bottom-1.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-ink/70;
+  @apply absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-ink/70;
 }
 
 /* minimized-window tiles: tiny window mockups on the right side of the dock */
@@ -720,6 +727,26 @@ body.resizing * {
   height: 100% !important;
   max-height: 100% !important;
   border-radius: 0;
+  --inner-r: 0px;
+}
+
+/* The clip margin that lets the resize handles hang outside the frame also
+   widens the rounded clip, so a square child corner shows through just past
+   the frame's curve. On a dark toolbar that read as a black box behind the
+   corner. Rounding the top and bottom children to the frame's inner radius
+   keeps them inside it. */
+.window {
+  --inner-r: calc(var(--radius-window) - 1px);
+}
+
+.window > #window-header {
+  border-radius: var(--inner-r) var(--inner-r) 0 0;
+}
+
+.window > :nth-last-child(1 of :not(.rh)) {
+  border-radius: 0 0 var(--inner-r) var(--inner-r);
+  /* clip-path rather than overflow, which would stop a body that scrolls */
+  clip-path: inset(0 round 0 0 var(--inner-r) var(--inner-r));
 }
 
 /* The uniform toolbar: a frosted band across the top of every window, a
@@ -737,6 +764,29 @@ body.resizing * {
 
 #window-controls {
   @apply flex items-center gap-2;
+}
+
+/* Back and Forward, a small glass pill after the traffic lights */
+.finder-nav {
+  @apply ml-2 flex items-center rounded-full p-0.5;
+  background: rgb(var(--glass-ink) / 0.06);
+}
+
+.finder-nav button {
+  @apply grid size-7 cursor-pointer place-items-center rounded-full transition-colors;
+  color: var(--glass-fg);
+}
+
+.finder-nav button:hover:not(:disabled) {
+  background: rgb(var(--glass-ink) / 0.08);
+}
+
+.finder-nav button:disabled {
+  @apply cursor-default opacity-30;
+}
+
+.finder-nav svg {
+  @apply size-4;
 }
 
 #window-controls div {
