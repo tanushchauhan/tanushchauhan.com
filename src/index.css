@@ -453,8 +453,8 @@ nav time {
   inset: 0;
   background: linear-gradient(
     180deg,
-    rgb(255 255 255 / 0.38),
-    rgb(255 255 255 / 0.1) 46%,
+    rgb(255 255 255 / 0.26),
+    rgb(255 255 255 / 0.06) 46%,
     rgb(255 255 255 / 0) 52%
   );
 }
@@ -472,49 +472,66 @@ nav time {
   display: none;
 }
 
+/* the petals overlap like tinted film, darker where two cross */
+.app-icon .petal {
+  mix-blend-mode: multiply;
+  opacity: 0.92;
+}
+
 .app-icon[data-icon="finder"] {
-  --ic-a: #66c3ff;
-  --ic-b: #1e7de6;
+  --ic-a: #5ec5fa;
+  --ic-b: #4796f1;
 }
 
 .app-icon[data-icon="safari"] {
-  --ic-a: #62bcff;
-  --ic-b: #1565d8;
+  --ic-a: #ffffff;
+  --ic-b: #e8e8ed;
 }
 
 .app-icon[data-icon="photos"] {
   --ic-a: #ffffff;
-  --ic-b: #e6e6ec;
+  --ic-b: #ececf0;
 }
 
 .app-icon[data-icon="terminal"] {
-  --ic-a: #4b4b53;
-  --ic-b: #131317;
+  --ic-a: #2a2a2d;
+  --ic-b: #0f0f11;
+  --ic-glyph: #f2f2f4;
 }
 
 .app-icon[data-icon="contact"] {
-  --ic-a: #dcb47c;
-  --ic-b: #8a5f34;
+  --ic-a: #e0decd;
+  --ic-b: #c9c6b3;
 }
 
 .app-icon[data-icon="guestbook"] {
-  --ic-a: #70e98b;
-  --ic-b: #1c9f47;
+  --ic-a: #8aee80;
+  --ic-b: #5ccd52;
+  --ic-glyph: #f7fcf5;
 }
 
 .app-icon[data-icon="settings"] {
-  --ic-a: #a3a3aa;
-  --ic-b: #5a5a61;
+  --ic-a: #98989d;
+  --ic-b: #6e6e73;
 }
 
-/* the whole set, monochrome: frosted white tiles over the wallpaper */
+/* the whole set, monochrome: frosted white tiles over the wallpaper, and
+   every coloured part of a glyph turned to white at some strength */
 :root[data-glass="clear"] .app-icon:not([data-shape]) {
   --ic-a: rgb(255 255 255 / 0.62);
   --ic-b: rgb(255 255 255 / 0.3);
   --ic-glyph: #fff;
   --ic-line: #fff;
-  --ic-needle: #fff;
   --ic-mono: #fff;
+  --ic-card: rgb(255 255 255 / 0.3);
+  --ic-edge: rgb(255 255 255 / 0.5);
+  --ic-dial: rgb(255 255 255 / 0.22);
+  --ic-tick: rgb(255 255 255 / 0.75);
+  --ic-needle: #fff;
+  --ic-needle-2: rgb(255 255 255 / 0.55);
+  --ic-soft: rgb(255 255 255 / 0.28);
+  --ic-cursor: rgb(255 255 255 / 0.6);
+  --ic-tab-opacity: 0.45;
   -webkit-backdrop-filter: blur(10px) saturate(1.4);
   backdrop-filter: blur(10px) saturate(1.4);
 }
@@ -525,8 +542,23 @@ nav time {
   --ic-b: #57280a;
   --ic-glyph: #ffe2c6;
   --ic-line: #ffe2c6;
-  --ic-needle: #ffc999;
   --ic-mono: #ffe2c6;
+  --ic-card: rgb(255 226 198 / 0.22);
+  --ic-edge: rgb(255 226 198 / 0.45);
+  --ic-dial: rgb(255 226 198 / 0.18);
+  --ic-tick: rgb(255 226 198 / 0.7);
+  --ic-needle: #ffc999;
+  --ic-needle-2: rgb(255 226 198 / 0.6);
+  --ic-soft: rgb(255 226 198 / 0.25);
+  --ic-cursor: rgb(255 226 198 / 0.6);
+  --ic-tab-opacity: 0.4;
+}
+
+/* multiply turns a white or cream petal invisible, so the two monochrome
+   looks lay them over each other plainly instead */
+:root:is([data-glass="clear"], [data-glass="tinted"]) .app-icon .petal {
+  mix-blend-mode: normal;
+  opacity: 0.5;
 }
 
 .tooltip {
