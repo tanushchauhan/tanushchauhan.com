@@ -89,8 +89,21 @@ const QuickLook = () => {
           ? "Open with Preview"
           : "Open with TextEdit";
 
+  // The panel zooms out of the icon it previews, as it does on a Mac: the
+  // animation starts it at the icon's position, measured from the centre of
+  // the screen where the panel comes to rest. Without an icon it grows in
+  // place. Moving through a folder with the arrows keeps the same panel, so
+  // this only plays when it opens.
+  const origin = quickLook.origin;
+  const from = origin
+    ? {
+        "--ql-from-x": `${Math.round(origin.x - window.innerWidth / 2)}px`,
+        "--ql-from-y": `${Math.round(origin.y - window.innerHeight / 2)}px`,
+      }
+    : undefined;
+
   return (
-    <div id="quick-look" role="dialog" aria-label={`Quick Look: ${item.name}`}>
+    <div id="quick-look" role="dialog" aria-label={`Quick Look: ${item.name}`} style={from}>
       <header>
         <button type="button" className="ql-close" aria-label="Close" onClick={() => setQuickLook(null)}>
           <X />

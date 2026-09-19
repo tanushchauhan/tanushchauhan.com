@@ -87,7 +87,15 @@ const Finder = ({ windowKey }) => {
 
       if (e.key === " " && selected) {
         e.preventDefault();
-        setQuickLook(previewing ? null : { item: selected, windowKey });
+        if (previewing) return setQuickLook(null);
+        // where the icon is, so the panel can zoom out of it
+        const icon = document.querySelector(`#${windowKey} ul.content li.selected :is(.app-icon, img)`);
+        const r = icon?.getBoundingClientRect();
+        setQuickLook({
+          item: selected,
+          windowKey,
+          origin: r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null,
+        });
         return;
       }
       if (e.key === "Enter" && selected) {

@@ -1341,13 +1341,17 @@ body.resizing * {
 #quick-look {
   @apply fixed top-1/2 left-1/2 z-[7500] flex max-h-[76vh] w-[560px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-window;
   @apply glass;
-  animation: ql-in 0.18s ease-out;
+  animation: ql-in 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
+/* The centring above is Tailwind's `translate` property, which composes with
+   `transform` rather than being replaced by it. So the keyframe moves the panel
+   only by the icon's offset from centre; putting the -50% in here as well had
+   it start half a panel off to the side and slide over. */
 @keyframes ql-in {
   from {
-    transform: translate(-50%, -50%) scale(0.94);
-    opacity: 0;
+    transform: translate(var(--ql-from-x, 0px), var(--ql-from-y, 0px)) scale(0.08);
+    opacity: 0.4;
   }
 }
 
