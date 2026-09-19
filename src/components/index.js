@@ -9,6 +9,7 @@ import Spotlight from "./Spotlight.jsx";
 import MobileExperience from "./MobileExperience.jsx";
 import DesktopMenu from "./DesktopMenu.jsx";
 import ControlCenter from "./ControlCenter.jsx";
+import QuickLook from "./QuickLook.jsx";
 
 export {
   ControlCenter,
@@ -22,4 +23,5 @@ export {
   BootScreen,
   Spotlight,
   MobileExperience,
+  QuickLook,
 };

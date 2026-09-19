@@ -1001,9 +1001,33 @@ body.resizing * {
   @apply truncate text-sm font-medium text-ink/80;
 }
 
+/* the content pane and, under it, the status bar */
+.finder-main {
+  @apply flex min-w-0 flex-1 flex-col;
+  background: var(--surface);
+}
+
 [id^="finder"] ul.content {
   @apply relative flex-1 overflow-y-auto p-4;
-  background: var(--surface);
+}
+
+.finder-status {
+  @apply shrink-0 truncate border-t px-4 py-1.5 text-center text-[11px] text-ink/45 select-none;
+  border-color: var(--glass-line);
+}
+
+.finder-status b {
+  @apply font-medium text-ink/70;
+}
+
+/* Selected, as Finder draws it: a grey well behind the icon and the name in
+   an accent pill */
+[id^="finder"] ul.content li.selected {
+  @apply bg-ink/10 hover:bg-ink/10;
+}
+
+[id^="finder"] ul.content li.selected p {
+  @apply rounded bg-[#0a84ff] px-1 text-white;
 }
 
 [id^="finder"] ul.content li {
@@ -1309,6 +1333,121 @@ body.resizing * {
 
 #about .fine-print {
   @apply mt-4 text-[10px] text-ink/35;
+}
+
+/* ---------------- quick look ----------------
+   A floating glass panel over everything, like Spotlight. The preview itself
+   sits on the solid surface, the same rule as a window body. */
+#quick-look {
+  @apply fixed top-1/2 left-1/2 z-[7500] flex max-h-[76vh] w-[560px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-window;
+  @apply glass;
+  animation: ql-in 0.18s ease-out;
+}
+
+@keyframes ql-in {
+  from {
+    transform: translate(-50%, -50%) scale(0.94);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #quick-look {
+    animation: none;
+  }
+}
+
+#quick-look header {
+  @apply relative flex h-11 shrink-0 items-center gap-3 px-3;
+}
+
+#quick-look h2 {
+  @apply pointer-events-none absolute left-1/2 max-w-[50%] -translate-x-1/2 truncate text-sm font-semibold;
+  color: var(--glass-fg);
+}
+
+#quick-look header button {
+  @apply flex cursor-pointer items-center gap-1.5 rounded-full text-[12px] font-medium transition-colors;
+  color: var(--glass-fg);
+}
+
+#quick-look .ql-close {
+  @apply grid size-7 place-items-center hover:bg-ink/10;
+}
+
+#quick-look .ql-open {
+  @apply ml-auto bg-ink/10 px-3 py-1 hover:bg-ink/15;
+}
+
+#quick-look header svg {
+  @apply size-3.5;
+}
+
+#quick-look .ql-body {
+  @apply min-h-0 flex-1 overflow-y-auto;
+  background: var(--surface);
+}
+
+#quick-look .ql-image {
+  @apply block max-h-[64vh] w-full bg-neutral-900 object-contain;
+}
+
+#quick-look .ql-text {
+  @apply space-y-4 p-6;
+}
+
+#quick-look .ql-text .subtitle {
+  @apply text-sm font-medium text-burnt;
+}
+
+#quick-look .ql-text p {
+  @apply text-sm leading-relaxed text-ink/75;
+}
+
+#quick-look .ql-text img.portrait {
+  @apply mx-auto size-28 rounded-full object-cover;
+}
+
+#quick-look .ql-text img.banner {
+  @apply aspect-video w-full rounded-lg bg-neutral-900 object-contain;
+}
+
+#quick-look :is(.ql-folder, .ql-link) {
+  @apply flex flex-col items-center px-6 py-8 text-center;
+}
+
+#quick-look .ql-folder > .app-icon,
+#quick-look .ql-link > :is(.app-icon, img) {
+  @apply size-20;
+}
+
+#quick-look .ql-link img.link-chip {
+  @apply rounded-3xl bg-neutral-800 p-4;
+}
+
+#quick-look .ql-count,
+#quick-look .host {
+  @apply mt-3 text-base font-semibold text-ink/85;
+}
+
+#quick-look .href {
+  @apply mt-1 max-w-full text-xs break-all text-ink/50;
+}
+
+#quick-look .ql-folder ul {
+  @apply mt-4 w-full max-w-xs space-y-1 text-left;
+}
+
+#quick-look .ql-folder li {
+  @apply flex items-center gap-2 rounded-md px-2 py-1 text-sm text-ink/75;
+}
+
+#quick-look .ql-folder li :is(.app-icon, img) {
+  @apply size-5;
+}
+
+#quick-look .ql-folder li img.link-chip {
+  @apply rounded-md bg-neutral-800 p-0.5;
 }
 
 /* ---------------- spotlight ---------------- */

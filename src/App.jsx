@@ -9,6 +9,7 @@ import {
   Spotlight,
   MobileExperience,
   DesktopMenu,
+  QuickLook,
 } from "#components";
 import {
   Terminal,
@@ -107,6 +108,7 @@ const App = () => {
         <AboutMac />
 
         <Spotlight />
+        <QuickLook />
         <DesktopMenu />
         <Dock />
       </main>

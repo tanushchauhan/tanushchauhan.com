@@ -22,8 +22,13 @@ Austin), and live at [tanushchauhan.com](https://tanushchauhan.com).
   that also holds the theme and the sound switch
 - Windows you can drag by the title bar, resize from any edge or corner,
   minimize into the dock and maximize. Positions and sizes survive a reload.
-- A Finder with Projects, Publications, About Me and Trash, plus Spotlight
-  (press ⌘K) that searches all of it
+- A Finder with Projects, Publications, About Me and Trash, back and forward
+  buttons, and selection the Mac way: click to select, double-click to open,
+  and Space for Quick Look, with the arrow keys flicking through a folder.
+  Spotlight (press ⌘K) searches all of it.
+- About This Mac, reporting the actual build: the React and Vite versions,
+  the commit, how long the server has been up since the last deploy, and how
+  many people have visited
 - Safari, holding a short reading list of the things I would point at first
 - A gallery of poster cards, and a right-click menu on the desktop
 - A separate phone layout: a springboard with pages, a dock and app sheets,

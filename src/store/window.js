@@ -150,6 +150,15 @@ const useWindowStore = create(
           state.widgetPos[layout][id] = pos;
         }),
 
+      // The item Quick Look is showing, and the Finder window it came from.
+      // Not persisted: a preview is a glance, not something to reopen on load.
+      quickLook: null,
+
+      setQuickLook: (preview) =>
+        set((state) => {
+          state.quickLook = preview;
+        }),
+
       setSpotlight: (open) =>
         set((state) => {
           state.spotlightOpen = open;
