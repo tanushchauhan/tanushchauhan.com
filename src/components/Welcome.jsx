@@ -77,7 +77,7 @@ const Welcome = () => {
         {renderText("tanushchauhan.com", "text-4xl italic font-georama", 400)}
       </h1>
       <p ref={subtitleRef} className="mt-1 text-white/90">
-        {renderText("Hey, I am Tanush", "text-lg font-georama", 100)}
+        {renderText("Hey, I'm Tanush", "text-lg font-georama", 100)}
       </p>
       {/* It tells you what to do. It used to open by announcing that this is an
           operating system and not a website, which the screen has already said

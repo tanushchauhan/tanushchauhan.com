@@ -15,7 +15,7 @@ const NEOFETCH = `
          ◆               tanush @ tanushchauhan.com
   ─────────────────────────────────────────
   OS        tanushchauhan.com 1.0
-  Host      UT Austin, Dean's Scholars
+  Host      UT Austin
   Kernel    CS Honors + Math + Robotics
   Shell     /bin/ros2
   Packages  react, ros2, supabase, postgres
@@ -27,7 +27,7 @@ const NEOFETCH = `
  * it would not read as a boast. It read as a boast.
  */
 const FORTUNES = [
-  "A robot that follows you is a feature. A robot that follows you home is a paper.",
+  "Calibrate the cameras. Then calibrate them again.",
   "The best time to start a hackathon project was 36 hours ago. The second best time is now.",
   "Real shells have no 'undo'. This one has no 'rm'. Call it even.",
   "Somewhere a LiDAR point cloud is aligning perfectly. Not this one.",
@@ -114,11 +114,10 @@ const FS_ROOT = {
       hidden: true,
       secret: [
         "you found the hidden file.",
-        "fun fact: this entire OS exists because I refused to build",
-        "a portfolio that starts with \"Hi, I am ___\" and a photo on the right.",
+        "there is a poster of me in here that did not fit anywhere else.",
+        "run 'poster' to see it.",
         "",
-        "so obviously I hid one in here instead. run 'poster'.",
-        "then run 'open contact' and let us build something.",
+        "and if you want to build something together, 'open contact'.",
       ],
     },
   ],
@@ -895,7 +894,7 @@ export const TerminalBody = () => {
       const item = locations.about.children.find((c) => c.id === "poster");
       openWindow("imgFile", item.data);
       print([
-        "The version of me that fits on one page, before the résumé sanded it down.",
+        "A one-page version of me, a bit less formal than the résumé.",
       ]);
     },
   };
