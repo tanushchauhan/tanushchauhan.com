@@ -43,6 +43,22 @@ const useLiveSpecs = (isOpen) => {
   return { health, visitors };
 };
 
+const REPO = "https://github.com/tanushchauhan/tanushchauhan.com";
+
+/** The commit this build came from, linked to it on GitHub. */
+const Build = () => {
+  const date = dayjs(BUILD.builtAt).format("MMM D, YYYY");
+  if (!BUILD.commit) return date;
+  return (
+    <>
+      <a href={`${REPO}/commit/${BUILD.commit}`} target="_blank" rel="noreferrer">
+        {BUILD.commit}
+      </a>
+      {` · ${date}`}
+    </>
+  );
+};
+
 const AboutMac = () => {
   const { openWindow, windows, wallpaper, theme } = useWindowStore();
   const { health, visitors } = useLiveSpecs(windows.about?.isOpen);
@@ -58,10 +74,7 @@ const AboutMac = () => {
     ["Chip", `React ${BUILD.react} on Vite ${BUILD.vite}`],
     ["Server", "Bun, Hono and Postgres"],
     health && ["Uptime", `${duration(health.uptimeSeconds)} since the last deploy`],
-    [
-      "Build",
-      [BUILD.commit, dayjs(BUILD.builtAt).format("MMM D, YYYY")].filter(Boolean).join(" · "),
-    ],
+    ["Build", <Build key="build" />],
     visitors != null && ["Visitors", visitors.toLocaleString()],
     [
       "Display",

@@ -1228,6 +1228,10 @@ body.resizing * {
   @apply text-ink/55 tabular-nums;
 }
 
+#about dd a {
+  @apply text-ink/80 underline decoration-ink/25 underline-offset-2 hover:decoration-ink/60;
+}
+
 #about .about-body button {
   @apply mt-5 cursor-pointer rounded-full bg-ink/10 px-4 py-1 text-[13px] font-medium transition-colors hover:bg-ink/15;
 }
