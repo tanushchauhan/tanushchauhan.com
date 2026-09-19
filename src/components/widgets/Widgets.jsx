@@ -8,7 +8,7 @@ import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { Bar, Heatmap, Sparkline } from "./Sparkline.jsx";
 import { onRefreshWidgets } from "../../utils/widgets.js";
-import { Sun, Moon, Grid3x3, GitCommitVertical, Box, Activity, Globe } from "lucide-react";
+import { Sun, Moon, Grid3x3, GitCommitVertical, Box, Activity, Globe, Network } from "lucide-react";
 
 gsap.registerPlugin(Draggable);
 
@@ -205,39 +205,6 @@ const gb = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`);
 const gbValue = (mb) => (mb >= 1024 ? (mb / 1024).toFixed(1) : String(mb));
 const gbUnit = (mb) => (mb >= 1024 ? "GB" : "MB");
 
-const ago = (iso) => (iso ? duration((Date.now() - new Date(iso)) / 1000) : "never");
-
-/*
- * The tailnet, as one line under the fleet. Every device rather than only the
- * ones running an agent, so a laptop or a phone shows up too, with a dot for
- * whether it is connected. The detail (addresses, versions, key expiry) is the
- * terminal's `tailnet` command; a card has room for the yes or no.
- */
-const Tailnet = ({ data }) => {
-  if (!data?.configured) return null;
-  if (!data.ok) {
-    return (
-      <p className="sub tailnet">
-        <span className="warn">tailnet unreachable</span>
-      </p>
-    );
-  }
-  const online = data.devices.filter((d) => d.online).length;
-  return (
-    <p className="sub tailnet">
-      <b>
-        tailnet {online}/{data.devices.length}
-      </b>
-      {data.devices.map((d) => (
-        <span key={d.name} className={clsx(!d.online && "off")} title={d.online ? d.os : `last seen ${ago(d.lastSeen)} ago`}>
-          <i className={d.online ? "dot-ok" : "dot-off"} />
-          {d.name}
-        </span>
-      ))}
-    </p>
-  );
-};
-
 /*
  * Moontower: the fleet card. One tab per reporting machine, the hub itself
  * being just another row rather than a special case.
@@ -323,12 +290,6 @@ const System = ({ data }) => {
               </span>
             );
           })}
-          {data?.tailnet?.ok && (
-            <span>
-              <b>tailnet</b> {data.tailnet.devices.filter((d) => d.online).length}/
-              {data.tailnet.devices.length} online
-            </span>
-          )}
         </p>
       )}
 
@@ -409,8 +370,6 @@ const System = ({ data }) => {
             </p>
           )}
 
-          <Tailnet data={data.tailnet} />
-
           <p className="sub app-mem">
             {server.stale ? (
               /* a frozen number presented as live is worse than no number */
@@ -439,6 +398,75 @@ const System = ({ data }) => {
         </>
       ) : (
         <p className="empty">Waiting for the first reading…</p>
+      )}
+    </article>
+  );
+};
+
+/* ---------- tailnet ----------
+ * Every device on the tailnet, including the ones with no Moontower agent: a
+ * laptop, a phone. Its own card because it is its own source: Moontower is
+ * what my machines say about themselves, this is what Tailscale's control
+ * plane says about them, and the two disagree in useful ways.
+ *
+ * Offline dims rather than turns red. A laptop with its lid shut is not a
+ * fault, and a card that went red every night would teach me to ignore it.
+ * The amber notes are the two things worth acting on: a client with an update
+ * waiting, and a node key close enough to expiry that the device is about to
+ * drop off.
+ */
+const EXPIRY_WARN_MS = 14 * 86400 * 1000;
+
+const Tailnet = ({ data }) => {
+  const devices = data?.ok ? data.devices : [];
+  const online = devices.filter((d) => d.online).length;
+
+  const state = (d) => {
+    if (d.online) return "online";
+    const seconds = (Date.now() - new Date(d.lastSeen)) / 1000;
+    // a day's granularity is plenty for something that has been off that long
+    return seconds >= 86400 ? `${Math.floor(seconds / 86400)}d ago` : `${duration(seconds)} ago`;
+  };
+
+  const detail = (d) =>
+    [d.os, d.address, d.version && `v${d.version}`].filter(Boolean).join(" · ");
+
+  const warning = (d) => {
+    if (d.keyExpiry && new Date(d.keyExpiry) - Date.now() < EXPIRY_WARN_MS) {
+      return `key expires ${dayjs(d.keyExpiry).format("MMM D")}`;
+    }
+    if (d.updateAvailable) return "update available";
+    return null;
+  };
+
+  return (
+    <article className="widget w-tailnet" style={{ "--accent": "#a5b4fc" }}>
+      <Head icon={<Network />}>
+        Tailnet
+        {data?.ok && (
+          <span className="tail">
+            {online} of {devices.length} online
+          </span>
+        )}
+      </Head>
+      {data?.ok === false ? (
+        <p className="empty">Tailscale is not answering: {data.error}</p>
+      ) : (
+        <ul className="devices">
+          {devices.map((d) => (
+            <li key={d.name} className={clsx(!d.online && "off")}>
+              <p className="row">
+                <i className={clsx("d", d.online ? "d-ok" : "d-off")} />
+                <span className="n">{d.name}</span>
+                <span className="t">{state(d)}</span>
+              </p>
+              <p className="detail">
+                <span className="n">{detail(d)}</span>
+                {warning(d) && <span className="warn">{warning(d)}</span>}
+              </p>
+            </li>
+          ))}
+        </ul>
       )}
     </article>
   );
@@ -635,6 +663,11 @@ const cards = ({ github, building, system, authed }) => [
     ? [
         { id: "system", wide: true, node: <System data={system} /> },
         { id: "services", wide: true, node: <Services data={system} /> },
+        // only once the server says it has a credential: a card that could
+        // only ever say "not configured" is not worth its space in the grid
+        ...(system?.tailnet?.configured
+          ? [{ id: "tailnet", wide: true, node: <Tailnet data={system.tailnet} /> }]
+          : []),
       ]
     : []),
 ];
@@ -658,7 +691,7 @@ const cards = ({ github, building, system, authed }) => [
  * A tier that buys nothing at the current width costs a measurement and is
  * stepped over, which is how `min` behaves above 1360px: see the CSS.
  */
-const FIT_TIERS = ["", "tight", "compact", "min", "core", "bare"];
+const FIT_TIERS = ["", "tight", "lean", "compact", "min", "core", "bare"];
 const DOCK_CLEARANCE = 20;
 
 /**
@@ -698,6 +731,11 @@ export const MobileSystem = () => {
       <div className="widget-slot wide">
         <Services data={system} />
       </div>
+      {system?.tailnet?.configured && (
+        <div className="widget-slot wide">
+          <Tailnet data={system.tailnet} />
+        </div>
+      )}
     </div>
   );
 };
@@ -708,7 +746,7 @@ export const MobileSystem = () => {
  * a layout that no longer exists; the card list covers the rest, because signing
  * in adds a row and moves everything under it.
  */
-const GEOMETRY = 2;
+const GEOMETRY = 3;
 const signature = (list) => `${GEOMETRY}:${list.map((c) => c.id).join(",")}`;
 
 /**
@@ -821,14 +859,16 @@ const Widgets = () => {
   return (
     // the fifth card has to come from somewhere: signing in slides the block
     // up towards the nameplate rather than down into the dock
-    <section id="widgets" className={clsx(data.authed && "authed")} ref={rootRef}>
-      {list.map(({ id, node, wide }) => (
+    <section
+      id="widgets"
+      className={clsx(data.authed && "authed", list.some((c) => c.id === "tailnet") && "with-tailnet")}
+      ref={rootRef}
+    >
+      {list.map(({ id, node }) => (
         <div
           key={id}
-          // The signed-in cards span the grid by default and pair up only
-          // where there is width for it (see the min-width rule in the CSS).
-          // At half of a narrow grid three stats do not fit on a line.
-          className={clsx("widget-slot", (id === "system" || id === "services") && wide && "wide")}
+          // placement is the stylesheet's: see the signed-in grid in index.css
+          className="widget-slot"
           data-id={id}
         >
           {node}

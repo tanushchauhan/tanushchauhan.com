@@ -1871,9 +1871,24 @@ body.resizing * {
   @apply top-48 gap-3;
 }
 
+/* Narrow, the signed-in cards take rows under the 2x2: the fleet card across
+   the full width, where three stats fit on a line, and Services and Tailnet
+   sharing the row under it. Without a Tailnet card Services has that row to
+   itself. */
+#widgets.authed .widget-slot[data-id="system"],
+#widgets.authed:not(.with-tailnet) .widget-slot[data-id="services"] {
+  @apply col-span-2;
+}
+
 /* The width only exists on a wide desktop. At 1100px the folders start at 878
-   and a 46rem grid would run within 110px of them, so below this the two cards
-   go back to a row each and the fit ladder handles the height as before. */
+   and a 46rem grid would run within 110px of them, so below this the cards go
+   back to the rows above and the fit ladder handles the height as before.
+
+   With a Tailnet card the grid grows a third column rather than a fourth row.
+   The device list is the one card whose length is up to me rather than the
+   design, so it gets the column that can run tall, beside the four public
+   cards, and the fleet card takes two thirds of the bottom row. The block
+   comes out no taller than it was without it. */
 @media (min-width: 1360px) {
   #widgets.authed {
     @apply w-[46rem];
@@ -1883,6 +1898,23 @@ body.resizing * {
   #widgets.authed .widget-slot[data-id="services"] {
     @apply col-span-1;
   }
+
+  #widgets.authed.with-tailnet {
+    @apply w-[50rem];
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "clock building tailnet"
+      "contrib commit tailnet"
+      "system system services";
+  }
+
+  #widgets.with-tailnet .widget-slot[data-id="clock"] { grid-area: clock; }
+  #widgets.with-tailnet .widget-slot[data-id="building"] { grid-area: building; }
+  #widgets.with-tailnet .widget-slot[data-id="contrib"] { grid-area: contrib; }
+  #widgets.with-tailnet .widget-slot[data-id="commit"] { grid-area: commit; }
+  #widgets.with-tailnet .widget-slot[data-id="tailnet"] { grid-area: tailnet; }
+  #widgets.with-tailnet .widget-slot[data-id="system"] { grid-area: system; }
+  #widgets.with-tailnet .widget-slot[data-id="services"] { grid-area: services; }
 }
 
 #widgets.authed .widget {
@@ -1928,6 +1960,26 @@ body.resizing * {
   @apply mt-1 h-8;
 }
 
+/* --- tier one and a half: the graphs get shorter before anything takes them
+   away. A 20px sparkline still shows the shape of the last 45 minutes, which
+   is the whole reason it is there, and the spacing around the stats goes with
+   it. This is the step most laptop windows land on when signed in. --- */
+#widgets[data-fit="lean"] .w-system .stat svg {
+  @apply mt-0.5 h-5;
+}
+
+#widgets[data-fit="lean"] .w-system :is(.tabs, .stats) {
+  @apply mt-1.5;
+}
+
+#widgets[data-fit="lean"] .w-system .units {
+  @apply mt-1;
+}
+
+#widgets[data-fit="lean"] .widget .heatmap {
+  @apply mt-1.5;
+}
+
 /* --- tier two: the fleet card gives up its decoration. Losing the shape of the
    last 45 minutes beats losing the card, which is what the tiers below cost.
    Without this step the gap between tiers was a whole card wide and a 1440x900
@@ -1953,7 +2005,7 @@ body.resizing * {
 /* The tail goes with them. It reports the uptime, load and core count of the
    selected tab, and the strip lists every machine at once, so left in place it
    would attach one machine's numbers to all of them. */
-#widgets:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .w-system :is(.tabs, .stats, .units, .tailnet, .app-mem, .empty, header .tail) {
+#widgets:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .w-system :is(.tabs, .stats, .units, .app-mem, .empty, header .tail) {
   display: none;
 }
 
@@ -1989,8 +2041,25 @@ body.resizing * {
   display: none;
 }
 
+/* Tailnet goes with it on a narrow window, where it shares a row with
+   Services and a device list is the taller of the two. Services stays: it is
+   the card that says whether something is broken. On a wide window Tailnet
+   has a column to itself and costs no height, so it stays there. */
+@media (max-width: 1359px) {
+  #widgets:is([data-fit="core"], [data-fit="bare"]) .widget-slot[data-id="tailnet"] {
+    display: none;
+  }
+
+  /* before that, from the tier where Services folds its healthy rows into a
+     line, the device list folds into the count in the header, so the row they
+     share is no taller than Services alone */
+  #widgets:is([data-fit="compact"], [data-fit="min"]) .w-tailnet .devices {
+    display: none;
+  }
+}
+
 /* --- the floor: the whole signed-in row goes. --- */
-#widgets[data-fit="bare"] .widget-slot[data-id="services"] {
+#widgets[data-fit="bare"] .widget-slot:is([data-id="services"], [data-id="tailnet"]) {
   display: none;
 }
 
@@ -2053,11 +2122,11 @@ body.resizing * {
   @apply mt-2 flex items-center gap-1.5 text-[11px] text-ink/50;
 }
 
-.w-system :is(.units, .tailnet) :is(.dot-ok, .dot-bad) {
+.w-system .units :is(.dot-ok, .dot-bad) {
   @apply block size-1.5 shrink-0 rounded-full;
 }
 
-.w-system :is(.units, .tailnet) .dot-ok {
+.w-system .units .dot-ok {
   @apply bg-emerald-400/80;
 }
 
@@ -2065,27 +2134,69 @@ body.resizing * {
   @apply bg-rose-400/90;
 }
 
-/* The tailnet line on the fleet card: a wrapping row of names, each with a
-   dot. Offline devices dim rather than turn red: a laptop that is shut is not
-   a fault, and red here would cry wolf every night. */
-.w-system .tailnet {
-  @apply mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink/65;
+/* ---------------- tailnet card (signed in only) ----------------
+   A row per device, the same shape as a Services row. Offline dims instead of
+   turning red: a shut laptop is not a fault. */
+.w-tailnet .devices {
+  @apply mt-2.5 flex min-h-0 flex-col gap-2 overflow-y-auto;
 }
 
-.w-system .tailnet b {
-  @apply font-semibold text-ink/80;
+.w-tailnet .row,
+.w-tailnet .detail {
+  @apply flex items-center gap-2 text-xs text-ink/80;
 }
 
-.w-system .tailnet span {
-  @apply inline-flex items-center gap-1.5;
+/* the second line sits under the name, past the dot */
+.w-tailnet .detail {
+  @apply mt-0.5 pl-3.5 text-[11px] text-ink/45;
 }
 
-.w-system .tailnet .off {
-  @apply text-ink/35;
+.w-tailnet li.off .row {
+  @apply text-ink/45;
 }
 
-.w-system .tailnet .dot-off {
-  @apply block size-1.5 rounded-full bg-ink/25;
+.w-tailnet li.off .detail {
+  @apply text-ink/30;
+}
+
+.w-tailnet .detail .warn {
+  @apply ml-auto shrink-0 whitespace-nowrap;
+}
+
+/* Narrow, the card shares a row with Services, and a second line per device
+   would make it the tallest thing in the block. The terminal has the detail. */
+@media (max-width: 1359px) {
+  .w-tailnet .detail {
+    @apply hidden;
+  }
+}
+
+.w-tailnet .d {
+  @apply block size-1.5 shrink-0 rounded-full;
+}
+
+.w-tailnet .d-ok {
+  @apply bg-emerald-400/90;
+}
+
+.w-tailnet .d-off {
+  @apply bg-ink/25;
+}
+
+.w-tailnet .n {
+  @apply truncate;
+}
+
+.w-tailnet .t {
+  @apply ml-auto shrink-0 text-[11px] whitespace-nowrap text-ink/40 tabular-nums;
+}
+
+.w-tailnet .warn {
+  @apply text-amber-600 dark:text-amber-300/90;
+}
+
+.w-tailnet header .tail {
+  @apply ml-auto truncate pl-2 text-[10px] font-medium tracking-normal text-ink/40 normal-case;
 }
 
 /* ---------------- services card (signed in only) ----------------

@@ -52,7 +52,8 @@ would be a poor terminal without them.
 - Moontower, a small fleet monitor. A POSIX `sh` agent on each machine reads
   `/proc` every 30 seconds and posts one request; the hub probes the sites
   themselves over HTTP. Signed in, the desktop grows a card per machine,
-  with a line for every device on my tailnet and whether it is connected.
+  and a Tailnet card with every device on my tailnet and whether it is
+  connected.
 
 ## Stack
 

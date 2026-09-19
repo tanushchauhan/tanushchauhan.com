@@ -177,9 +177,14 @@ export const run = async ({ browser, t }) => {
 
   // ---------- the tailnet ----------
   const tn = await withServices(fleet.services);
-  text = await tn.$eval(".w-system", (el) => el.innerText);
-  t.check("the fleet card counts the tailnet", text.includes("tailnet 3/4"));
-  t.check("and names a device with no agent on it", text.includes("iphone"));
+  text = await tn.$eval(".w-tailnet", (el) => el.innerText);
+  t.check("the tailnet has its own card", text.includes("3 of 4 online"));
+  t.check("which names a device with no agent on it", text.includes("iphone"));
+  t.check("and says when an offline one was seen", /macbook\s+2d ago/.test(text));
+  t.check(
+    "the fleet card keeps its graphs beside it",
+    await tn.$eval(".w-system .stat svg", (el) => getComputedStyle(el).display !== "none")
+  );
   const listing = await runCommand(tn, "tailnet");
   t.check("the command lists every device", listing.includes("3 of 4 online") && listing.includes("macbook"));
   t.check("says when an offline one was last seen", /macbook\s+2d ago/.test(listing));
