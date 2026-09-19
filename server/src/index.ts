@@ -12,9 +12,7 @@ import { startServiceProbes } from "./lib/probes.ts";
 
 const PORT = Number(Bun.env.PORT ?? 3001);
 
-// Vite's build output, resolved from the process cwd (the repo root locally,
-// /app in the container). The API and the frontend are deliberately the same
-// origin so there is no CORS config and the WebAuthn RP ID stays trivial.
+// same origin as the API, so there is no CORS and the RP ID is simple
 const DIST = "./dist";
 
 const startedAt = Date.now();
@@ -46,21 +44,11 @@ app.all("/api/*", (c) => c.json({ error: "not found" }, 404));
 
 /* ---------- static frontend ---------- */
 
-/* Three kinds of thing come out of dist and they want three different answers.
-   Everything under /assets carries a content hash in its filename, so a given
-   URL can never mean two different things and a year is as good as forever.
-   The shell that names those files must not be held at all, or it goes on
-   asking for a bundle that was deleted two deploys ago. Images, icons and the
-   rest are unhashed but change rarely, and an hour is short enough that
-   replacing one is not a mystery and long enough to be worth having.
-
-   Cloudflare has the last word on all of it. With Browser Cache TTL set to a
-   fixed value it rewrites these on the way out, so if the header a browser
-   receives does not match the one below, that setting is why. */
+// hashed assets are immutable, the HTML shell is never cached, the rest gets an hour
 app.use("/*", async (c, next) => {
   await next();
   if (c.req.method !== "GET" || !c.res.ok) return;
-  if (c.res.headers.has("cache-control")) return; // a route that said so itself
+  if (c.res.headers.has("cache-control")) return;
 
   const isHtml = c.res.headers.get("content-type")?.includes("text/html");
   c.res.headers.set(
@@ -75,9 +63,7 @@ app.use("/*", async (c, next) => {
 
 app.use("/*", serveStatic({ root: DIST }));
 
-// A request for a file that does not exist must 404 rather than fall through
-// to the SPA shell. Without this a missing image returns 200 with a page of
-// HTML, so broken assets look fine to monitoring and to crawlers.
+// missing files 404 instead of falling through to the SPA shell
 const ASSET_PATH = /^\/(assets|images|icons|files)\//;
 const HAS_EXTENSION = /\.[a-z0-9]{2,5}$/i;
 
@@ -97,20 +83,14 @@ app.get("*", async (c, next) => {
   return next();
 });
 
-// SPA fallback: every remaining path renders the desktop
 app.get("*", serveStatic({ path: `${DIST}/index.html` }));
 
-// migrations complete before the first request is served
 await runMigrations();
 
-// both start after the migration that creates the tables they write to
 startMetricsSampler();
 startServiceProbes();
 
-// Warn rather than throw: a missing secret breaks logging in, but the public
-// portfolio is fine without it, and taking the whole site down over an auth
-// misconfiguration would be the worse failure. Sessions refuse to sign
-// themselves at the point of use, so this cannot fail silently either.
+// warn rather than exit: the public site works without it, login does not
 if (!Bun.env.SESSION_SECRET) {
   console.warn(
     "SESSION_SECRET is not set: passkey login is disabled. Generate one with `openssl rand -base64 32`."

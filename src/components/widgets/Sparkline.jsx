@@ -1,16 +1,10 @@
-/**
- * Hand-rolled SVG. A chart library would cost 100 KB or more and undo the
- * bundle work for four small cards; these are about forty lines of path maths.
- */
-
 /** Line plus soft fill. `values` is plain numbers, oldest first. */
 export const Sparkline = ({ values = [], width = 220, height = 44, stroke = "currentColor" }) => {
   if (values.length < 2) return <svg width={width} height={height} aria-hidden />;
 
   const max = Math.max(...values);
   const min = Math.min(...values);
-  // a flat series would divide by zero, so give it a nominal range and let it
-  // render as a centred straight line
+  // a flat series would divide by zero
   const span = max - min || 1;
   const stepX = width / (values.length - 1);
 
@@ -46,13 +40,7 @@ export const Sparkline = ({ values = [], width = 220, height = 44, stroke = "cur
   );
 };
 
-/**
- * A fill bar, for the stats that are a capacity rather than a rate.
- *
- * Disk gets one of these instead of a sparkline because 45 minutes of disk
- * history is a flat line: what you want to know is how much of it is gone, not
- * what shape it made getting there.
- */
+/** A fill bar, for capacities like disk. */
 export const Bar = ({ pct = 0, height = 4 }) => {
   const clamped = Math.min(100, Math.max(0, pct));
   return (

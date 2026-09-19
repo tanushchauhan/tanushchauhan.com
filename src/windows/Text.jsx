@@ -19,9 +19,7 @@ const Text = () => {
 
       <div className="txt-body">
         {subtitle && <p className="subtitle">{subtitle}</p>}
-        {/* Only the about-me photo is a face, and only a face survives being
-            cropped to a circle. The project images are 16:9 logos and product
-            shots, so the same treatment cut the GradeMate wordmark in half. */}
+        {/* only the portrait is cropped to a circle */}
         {image && (
           <img src={image} alt={name} className={portrait ? "portrait" : "banner"} />
         )}

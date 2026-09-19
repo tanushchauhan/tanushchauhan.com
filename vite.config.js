@@ -8,9 +8,7 @@ import { execSync } from "child_process";
 const versionOf = (name) =>
   JSON.parse(readFileSync(new URL(`./node_modules/${name}/package.json`, import.meta.url))).version;
 
-/* The commit comes from SOURCE_COMMIT when the deploy passes one (the Docker
-   build has no .git to ask), and from git itself locally. Neither is an error:
-   About This Mac just leaves the row out. */
+// SOURCE_COMMIT when the deploy passes it (the Docker build has no .git), else git
 const commit = () => {
   if (process.env.SOURCE_COMMIT) return process.env.SOURCE_COMMIT.slice(0, 7);
   try {
@@ -24,7 +22,6 @@ const commit = () => {
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // what About This Mac reports about the build it is part of
   define: {
     __BUILD__: JSON.stringify({
       commit: commit(),
@@ -33,8 +30,7 @@ export default defineConfig({
       vite: versionOf("vite"),
     }),
   },
-  // in dev the frontend runs on Vite and the API on Bun; in production a single
-  // container serves both from the same origin, so app code always calls /api/*
+  // in production one container serves both, so the app always calls /api
   server: {
     proxy: {
       "/api": {

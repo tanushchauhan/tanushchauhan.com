@@ -29,8 +29,8 @@ const WINDOW_CONFIG = Object.fromEntries(
       isMaximized: false,
       zIndex: INITIAL_Z_INDEX,
       data: null,
-      pos: null, // last dragged {x, y}, persisted
-      size: null, // last resized {w, h}, persisted
+      pos: null,
+      size: null,
     },
   ])
 );
@@ -41,18 +41,13 @@ const useWindowStore = create(
       windows: WINDOW_CONFIG,
       nextZIndex: INITIAL_Z_INDEX + 1,
       spotlightOpen: false,
-      controlCenterOpen: false, // like spotlight, not worth persisting
+      controlCenterOpen: false,
       theme: "auto", // "auto" | "light" | "dark"
-      glass: "regular", // "clear" | "regular" | "tinted": how much the chrome shows through
+      glass: "regular", // "clear" | "regular" | "tinted"
       wallpaper: DEFAULT_WALLPAPER,
       folderPos: {}, // desktop folder drag offsets, keyed by project id
-      // Desktop widget drag offsets, keyed first by layout signature and only
-      // then by widget id. An offset is a translation away from where the grid
-      // put a card, so it means nothing once the grid changes: signing in adds
-      // a card and moves the block, and a deploy can change the geometry under
-      // a tab that has been open for days. Keeping one bucket per layout means
-      // each arrangement is remembered on its own terms instead of being
-      // replayed against a grid it was never measured in.
+      // widget drag offsets, keyed by layout and then by widget id, since an
+      // offset only means something in the grid it was measured in
       widgetPos: {},
 
       openWindow: (windowKey, data = null) => {
@@ -128,10 +123,7 @@ const useWindowStore = create(
           win.pos = pos;
         }),
 
-      // Null means "whatever the stylesheet says", which is what a window that
-      // has never been resized should keep using: the CSS sizes are tuned per
-      // window and expressed in viewport units, so they follow a screen the
-      // saved pixels would not.
+      // null means use the stylesheet's size
       setWindowSize: (windowKey, size) =>
         set((state) => {
           const win = state.windows[windowKey];
@@ -150,8 +142,7 @@ const useWindowStore = create(
           state.widgetPos[layout][id] = pos;
         }),
 
-      // The item Quick Look is showing, and the Finder window it came from.
-      // Not persisted: a preview is a glance, not something to reopen on load.
+      // not persisted
       quickLook: null,
 
       setQuickLook: (preview) =>
@@ -189,7 +180,7 @@ const useWindowStore = create(
       toggleSound: () => {
         const on = !get().soundOn;
         setSoundEnabled(on);
-        if (on) play("open"); // audible confirmation
+        if (on) play("open");
         set((state) => {
           state.soundOn = on;
         });
@@ -208,9 +199,7 @@ const useWindowStore = create(
           });
         }),
 
-      // Bumped by every Clean Up, and not persisted: Home watches it to put
-      // the folders I made onto the grid. An empty folderPos cannot be the
-      // signal, because that is also what every fresh load looks like.
+      // bumped by Clean Up so Home can move new folders onto the grid
       cleanUps: 0,
 
       resetFolderPos: () =>
@@ -220,7 +209,6 @@ const useWindowStore = create(
           state.cleanUps += 1;
         }),
 
-      /** Clean Up's second half: new folders onto the grid, as { id: {x, y} }. */
       placeDesktopFolders: (spots) =>
         set((state) => {
           state.desktopFolders.forEach((folder) => {
@@ -229,8 +217,7 @@ const useWindowStore = create(
           });
         }),
 
-      // open a folder in a Finder window: reuse the window already showing it,
-      // otherwise take a free instance, otherwise the least-recently-focused one
+      // reuse the window showing this folder, else a free one, else the oldest
       openFinderWindow: (location = null) => {
         play("open");
         set((state) => {
@@ -261,18 +248,9 @@ const useWindowStore = create(
       name: "tanushos-v1",
       version: 3,
       migrate: (persisted, version) => {
-        // v0 had a light/dark toggle; "auto" (follow the system) is the default
         if (version < 1) persisted = { ...persisted, theme: "auto" };
-        // v1 kept widget offsets in one flat bucket with nothing recording
-        // which layout produced them. There is no way to tell now, so they go:
-        // a card back at its home position is right, a card replaying a
-        // measurement from a grid that no longer exists is not.
         if (version < 2) persisted = { ...persisted, widgetPos: {} };
-        /* v2 kept a copy of the constants node in each window's `data`, so a
-           browser went on rendering whatever the copy said on the day it was
-           opened. Anything carrying an id becomes a reference. The rest were
-           file contents with no way back to a node, so they go, and the window
-           holding one goes with them rather than opening as a blank frame. */
+        // v3 stores window data as a reference instead of a copy
         if (version < 3) {
           persisted = {
             ...persisted,
@@ -290,10 +268,7 @@ const useWindowStore = create(
         }
         return persisted;
       },
-      // Saved state replaces defaults wholesale, so a browser holding an older
-      // `windows` object would be missing any window added since. Rebuilding
-      // from the current defaults backfills both new window keys and new
-      // per-window fields, and drops any that no longer exist.
+      // rebuilt from the defaults so windows added since are filled in
       merge: (persisted, current) => ({
         ...current,
         ...persisted,
@@ -301,7 +276,6 @@ const useWindowStore = create(
           Object.entries(current.windows).map(([key, defaults]) => {
             const saved = persisted?.windows?.[key] ?? {};
             const data = derefData(saved.data);
-            // a window pointing at a file this build no longer has stays shut
             const lost = saved.data != null && data == null;
             return [
               key,
@@ -311,7 +285,6 @@ const useWindowStore = create(
         ),
       }),
       partialize: (state) => ({
-        // `data` is stored as a reference, never as a copy of the words in it
         windows: Object.fromEntries(
           Object.entries(state.windows).map(([key, win]) => [
             key,

@@ -1,13 +1,7 @@
 /**
  * Mints a single-use Moontower enrollment token and prints the install command.
  *
- * Run from inside the container:
  *   docker exec -it <container> bun server/src/admin/enroll.ts
- *
- * Deliberately imports nothing from the route layer. The passkey equivalent of
- * this script once imported a module that throws in production when RP_ID is
- * unset, which meant the recovery tool only worked when the configuration was
- * already correct. A break-glass tool has to run when things are broken.
  */
 import { closeDb } from "../db/index.ts";
 import { mintEnrollmentToken } from "../lib/moontower.ts";

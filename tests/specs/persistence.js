@@ -2,18 +2,9 @@ import { openPage, seed, win, storedState, settled } from "../lib/harness.js";
 
 export const name = "persistence: windows restore by reference, not by copy";
 
-/**
- * A window's `data` is a node out of src/constants. The store used to persist
- * the node itself, which meant a browser went on rendering whatever the copy
- * said on the day the window was opened. Change a project's blurb, deploy it,
- * and anyone who had that folder open still read the old one. There was no
- * refresh that fixed it, only clearing site data, and nothing anywhere said so.
- *
- * The failure is invisible from the inside: the deploy is fine, the bundle is
- * fine, and the only person who sees the stale text is a returning visitor.
- */
+/** Window data is stored as a reference, so a returning visitor sees the current text. */
 export const run = async ({ browser, t }) => {
-  // ---------- what a browser saved under the old scheme ----------
+  // ---------- a v2 save ----------
   const v2 = JSON.stringify({
     version: 2,
     state: JSON.parse(
@@ -67,7 +58,7 @@ export const run = async ({ browser, t }) => {
   t.check("and the saved state was migrated rather than dropped", version === 3, `v${version}`);
   await page.close();
 
-  // ---------- what gets written now ----------
+  // ---------- a fresh save ----------
   page = await openPage(browser, {
     state: seed({ windows: { finder: win({ data: { ref: "about" } }) } }),
   });

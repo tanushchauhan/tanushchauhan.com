@@ -4,14 +4,7 @@ import {
 
 export const name = "selection: window text yes, desktop chrome no";
 
-/**
- * The body sets select-none for the whole desktop, which is right for the dock
- * and the folder labels and wrong for everything inside a window. The cost of
- * getting this wrong is quiet: a visitor who cannot copy the email address just
- * leaves, and never tells anybody.
- */
 export const run = async ({ browser, t }) => {
-  // ---------- the case with a cost ----------
   let page = await openPage(browser, { state: seed({ windows: { contact: win() } }) });
   t.check("the contact body is selectable", await isSelectable(page, "#contact .body"));
 
@@ -31,16 +24,13 @@ export const run = async ({ browser, t }) => {
   page = await openPage(browser, {
     state: seed({
       windows: {
-        // fun-facts rather than about-me: the latter ends on an email address,
-        // and a double click in it selects a "@" rather than a word
+        // fun-facts, since about-me ends on an email address
         txtFile: win({ data: { ref: "fun-facts", part: "data" } }),
       },
     }),
   });
   t.check("a text file is selectable", await isSelectable(page, "#txtFile .txt-body"));
-  /* An explicit offset: the default lands on the space after "really" in this
-     paragraph, and a double click on a space selects nothing, which reads as a
-     selection failure rather than as the aiming problem it is. */
+  // offset so the double click lands on a word, not a space
   const prose = await selectWord(page, "#txtFile .txt-body p:last-of-type", 70);
   t.check("a word of prose selects", prose.length > 2, JSON.stringify(prose));
   await page.close();

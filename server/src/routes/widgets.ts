@@ -10,10 +10,8 @@ const BUILDING_KEY = "building";
 const BUILDING_MAX = 140;
 
 /**
- * Everything here is proxied rather than called from the browser, for two
- * reasons: GITHUB_TOKEN must never reach the client bundle, and unauthenticated
- * GitHub allows 60 requests per hour per IP, which a handful of visitors would
- * exhaust. One cached fetch every 5 minutes serves everyone.
+ * Proxied and cached for 5 minutes, so GITHUB_TOKEN stays on the server and
+ * visitors never hit GitHub's rate limit.
  */
 type Cached<T> = { at: number; value: T };
 const cache = new Map<string, Cached<unknown>>();
@@ -27,8 +25,7 @@ const cached = async <T>(key: string, load: () => Promise<T>): Promise<T> => {
     cache.set(key, { at: Date.now(), value });
     return value;
   } catch (error) {
-    // Serving a stale card beats serving an error card. GitHub being briefly
-    // unreachable should not make the desktop look broken.
+    // a stale card is better than an error card
     if (hit) return hit.value;
     throw error;
   }
@@ -45,23 +42,15 @@ const ghHeaders = () => {
 };
 
 /* ---------- contributions ----------
- * The contribution calendar only exists in GitHub's GraphQL API, which always
- * requires a token even for public data. Without one this reports unavailable
- * rather than guessing, and the widget renders an honest empty state. */
+ * The calendar is only in the GraphQL API, which needs a token even for
+ * public data.
+ */
 const loadContributions = async () => {
   if (!Bun.env.GITHUB_TOKEN) {
     return { available: false as const, reason: "GITHUB_TOKEN is not set" };
   }
 
-  /*
-   * restrictedContributionsCount is the count of work done in private repos.
-   * GitHub returns it as a bare number with no repository, message, or date
-   * detail attached, which is exactly the anonymised shape a public profile
-   * shows. It is only non-zero when "Include private contributions on my
-   * profile" is enabled in GitHub settings, and it needs no repo scope: a
-   * read-only user token is enough, so this server never holds a credential
-   * that could read private source.
-   */
+  // restrictedContributionsCount is a bare count of private work, and needs no repo scope
   const query = `
     query($login: String!) {
       user(login: $login) {
@@ -105,7 +94,6 @@ const loadContributions = async () => {
       w.contributionDays.map((d) => ({ date: d.date, count: d.contributionCount }))
   );
 
-  // the heatmap only needs the trailing ~17 weeks to look right at widget size
   return {
     available: true as const,
     total: calendar.totalContributions as number,
@@ -115,14 +103,8 @@ const loadContributions = async () => {
 };
 
 /* ---------- latest commit ----------
- * Deliberately not the events API. /users/{user}/events/public only retains
- * roughly 90 days, so someone whose recent work is private reads as "no recent
- * pushes" while their public repos still have perfectly good commits sitting
- * there. Asking for repositories sorted by push date has no such window.
- *
- * Forks are skipped (the newest commit there is usually upstream's, not mine)
- * and commits are filtered by author, so a merged PR from someone else does not
- * get reported as my latest work. Both calls are public: no token required.
+ * Repos sorted by push date rather than the events API, which only keeps about
+ * 90 days. Forks are skipped and commits are filtered by author.
  */
 const loadLatestCommit = async () => {
   const repoRes = await fetch(
@@ -162,7 +144,6 @@ const loadLatestCommit = async () => {
 export const widgetRoutes = new Hono();
 
 widgetRoutes.get("/github", async (c) => {
-  // both cards in one request: two widgets, one round trip on page load
   const [contributions, latest] = await Promise.all([
     cached("contributions", loadContributions).catch(() => ({
       available: false as const,

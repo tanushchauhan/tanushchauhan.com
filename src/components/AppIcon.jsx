@@ -1,26 +1,12 @@
 /**
- * The app and document icons, drawn rather than shipped as pictures.
- *
- * An app icon is a tile with a glyph on it. The tile is CSS: a rounded square
- * with a gradient, a sheen and a rim, all read from variables, which is what
- * lets the Control Center's glass setting restyle every icon at once (clear
- * turns them into frosted monochrome, tinted into the site's own orange). The
- * glyph is inline SVG on a 64 unit grid, and any colour the glass setting has
- * to reach is a variable with the everyday colour as its fallback.
- *
- * Folders, documents and the bin are shapes, not tiles, so they skip the
- * background and draw themselves.
- *
- * `icon` is a name from the tables below. A path is still accepted and comes
- * out as a plain <img>, which is how the monochrome link glyphs and the
- * avatar get through unchanged.
+ * App and document icons, drawn in SVG over a CSS tile so the glass setting
+ * can restyle them. A path instead of a name renders as a plain <img>.
  */
 import { useId } from "react";
 import clsx from "clsx";
 
 const round = { fill: "none", strokeLinecap: "round", strokeLinejoin: "round" };
 
-/* evenly spaced teeth or ticks around the centre, drawn pointing up and rotated */
 const around = (n, draw) =>
   Array.from({ length: n }, (_, i) => (
     <g key={i} transform={`rotate(${(i * 360) / n} 32 32)`}>
@@ -32,7 +18,6 @@ const tooth = (inner, outer, width) => (
   <rect x={32 - width / 2} y={32 - outer} width={width} height={outer - inner} rx={width / 2} />
 );
 
-/* clockwise from the top, the order the petals sit in */
 const PETALS = ["#f0922e", "#f6cd45", "#9fd342", "#5dcf7b", "#4aa7ef", "#9f8fdf", "#ec76b1", "#ea6461"];
 
 const GLYPHS = {
@@ -44,7 +29,6 @@ const GLYPHS = {
           <stop offset="1" stopColor="#e2effb" />
         </linearGradient>
       </defs>
-      {/* the white half is an inset card with the profile cut into it */}
       <path
         d="M34.6 5H50a9.3 9.3 0 0 1 9.3 9.3v35.3a9.3 9.3 0 0 1-9.3 9.3h-9.8c-3 0-4.6-2.3-5-5.9l-2.7-16.4h-4.9c-1.3 0-1.7-.9-1.6-2.3.9-10.1 3.6-20.7 8.6-29.3z"
         style={{ fill: `var(--ic-card, url(#${id}-card))`, stroke: "var(--ic-edge, #2358c8)" }}
@@ -113,7 +97,6 @@ const GLYPHS = {
 
   contact: () => (
     <>
-      {/* the index tabs down the right edge; the tile's rounded corner clips them */}
       <g style={{ opacity: "var(--ic-tab-opacity, 1)" }}>
         <rect x="56.3" y="0" width="7.7" height="21.4" style={{ fill: "var(--ic-mono, #52bdf5)" }} />
         <rect x="56.3" y="21.4" width="7.7" height="21.2" style={{ fill: "var(--ic-mono, #ef8b33)" }} />
@@ -138,7 +121,6 @@ const GLYPHS = {
 
   settings: () => (
     <>
-      {/* the small gear sits behind the large one and shows between its spokes */}
       <g fill="currentColor" opacity=".45">
         <circle cx="32" cy="32" r="13.25" fill="none" stroke="currentColor" strokeWidth="3.1" />
         {around(24, () => tooth(14.2, 16.9, 1.6))}
@@ -184,7 +166,6 @@ const SHAPES = {
       <circle cx="39" cy="32" r="3" fill="#ffd23f" />
     </>
   ),
-  /* a frosted bin, darker at the top where the rim shades it */
   trash: (id, full) => (
     <>
       <defs>
@@ -203,7 +184,6 @@ const SHAPES = {
       />
       <rect x="8.6" y="7" width="46.8" height="9" rx="4.5" fill="#f5f5f7" />
       <rect x="10" y="8.3" width="44" height="6.4" rx="3.2" fill={`url(#${id}-well)`} />
-      {/* with something in it, crumpled paper sits in the well and over the rim */}
       {full && (
         <g stroke="#b9b9c0" strokeWidth=".5" strokeLinejoin="round">
           <path d="M14.5 13.6c-.6-3.4 1.3-6.8 4.9-7.6 2.1-2.6 6.4-2.4 8.2.3 2.8-.4 5 1.7 5 4.4l.4 2.9z" fill="#fbfbfc" />
@@ -217,14 +197,12 @@ const SHAPES = {
 };
 
 const AppIcon = ({ icon, alt = "", className }) => {
-  // gradient ids have to be unique on the page, and the same icon can appear
-  // in the dock, a Finder window and Spotlight at once
+  // gradient ids must be unique, and one icon can be on screen several times
   const id = `ic${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   if (!icon) return null;
   if (icon.includes("/")) return <img src={icon} alt={alt} className={className} />;
 
-  // "trash-full" is the bin with paper in it
   const full = icon === "trash-full";
   const name = full ? "trash" : icon;
   const shape = SHAPES[name];

@@ -2,17 +2,7 @@ import { openPage, settled } from "../lib/harness.js";
 
 export const name = "mobile: the home page fits, and swipes";
 
-/*
- * Safari's address bar and toolbar take about 190px of an iPhone's screen. The
- * home page was laid out for the height you only get once they hide, so with
- * them showing it overflowed and the page became something you scrolled instead
- * of something you swiped. The fit ladder measures and tightens a rung at a
- * time; these are the sizes it has to land on.
- *
- * The SE is listed as a known miss rather than a pass. Closing it means
- * dropping a widget card on the smallest screens, which is a design decision
- * and not a bug to be quietly fixed by loosening a threshold here.
- */
+/* The SE is a known miss: fitting it would mean dropping a widget card. */
 const SCREENS = [
   { label: "iPhone 15, toolbars showing", width: 393, height: 664, mustFit: true },
   { label: "iPhone 16, toolbars showing", width: 402, height: 700, mustFit: true },
@@ -87,8 +77,7 @@ export const run = async ({ browser, t }) => {
   await page.click('.m-app:has([data-icon="settings"])');
   await page.waitForTimeout(900);
 
-  // the section labels are uppercased in CSS and innerText reports the
-  // transformed text, so compare in one case
+  // labels are uppercased in CSS, so compare in lowercase
   const text = (await page.$eval(".m-scroll", (el) => el.innerText)).toLowerCase();
   t.check("settings has appearance", text.includes("appearance"));
   t.check("wallpaper", text.includes("wallpaper"));
@@ -98,7 +87,6 @@ export const run = async ({ browser, t }) => {
   const paper = () => page.$eval("#mobile", (el) => getComputedStyle(el).backgroundImage);
   t.check("it starts on austin", (await paper()).includes("austin"));
 
-  // the lists, in order: appearance, glass, wallpaper, sound
   await page.click(".m-settings:nth-of-type(3) li:nth-child(2)");
   await page.waitForTimeout(700);
   t.check("picking one changes the phone wallpaper", (await paper()).includes("bluebonnet"));

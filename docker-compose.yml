@@ -1,14 +1,10 @@
-# Local development only. In production Coolify provides Postgres as its own
-# resource and builds the app from the Dockerfile, so this file is never deployed.
+# Local development only; production runs on Coolify.
 #
-#   docker compose up -d db     Postgres for local dev (run the app natively:
-#                               `npm run dev` + `npm run dev:api`)
-#   docker compose up --build   also build and run the real image, to verify the
-#                               Dockerfile before pushing a deploy
+#   docker compose up -d db     Postgres for `npm run dev` + `npm run dev:api`
+#   docker compose up --build   also build and run the real image
 
 services:
   db:
-    # kept in step with the Coolify Postgres resource in production
     image: postgres:18-alpine
     restart: unless-stopped
     environment:

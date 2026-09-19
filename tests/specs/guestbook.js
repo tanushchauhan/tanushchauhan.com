@@ -8,11 +8,6 @@ const entries = [
   { id: 5, name: "a friend", message: "nice site, the terminal is a good touch", createdAt: "2026-07-29T12:00:00Z", isHidden: false, source: "99887766" },
 ];
 
-/**
- * is_hidden had been in the schema since the table existed with nothing able to
- * set it, so taking an entry down meant a psql session against production.
- * These are the controls that replaced that.
- */
 export const run = async ({ browser, t }) => {
   const sent = [];
   const page = await openPage(browser, { state: seed({ windows: { terminal: win() } }) });

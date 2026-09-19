@@ -3,35 +3,22 @@ import { db } from "../db/index.ts";
 import { agentEnrollments, servers, HUB_SLUG } from "../db/schema.ts";
 
 /**
- * Moontower: the fleet reporting system.
+ * Moontower, the fleet monitor, named for Austin's moonlight towers.
  *
- * Named for Austin's moonlight towers, which is apt enough: a scattering of
- * small fixed things, each lighting up one part of the city.
- *
- * The security posture, stated once so the rest of the code can be read against
- * it. Agents hold a per-server key and can do exactly one thing with it, post
- * readings for their own server. There is no channel from the hub to an agent
- * that can execute anything: the hub's reply is configuration (which collectors
- * to run, how often) and a version number the agent only prints. That is
- * deliberate. An auto-updating agent would mean a compromise of this website
- * becomes root on every machine that ever enrolled, which is far too much
- * authority for a portfolio site to hold over a mail server.
+ * An agent's key can only post readings for its own server. The hub's reply is
+ * configuration and a version number, never anything the agent executes, so a
+ * compromise of this site does not reach the enrolled machines.
  */
 
 export const AGENT_VERSION = "1.2.0";
 
-/** How long without a report before a server is shown as stale rather than live. */
 export const STALE_AFTER_MS = 3 * 60 * 1000;
 
 const ENROLLMENT_TTL_MS = 30 * 60 * 1000;
 const KEY_PREFIX = "mt_";
 const ENROLL_PREFIX = "mt_enroll_";
 
-/**
- * The collector menu. Adding a metric to a server is a config change here and
- * in its row, never a code push to the machine. Agents ignore names they do not
- * recognise, so an older agent degrades to fewer metrics instead of breaking.
- */
+/** Agents ignore collector names they do not know, so older agents still work. */
 export const COLLECTORS = ["cpu", "memory", "disk", "load", "units"] as const;
 export type Collector = (typeof COLLECTORS)[number];
 
@@ -45,7 +32,6 @@ const randomToken = (prefix: string) => {
   return prefix + Buffer.from(bytes).toString("base64url");
 };
 
-/** Slugs land in URLs, tab labels and log lines, so keep them boring. */
 export const normaliseSlug = (raw: string) =>
   raw
     .toLowerCase()
@@ -64,11 +50,7 @@ export const mintEnrollmentToken = async () => {
   return { token, expiresAt };
 };
 
-/**
- * Registers a server and hands back its long-lived key. The enrollment token is
- * burned only once the server row is safely written, so a failure here leaves
- * the token usable rather than stranding you with a spent token and no server.
- */
+/** Registers a server and returns its key. The token is spent only after the row is written. */
 export const enrollServer = async (token: string, slugRaw: string, name: string, meta: {
   agentVersion?: string;
   osName?: string;
@@ -117,11 +99,7 @@ export const enrollServer = async (token: string, slugRaw: string, name: string,
 
 /* ---------- reporting ---------- */
 
-/**
- * Resolves a bearer key to its server. Hub is excluded on purpose: it has no
- * key, and nothing arriving over the network should ever be able to write rows
- * attributed to the machine the hub itself is measuring.
- */
+/** The hub has no key, so nothing from the network can write rows as the hub. */
 export const serverForKey = async (key: string | undefined) => {
   if (!key || !key.startsWith(KEY_PREFIX)) return null;
   const [row] = await db.select().from(servers).where(eq(servers.keyHash, await hash(key))).limit(1);
@@ -132,8 +110,7 @@ export const serverForKey = async (key: string | undefined) => {
 export const configFor = (server: { slug: string }) => ({
   collect: COLLECTORS,
   intervalSeconds: 30,
-  // the agent prints this when it differs from its own; upgrading is always a
-  // human re-running the installer, never something the hub can trigger
+  // the agent only prints this; upgrading is always a manual reinstall
   latestVersion: AGENT_VERSION,
 });
 

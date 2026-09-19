@@ -4,29 +4,12 @@ import clsx from "clsx";
 import { wallpapers } from "#constants";
 import useWindowStore from "#store/window.js";
 
-/**
- * The Control Center.
- *
- * Everything here used to be scattered along the menu bar: appearance behind
- * its own dropdown, sound as a lone speaker icon, and a wallpaper item in the
- * desktop right-click menu that did not change the wallpaper. They are the
- * same kind of thing, they belong in the same panel, and the menu bar is
- * quieter for their leaving.
- *
- * Only controls that do something. macOS has Wi-Fi and Bluetooth and
- * brightness up here too, and a row of switches wired to nothing would be a
- * more convincing imitation and a worse thing to hand somebody.
- */
 const THEMES = [
   { value: "auto", label: "Auto", icon: MonitorCog },
   { value: "light", label: "Light", icon: Sun },
   { value: "dark", label: "Dark", icon: Moon },
 ];
 
-/* How much of the desktop shows through the chrome, the way the slider in
-   macOS 27 runs from clear glass to fully tinted. The chip on each button is
-   drawn at the opacity that choice gives the glass, so the row previews
-   itself. */
 const GLASS = [
   { value: "clear", label: "Clear", chip: 0.24 },
   { value: "regular", label: "Regular", chip: 0.5 },
@@ -51,8 +34,7 @@ const ControlCenter = () => {
   useEffect(() => {
     if (!controlCenterOpen) return;
     const onDown = (e) => {
-      // the trigger closes it itself, so ignoring that click here stops the
-      // two handlers from cancelling each other out into a panel that never opens
+      // the trigger toggles the panel itself
       if (ref.current?.contains(e.target) || e.target.closest("#control-center-button")) {
         return;
       }
@@ -60,13 +42,7 @@ const ControlCenter = () => {
     };
     const onKey = (e) => e.key === "Escape" && setControlCenter(false);
 
-    /* pointerdown, in the capture phase, and both halves matter.
-     *
-     * The widgets and the desktop folders are GSAP draggables, and a draggable
-     * calls preventDefault on pointerdown, which suppresses the compatibility
-     * mouse events entirely: a click on a widget fires no mousedown anywhere,
-     * so a mousedown listener never hears about most of the desktop. Capture
-     * then makes sure we run before anything can stop propagation. */
+    // pointerdown in the capture phase: GSAP draggables suppress mouse events
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("keydown", onKey);
     return () => {
@@ -127,8 +103,6 @@ const ControlCenter = () => {
               title={paper.note}
               onClick={() => setWallpaper(paper.id)}
             >
-              {/* both halves of the pair, so the swatch shows what the theme
-                  switch will do to it as well as what it looks like now */}
               <span className="swatch">
                 <img src={paper.light} alt="" />
                 <img src={paper.dark} alt="" />

@@ -40,11 +40,9 @@ const App = () => {
     setSoundEnabled(soundOn);
   }, [soundOn]);
 
-  // asked once per load, because the session lives in an httpOnly cookie that
-  // the page cannot inspect for itself
   useEffect(() => {
     useAuthStore.getState().refresh();
-    registerVisit(); // counted once per load, whatever the terminal asks later
+    registerVisit();
   }, []);
   const [isMobile, setIsMobile] = useState(
     () => window.matchMedia(MOBILE_QUERY).matches
@@ -57,11 +55,7 @@ const App = () => {
     return () => media.removeEventListener("change", onChange);
   }, []);
 
-  // theme and wallpaper together, because the wallpaper depends on which one
-  // won: every wallpaper is a light/dark pair, and this is the only place that
-  // knows whether "auto" resolved to dark on this device right now. The menu
-  // bar is transparent, so its ink is picked here too, from whether the
-  // resolved wallpaper is pale at the top.
+  // every wallpaper is a light/dark pair, so theme and wallpaper resolve together
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {

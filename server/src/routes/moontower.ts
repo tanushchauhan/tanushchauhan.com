@@ -18,16 +18,13 @@ import { latestSample } from "../lib/metrics.ts";
 import { tailnet } from "../lib/tailscale.ts";
 
 /**
- * The endpoints Moontower agents talk to. Both are unauthenticated in the
- * session sense (an agent has no cookie) and authenticated in every other:
- * enrollment needs a single-use token, reporting needs that server's own key.
+ * Endpoints for Moontower agents. Enrolling needs a single-use token and
+ * reporting needs the server's own key.
  */
 export const moontowerRoutes = new Hono();
 
-// Enrollment is rare and expensive to get wrong, so it gets a tight budget
-// keyed by address. Reporting is once every 30 seconds per server and is keyed
-// by the presented credential instead: several boxes behind one office NAT
-// share an address, and they should not share a budget.
+// reports are keyed by credential, not address, so machines behind one NAT
+// do not share a budget
 const enrollLimiter = rateLimit({ limit: 10, windowMs: 60 * 60 * 1000 });
 const ingestLimiter = rateLimit({ limit: 240, windowMs: 10 * 60 * 1000 });
 
@@ -48,12 +45,7 @@ const num = (value: unknown, min: number, max: number) => {
 const MAX_UNITS = 40;
 const UNIT_NAME = /^[A-Za-z0-9@._\-\\:]+$/;
 
-/**
- * Unit names are strings a reporting machine chose, and they end up rendered on
- * a card, so they are checked here rather than trusted. The cap is a size limit
- * on the row: a box with 300 units should not be able to put 300 of them in a
- * jsonb column every 30 seconds.
- */
+/** Unit names come from the agent, so they are validated and capped. */
 const parseUnits = (value: unknown): UnitState[] | null => {
   if (!Array.isArray(value)) return null;
   const out: UnitState[] = [];
@@ -63,8 +55,6 @@ const parseUnits = (value: unknown): UnitState[] | null => {
     if (!raw || typeof raw !== "object") continue;
     const { n, a, s, r } = raw as Record<string, unknown>;
     if (typeof n !== "string" || !UNIT_NAME.test(n) || n.length > 80) continue;
-    // deduped here too, not only in the agent: a duplicate would otherwise
-    // spend the cap and push a real unit off the end of the list
     if (seen.has(n)) continue;
     seen.add(n);
     out.push({
@@ -77,12 +67,7 @@ const parseUnits = (value: unknown): UnitState[] | null => {
   return out;
 };
 
-/**
- * Mints an enrollment token for a signed-in session, so adding a server is a
- * command in the site's own terminal rather than a docker exec. The CLI script
- * stays as break-glass for when logging in is exactly what is broken, the same
- * split as the passkey bootstrap tokens.
- */
+/** Mints an enrollment token from the site's terminal. */
 moontowerRoutes.post("/enroll-token", requireAuth, async (c) => {
   const { token, expiresAt } = await mintEnrollmentToken();
   const origin = Bun.env.ORIGIN ?? new URL(c.req.url).origin;
@@ -123,15 +108,12 @@ moontowerRoutes.post("/enroll", async (c) => {
     cores: typeof body?.cores === "number" ? Math.round(body.cores) : undefined,
   });
 
-  // 401 rather than 400: an invalid token is an authorization failure, and the
-  // message stays vague about which part failed
   if (!result.ok) return c.json({ error: result.error }, 401);
   return c.json({ slug: result.slug, key: result.key, config: configFor(result) });
 });
 
 moontowerRoutes.post("/ingest", async (c) => {
   const key = bearer(c.req.header("authorization"));
-  // hashed before it becomes a bucket key so raw credentials never sit in a map
   const budget = ingestLimiter(hashIp(key ?? clientIp(c)));
   if (!budget.ok) return tooMany(c, budget.retryAfter);
 
@@ -150,8 +132,7 @@ moontowerRoutes.post("/ingest", async (c) => {
 
   await db.insert(metricSamples).values({
     server: server.slug,
-    // the row is timestamped here, not by the agent: a box with a wrong clock
-    // would otherwise scatter points across the chart or land them in the future
+    // timestamped here, not by the agent, so a wrong clock cannot skew the chart
     cpuPct,
     memPct,
     memUsedMb: Math.round(memUsedMb),
@@ -162,8 +143,7 @@ moontowerRoutes.post("/ingest", async (c) => {
     load1: num(body.load1, 0, 1024),
   });
 
-  // an agent too old to collect units sends none, which must leave the last
-  // snapshot alone rather than blanking the card
+  // an older agent sends no units; keep the last snapshot
   const units = parseUnits(body.units);
 
   await db
@@ -182,15 +162,11 @@ moontowerRoutes.post("/ingest", async (c) => {
     })
     .where(eq(servers.slug, server.slug));
 
-  // configuration and a version string. Nothing here is executed by the agent.
+  // data only; the agent never executes anything the hub sends
   return c.json(configFor(server));
 });
 
-/* ---------- services ----------
- * The applications, as opposed to the machines. Managed by hand because the
- * list is short and I am the only one who edits it; the probing itself runs on
- * a timer in lib/probes.ts.
- */
+/* ---------- services ---------- */
 
 moontowerRoutes.post("/services", requireAuth, async (c) => {
   const body = await c.req.json().catch(() => null);
@@ -216,8 +192,6 @@ moontowerRoutes.post("/services", requireAuth, async (c) => {
 
   if (!row) return c.json({ error: `"${slug}" is already on the list` }, 409);
 
-  // probe it now rather than leaving it blank for up to a minute: adding a
-  // service and being told nothing about it is a bad first impression
   const result = await probe(row.url);
   await db
     .update(services)
@@ -236,12 +210,7 @@ moontowerRoutes.delete("/services/:slug", requireAuth, async (c) => {
   return c.json({ removed: row.slug });
 });
 
-/* ---------- fleet ----------
- * Every reporting machine, behind requireAuth. Not because the numbers are
- * secret exactly, but knowing how much headroom a box has and how long it has
- * been up is reconnaissance if you are thinking about knocking it over.
- * Visitors get the portfolio, I get the vitals.
- */
+/* ---------- fleet ---------- */
 
 const HISTORY_POINTS = 90; // 45 minutes at one sample every 30 seconds
 
@@ -261,12 +230,7 @@ const latestFor = (history: Row[]) => {
   const last = history[history.length - 1];
   if (!last) return null;
 
-  /*
-   * Capacities do not change between readings, so one report that omits a
-   * total should not blank the card. Rates are different: a missing cpuPct
-   * means the agent did not measure it, and showing the previous one as
-   * current would be inventing data.
-   */
+  // capacities carry over from the previous row; rates never do
   const carried = <K extends keyof Row>(key: K) =>
     last[key] ?? [...history].reverse().find((h) => h[key] != null)?.[key] ?? null;
 
@@ -286,12 +250,6 @@ moontowerRoutes.get("/fleet", requireAuth, async (c) => {
   const fleet = await db.select().from(servers).orderBy(servers.createdAt);
   const live = latestSample();
 
-  /*
-   * One query for the whole fleet rather than one per server. At a day of
-   * retention across a handful of machines this table stays small, and the
-   * (server, at) index makes the ordering free; slicing per server in memory
-   * beats N round trips that each have to be awaited.
-   */
   const rows = await db
     .select({
       server: metricSamples.server,
@@ -326,16 +284,12 @@ moontowerRoutes.get("/fleet", requireAuth, async (c) => {
     version: AGENT_VERSION,
     deployedSecondsAgo: Math.floor(process.uptime()),
     env: Bun.env.NODE_ENV ?? "development",
-    // every device on the tailnet, including the ones with no agent on them
     tailnet: devices,
-    // one poll feeds both cards: they are the same question asked at two levels
     services: watched.map((s) => ({
       slug: s.slug,
       name: s.name,
       url: s.url,
       server: s.server,
-      // same idea as a stale server: the last reading stops speaking for the
-      // present once the loop that produced it has clearly stopped
       stale: !s.checkedAt || s.checkedAt.getTime() < Date.now() - PROBE_STALE_MS,
       ok: s.ok,
       status: s.status,
@@ -351,23 +305,18 @@ moontowerRoutes.get("/fleet", requireAuth, async (c) => {
       return {
         slug: s.slug,
         name: s.name,
-        // hub measures itself in this process, so it cannot be stale while
-        // this response is being written
+        // the hub measures itself in this process, so it is never stale
         stale: !isHub && lastSeen < cutoff,
         lastSeenAt: isHub ? new Date().toISOString() : s.lastSeenAt,
         agentVersion: s.agentVersion,
-        // config-plus-notify: the hub says a newer agent exists, and upgrading
-        // stays a human re-running the installer
         updateAvailable: Boolean(s.agentVersion && s.agentVersion !== AGENT_VERSION),
         osName: s.osName,
         cores: s.cores,
         uptimeSeconds: isHub ? live?.hostUptimeSeconds ?? null : s.uptimeSeconds,
-        // null until the sampler's second tick: a CPU percentage is a rate, so
-        // the first reading after a boot has nothing to compare against
+        // null until the second tick, since CPU is a rate
         sample: isHub ? live : latestFor(historyFor(s.slug)),
         appMemMb: isHub ? live?.appMemMb ?? null : null,
         history: historyFor(s.slug),
-        // hub has no agent, so it has no systemd snapshot to report
         units: s.units ?? null,
         failedUnits: s.failedUnits,
       };

@@ -21,11 +21,6 @@ const NEOFETCH = `
   Packages  react, ros2, supabase, postgres
   Location  Austin, TX`;
 
-/*
- * Observations, not advertising. Three of these used to be the site plugging
- * its own author: a paper, a project, and a GPA, each delivered as a fortune so
- * it would not read as a boast. It read as a boast.
- */
 const FORTUNES = [
   "Calibrate the cameras. Then calibrate them again.",
   "The best time to start a hackathon project was 36 hours ago. The second best time is now.",
@@ -201,7 +196,6 @@ const WELCOME_LINES = [
   { type: "out", text: "Type 'help' for the list of commands.\n" },
 ];
 
-// the terminal session survives reloads, like a machine left running
 const SESSION_KEY = "tanushos-term-v1";
 
 const loadSession = () => {
@@ -209,12 +203,11 @@ const loadSession = () => {
     const saved = JSON.parse(localStorage.getItem(SESSION_KEY));
     if (saved?.history?.length) return saved;
   } catch {
-    /* corrupted session, start fresh */
   }
   return { history: WELCOME_LINES, cwd: [], cmdHistory: [] };
 };
 
-// the shell itself, reused by the desktop window and the mobile app
+// shared by the desktop window and the mobile app
 export const TerminalBody = () => {
   const { openWindow, openFinderWindow, setTheme, windows } = useWindowStore();
   const auth = useAuthStore();
@@ -242,8 +235,7 @@ export const TerminalBody = () => {
     );
   }, [history, cwd, cmdHistory]);
 
-  // the command line is contentEditable (not an <input>) so password managers
-  // like iCloud Passwords don't try to autofill it
+  // contentEditable rather than an <input>, so password managers leave it alone
   const setInputText = (text) => {
     const el = inputRef.current;
     setInput(text);
@@ -424,8 +416,7 @@ export const TerminalBody = () => {
         "'open contact' for the window version.",
       ]),
 
-    // one request per page load, shared with App.jsx, so asking twice does not
-    // count as coming back twice
+    // shares App's request, so it does not count as a second visit
     visitor: async () => {
       const visit = await registerVisit();
       if (!visit) return print(["visitor: could not reach the server."]);
@@ -491,10 +482,7 @@ export const TerminalBody = () => {
       setOverlay("snake");
     },
 
-    /* ---------- auth ----------
-     * These print asynchronously: the WebAuthn call blocks on a real Touch ID
-     * prompt, so the command returns immediately and the result lands when the
-     * user has answered it. */
+    /* ---------- auth ---------- */
     login: async () => {
       if (auth.status === "authed") return print(["already signed in."]);
       print(["waiting for passkey…"]);
@@ -543,11 +531,6 @@ export const TerminalBody = () => {
       }
     },
 
-    /**
-     * Fleet management from the site's own terminal, which beats a docker exec
-     * for the common case. The CLI script stays for when logging in is the
-     * thing that is broken.
-     */
     moontower: async (args) => {
       const [sub, ...rest] = args;
 
@@ -610,7 +593,6 @@ export const TerminalBody = () => {
             const state = s.stale ? "stale" : "reporting";
             const cpu = s.sample?.cpuPct != null ? `${s.sample.cpuPct}% cpu` : "no reading";
             const disk = s.sample?.diskPct != null ? `  ${Math.round(s.sample.diskPct)}% disk` : "";
-            // the unit rollup: which ones are broken is the point, so name them
             const broken = (s.units ?? []).filter((u) => u.a !== "active");
             const units = !s.units?.length
               ? ""
@@ -629,11 +611,6 @@ export const TerminalBody = () => {
       }
     },
 
-    /*
-     * The applications, as opposed to the machines. Kept a separate command for
-     * the same reason it is a separate card: "nginx is running" and "the site
-     * answers" are different facts and they fail independently.
-     */
     services: async (args) => {
       const [sub, ...rest] = args;
 
@@ -642,7 +619,6 @@ export const TerminalBody = () => {
       }
 
       if (sub === "add") {
-        // the url is the last word, everything before it is the display name
         const url = rest[rest.length - 1] ?? "";
         const name = rest.slice(0, -1).join(" ").trim();
         if (!name || !url) return print(["usage: services add <name> <url>"]);
@@ -695,8 +671,6 @@ export const TerminalBody = () => {
         return print([
           "services:",
           ...data.services.map((s) => {
-            // a stale reading is not a verdict: the probe loop has stopped and
-            // the last number it left is no longer about right now
             const state = s.stale
               ? "no check"
               : s.ok === null
@@ -722,11 +696,7 @@ export const TerminalBody = () => {
       }
     },
 
-    /*
-     * The tailnet, read-only. It says what exists and whether it is connected;
-     * getting onto a device is `tailscale ssh`, from a machine on the tailnet,
-     * and never through this site.
-     */
+    // read-only: this never connects to a device
     tailnet: async () => {
       if (auth.status !== "authed") {
         return print(["tailnet: not signed in. run 'sudo' first."]);
@@ -761,8 +731,6 @@ export const TerminalBody = () => {
             const state = d.online ? "online" : since(d.lastSeen);
             const notes = [
               d.version && `v${d.version}${d.updateAvailable ? " (update available)" : ""}`,
-              // a key about to expire drops the device off the tailnet, which
-              // is worth hearing about before it happens rather than after
               d.keyExpiry && new Date(d.keyExpiry) < soon &&
                 `key expires ${new Date(d.keyExpiry).toLocaleDateString()}`,
             ].filter(Boolean);
@@ -774,12 +742,7 @@ export const TerminalBody = () => {
       }
     },
 
-    /*
-     * Moderation. Anyone can write in the guestbook, so there has to be a way
-     * to take something down, and until this existed the only one was psql
-     * against production. Hiding is the default because it is reversible and
-     * leaves the row where the rate limiter can still see it.
-     */
+    // hiding is reversible, so it is the default
     guestbook: async (args) => {
       const [sub, ...rest] = args;
 
@@ -835,8 +798,6 @@ export const TerminalBody = () => {
           "",
           ...data.entries.slice(0, 25).map((e) => {
             const flag = e.isHidden ? "-" : " ";
-            // one line each: the id to act on, who, where from, and enough of
-            // the message to recognise it
             const who = (e.name ?? "anonymous").slice(0, 14).padEnd(14);
             const body = e.message.replace(/\s+/g, " ").slice(0, 46);
             return `${flag} ${String(e.id).padStart(4)}  ${who} ${(e.source ?? "?").padEnd(9)} ${body}`;
@@ -855,8 +816,7 @@ export const TerminalBody = () => {
       }
     },
 
-    // edits the "now building" widget in place, so saying what I am working on
-    // is a sentence in a terminal rather than a commit and a redeploy
+    // edits the "now building" widget
     building: async (args) => {
       const text = args.join(" ").trim();
       if (!text) {
@@ -879,8 +839,6 @@ export const TerminalBody = () => {
           body: JSON.stringify({ text }),
         });
         const data = await res.json();
-        // the card polls on a quarter-hour timer, which is fine for data that
-        // changes on its own and useless for data I just changed
         if (res.ok) refreshWidgets();
         print([res.ok ? `now building: ${data.text}` : `building: ${data.error}`]);
       } catch {
@@ -888,8 +846,7 @@ export const TerminalBody = () => {
       }
     },
 
-    // deliberately absent from help and from tab completion: the payoff for
-    // reading ~/.secret. Same file also sits in ~/about for anyone who browses.
+    // hidden from help and completion; ~/.secret points here
     poster: () => {
       const item = locations.about.children.find((c) => c.id === "poster");
       openWindow("imgFile", item.data);
@@ -899,12 +856,9 @@ export const TerminalBody = () => {
     },
   };
 
-  /** Runs a command and returns whatever it produced, promise or not. */
   const dispatch = (cmd, nextCmdHistory) => {
     const [word, ...args] = cmd.split(/\s+/);
-    // lowercased once, and used everywhere below: a phone keyboard capitalises
-    // the first word of the line, and `Sudo` was falling through to "command
-    // not found" while `Ls` already worked
+    // phone keyboards capitalise the first word
     const name = word.toLowerCase();
     const handler = commands[name];
     if (handler) return handler(args, nextCmdHistory);
@@ -913,8 +867,6 @@ export const TerminalBody = () => {
       if (cmd.includes("rm -rf"))
         return print(["nice try, this OS is load-bearing."]);
 
-      // the front door to the private half of the site. Nothing here is
-      // guessable-secret: the obscurity is flavour, the passkey is the lock.
       if (auth.status === "authed") {
         return print([`already elevated. signed in with '${auth.passkey}'.`]);
       }
@@ -925,21 +877,13 @@ export const TerminalBody = () => {
         ]);
       }
       print(["verifying identity…"]);
-      // returned, not fired and forgotten, so the prompt waits for the prompt
       return auth.login().then((message) => print([message]));
     }
 
-    // echoes what was typed, not the folded form, so the message matches the line
     return print([`zsh: command not found: ${word}, type 'help'`]);
   };
 
-  /**
-   * A command that takes time (anything touching the network or a Touch ID
-   * prompt) holds the prompt until it finishes, the way a real shell does.
-   * Returning the prompt immediately let the next command's output land before
-   * the previous command's, so results appeared interleaved with unrelated
-   * lines.
-   */
+  /** Holds the prompt until the command finishes, so output never interleaves. */
   const runCommand = async (raw) => {
     const cmd = raw.trim();
     setHistory((h) => [...h, { type: "cmd", text: cmd, prompt }]);
@@ -970,7 +914,6 @@ export const TerminalBody = () => {
     if (completingCommand) {
       candidates = COMMAND_NAMES.filter((c) => c.startsWith(last.toLowerCase()));
     } else {
-      // complete against children of the path's directory part
       const slash = last.lastIndexOf("/");
       const dirPart = slash >= 0 ? last.slice(0, slash + 1) : "";
       const namePart = slash >= 0 ? last.slice(slash + 1) : last;
@@ -994,12 +937,10 @@ export const TerminalBody = () => {
   };
 
   const handleKeyDown = (e) => {
-    // while a game/effect owns the terminal, keys steer it, not the shell
     if (overlay) {
       e.preventDefault();
       return;
     }
-    // no prompt means no input: the running command has the terminal
     if (busy) {
       e.preventDefault();
       return;
@@ -1052,7 +993,7 @@ export const TerminalBody = () => {
     if (isOpen) inputRef.current?.focus();
   }, [isOpen]);
 
-  // a passkey prompt steals focus; take it back when the command finishes
+  // a passkey prompt steals focus; take it back afterwards
   useEffect(() => {
     if (!busy && isOpen && !overlay) inputRef.current?.focus();
   }, [busy, isOpen, overlay]);
@@ -1060,28 +1001,22 @@ export const TerminalBody = () => {
   const exitOverlay = (lines) => {
     setOverlay(null);
     if (lines.length) print(lines);
-    // refocus after the exit keystroke has fully finished (keydown→input→keyup),
-    // so its character can't land in the freshly re-enabled prompt
+    // after the exit keystroke finishes, so it does not land in the prompt
     setTimeout(() => {
       setInputText("");
       inputRef.current?.focus();
     }, 150);
   };
 
+  // the games sit beside the scroller, not inside it, so they stay in view
   return (
-    /* The games sit beside the scroller rather than inside it. Inside, an
-       absolute overlay is placed against the top of the scrolled content, so
-       once any output had pushed the prompt down the canvas was drawn above
-       the visible area and the game ran where nobody could see it. */
     <div className="term-frame">
       {overlay === "matrix" && <MatrixOverlay onExit={exitOverlay} />}
       {overlay === "snake" && <SnakeOverlay onExit={exitOverlay} />}
       <div
         ref={bodyRef}
         className="term-body"
-        // A click that ends a drag is someone selecting output, not asking for
-        // the prompt. Focusing the input would collapse the selection on mouseup,
-        // so it never survived long enough to copy.
+        // a click that ends a drag is a text selection; leave it alone
         onClick={() => {
           if (!document.getSelection()?.isCollapsed) return;
           inputRef.current?.focus();
@@ -1099,8 +1034,6 @@ export const TerminalBody = () => {
           )
         )}
 
-        {/* the prompt disappears while a command runs, so there is nowhere to
-            type and no way to interleave the next command's output */}
         <div className="flex items-baseline gap-2" hidden={busy}>
           <span className="prompt shrink-0">{prompt}</span>
           <span
@@ -1111,10 +1044,6 @@ export const TerminalBody = () => {
             role="textbox"
             aria-label="terminal input"
             spellCheck={false}
-            /* iOS capitalises the first word of anything it thinks is a
-               sentence, including this, which turns `ls` into `Ls` and every
-               command into an error. Autocapitalize works on contenteditable
-               the same way it does on an input. */
             autoCapitalize="none"
             autoCorrect="off"
             onInput={(e) => setInput(e.currentTarget.textContent)}

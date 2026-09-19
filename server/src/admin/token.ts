@@ -1,21 +1,11 @@
 /**
- * Break-glass: prints a one-time token that authorizes enrolling a passkey.
+ * Prints a one-time token for enrolling a passkey, for the first passkey or
+ * when every passkey is lost. Needs shell access by design.
  *
  *   docker exec -it <container> bun server/src/admin/token.ts
  *
- * Run this to enrol the very first passkey, and again if access to every
- * registered passkey is ever lost. It requires shell access to the container,
- * which is the point: it is the one path in that does not depend on holding a
- * credential, so it must not be reachable over HTTP.
- *
- * Invoked by path rather than `bun run admin:token` because the runtime image
- * has WORKDIR /app while package.json lives in /app/server, so `bun run` finds
- * no scripts. `cd server && bun run admin:token` works too.
- *
- * It deliberately imports nothing from auth/webauthn.ts. That module refuses to
- * load in production until RP_ID and ORIGIN are set to the real domain, and a
- * recovery tool that only works once the config is already correct is no
- * recovery tool at all. All it needs is a database.
+ * It does not import auth/webauthn.ts, which refuses to load without RP_ID and
+ * ORIGIN, so it still works when that config is wrong.
  */
 import { count } from "drizzle-orm";
 import { mintBootstrapToken } from "../auth/bootstrap.ts";

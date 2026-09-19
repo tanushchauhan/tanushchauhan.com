@@ -1,21 +1,9 @@
 import { create } from "zustand";
 
-/**
- * Loaded only when someone actually starts a passkey ceremony. Exactly one
- * person will ever log in here, so making every visitor download the WebAuthn
- * browser helpers would undo part of the bundle work for no one's benefit.
- * Nothing may import from this module statically or it lands back in the main
- * chunk.
- */
+// loaded only when a passkey ceremony starts, to keep it out of the main bundle
 const webauthn = () => import("@simplewebauthn/browser");
 
-/**
- * Auth state, deliberately NOT persisted. The session lives in an httpOnly
- * cookie the page cannot read, so localStorage could only ever hold a stale
- * copy of the answer: it would claim you were logged in after the cookie
- * expired, or claim you were not right after you logged in on another tab.
- * The server is the only source of truth and `refresh()` is how we ask it.
- */
+// not persisted: the session is an httpOnly cookie, so the server is the source of truth
 const json = async (url, options = {}) => {
   const res = await fetch(url, {
     credentials: "same-origin",
@@ -45,8 +33,7 @@ const useAuthStore = create((set, get) => ({
       });
       return me;
     } catch {
-      // the API being unreachable is not the same as being logged out, but for
-      // the UI's purposes it has to behave the same way
+      // an unreachable API is treated as signed out
       set({ status: "anonymous", user: null, passkey: null });
       return { authenticated: false };
     }
@@ -102,7 +89,6 @@ const useAuthStore = create((set, get) => ({
     try {
       await json("/api/auth/logout", { method: "POST" });
     } catch {
-      /* logging out locally matters more than the request succeeding */
     }
     await get().refresh();
     return "signed out.";

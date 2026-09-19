@@ -5,28 +5,15 @@ import { HUB_SLUG, metricSamples } from "../db/schema.ts";
 import { registerHub } from "./moontower.ts";
 
 /**
- * Whole-machine metrics for the hub server.
+ * Whole-machine metrics for the hub. /proc/stat and /proc/meminfo are not
+ * namespaced, so a container reads the host's figures from them directly.
+ * node:os is the fallback on macOS.
  *
- * These are the numbers for the entire box, not for this container. That
- * distinction cost a rewrite: the first version read cgroup v2, which describes
- * only what this container is using, so a Postgres container pegging a core
- * showed up here as 3%. The card is meant to answer "how is the server doing",
- * so it reads the machine.
- *
- * `/proc/stat` and `/proc/meminfo` are not namespaced, so a container reads the
- * host's real figures straight out of them with no privileges, no Docker socket
- * and no agent. `node:os` is the fallback for development on macOS.
- *
- * Two deliberate choices worth knowing:
- *  - memory used is MemTotal - MemAvailable, the number `free` calls "used".
- *    os.freemem() reports MemFree, which excludes reclaimable page cache and
- *    makes every healthy Linux box look 90%+ full.
- *  - CPU busy excludes both idle and iowait. Time blocked on disk is not the
- *    CPU doing work, and counting it makes a busy disk look like a busy CPU.
+ * Memory used is MemTotal - MemAvailable, as `free` reports it, and CPU busy
+ * time excludes iowait.
  */
 
-// overridable so the parsing can be tested against fixtures rather than only
-// against whatever the dev machine happens to report
+// overridable so parsing can be tested against fixtures
 const PROC = Bun.env.PROC_ROOT ?? "/proc";
 const SAMPLE_MS = 30_000;
 const RETAIN_MS = 24 * 60 * 60 * 1000;
@@ -38,16 +25,11 @@ const readProc = async (name: string) => {
     if (!(await file.exists())) return null;
     return await file.text();
   } catch {
-    // absent on macOS, and a metrics read must never take the process down
     return null;
   }
 };
 
-/* ---------- CPU ----------
- * A CPU percentage is a rate, so it only exists between two readings. The
- * sampler keeps the previous one; until the second tick lands there is nothing
- * honest to report and this reports null rather than a made-up zero.
- */
+/* ---------- CPU ---------- */
 type CpuReading = { at: number; busy: number; total: number };
 let previous: CpuReading | null = null;
 
@@ -67,7 +49,6 @@ const parseProcStat = (raw: string): CpuReading | null => {
   return { at: Date.now(), busy: total - idle - iowait, total };
 };
 
-/** macOS development fallback: the same arithmetic over os.cpus() tick counts. */
 const cpuFromOs = (): CpuReading => {
   let busy = 0;
   let total = 0;
@@ -103,8 +84,6 @@ const parseMeminfo = (raw: string) => {
   };
 
   const total = value("MemTotal");
-  // MemAvailable is the kernel's own estimate of what a new workload could
-  // claim without swapping, which is the honest definition of free
   const available = value("MemAvailable");
   if (total === null || available === null) return null;
   return { usedBytes: total - available, totalBytes: total, source: "proc" as const };
@@ -115,12 +94,7 @@ export const readMemory = async () => {
   const parsed = raw ? parseMeminfo(raw) : null;
   if (parsed) return parsed;
 
-  /*
-   * Development only. On macOS this reads high: freemem() counts genuinely free
-   * pages and macOS keeps almost none, using the rest for cache it hands back on
-   * demand. The card reports which source answered so that is not mistaken for
-   * a problem.
-   */
+  // macOS keeps almost no free pages, so this reads high in development
   return {
     usedBytes: os.totalmem() - os.freemem(),
     totalBytes: os.totalmem(),
@@ -132,14 +106,8 @@ const MB = 1024 * 1024;
 const GB = 1024 * MB;
 
 /* ---------- disk ----------
- * The one figure here that is not read out of /proc, because the kernel does
- * not put filesystem usage there. statfs is the same question `df` asks.
- *
- * Worth knowing, given the cgroup rewrite: inside a container this measures the
- * overlay filesystem, which for overlay2 sits on the host's disk and so reports
- * the host's real numbers. That is true of the normal Docker setup rather than
- * guaranteed by anything, so DISK_PATH exists to point it at a host volume if
- * hub ever stops agreeing with `df /` on the machine itself.
+ * On overlay2 this reports the host disk. DISK_PATH can point it at a host
+ * volume if that ever stops matching `df /`.
  */
 const DISK_PATH = Bun.env.DISK_PATH ?? "/";
 
@@ -148,8 +116,7 @@ const readDisk = async () => {
     const { statfs } = await import("node:fs/promises");
     const fs = await statfs(DISK_PATH);
     const total = Number(fs.blocks) * Number(fs.bsize);
-    // blocks - bfree, not bavail: bavail excludes the root reserve, and
-    // counting reserved-but-unused space as used is what `df` does too
+    // blocks - bfree, like df: the root reserve counts as free
     const used = (Number(fs.blocks) - Number(fs.bfree)) * Number(fs.bsize);
     if (!total) return null;
     return {
@@ -158,8 +125,6 @@ const readDisk = async () => {
       diskTotalGb: Number((total / GB).toFixed(1)),
     };
   } catch {
-    // statfs landed in Node 18.15 and is in Bun, but a metrics read must never
-    // be the reason the site goes down
     return null;
   }
 };
@@ -178,16 +143,12 @@ export const sample = async () => {
     cpuPct: pct === null ? null : Number(pct.toFixed(1)),
     cores: os.cpus().length,
     ...(disk ?? { diskPct: null, diskUsedGb: null, diskTotalGb: null }),
-    // already a 1-minute average, so unlike CPU it needs no previous reading
     load1: Number(os.loadavg()[0].toFixed(2)),
     memPct: Number(memPct.toFixed(1)),
     memUsedMb: Math.round(memory.usedBytes / MB),
     memTotalMb: Math.round(memory.totalBytes / MB),
-    // "proc" means these are the machine's real figures; "os" means a dev
-    // machine's approximation
     source: source === "proc" && memory.source === "proc" ? ("proc" as const) : ("os" as const),
-    // this process's own resident set, so a leak in the site itself is visible
-    // separately from whatever else the box is doing
+    // the site's own memory, so a leak here is visible on its own
     appMemMb: Math.round(process.memoryUsage.rss() / MB),
     hostUptimeSeconds: Math.floor(os.uptime()),
   };
@@ -195,15 +156,10 @@ export const sample = async () => {
 
 export type Sample = Awaited<ReturnType<typeof sample>>;
 
-/** The most recent tick, so a request never has to wait for a CPU delta. */
 let latest: Sample | null = null;
 export const latestSample = () => latest;
 
-/**
- * Samples on an interval and keeps a day of history, which is what gives the
- * sparklines a shape. Deliberately fire-and-forget: a database hiccup must not
- * take down the process, and a gap in a decorative chart is not worth a crash.
- */
+/** Samples every 30 seconds and keeps a day of history. Errors are logged, never thrown. */
 export const startMetricsSampler = () => {
   let ticks = 0;
 

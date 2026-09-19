@@ -79,9 +79,6 @@ const Welcome = () => {
       <p ref={subtitleRef} className="mt-1 text-white/90">
         {renderText("Hey, I am Tanush", "text-lg font-georama", 100)}
       </p>
-      {/* It tells you what to do. It used to open by announcing that this is an
-          operating system and not a website, which the screen has already said
-          better than the sentence could. */}
       <p className="hint">
         Open a folder, try the terminal, or press ⌘K to search.
       </p>

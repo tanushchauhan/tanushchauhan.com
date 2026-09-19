@@ -1,11 +1,4 @@
-/**
- * Registers this page load with the visitor counter, once.
- *
- * The terminal's `visitor` command wants the same answer, so it shares this
- * promise rather than posting again and counting one visit as two. A request
- * that failed is forgotten, so the next caller gets a fresh attempt instead of
- * a cached failure.
- */
+/** Counts this page load once; the terminal shares the same promise. */
 let pending = null;
 
 export const registerVisit = () => {

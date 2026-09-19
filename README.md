@@ -148,15 +148,12 @@ installer creates an unprivileged user, drops one shell script in
 schedules a systemd timer (or cron). `services add <name> <url>` puts a site on
 the probe list.
 
-The agent has no channel through which the hub can run anything on it. The
-hub's reply is configuration and a version string, and which systemd units are
-reported is set in the config file on the machine, never sent from the hub. An
-auto-updating agent would turn a compromise of a portfolio site into root on a
-mail server, which is not a trade worth making. The same goes for the tailnet:
-the site asks Tailscale's API which devices exist with a read-only credential,
-it never joins the tailnet itself, and there is no way to open a shell from
-it. The scripts are in
-`public/moontower/` and are short enough to read before running them.
+The hub cannot run anything on an agent. Its reply is configuration and a
+version string, and the list of systemd units to report lives in the config
+file on the machine, never in the hub. The tailnet card works the same way:
+the site asks Tailscale's API which devices exist with a read-only credential
+and never joins the tailnet. The scripts are in `public/moontower/` and are
+short enough to read before running them.
 
 ## Tests
 

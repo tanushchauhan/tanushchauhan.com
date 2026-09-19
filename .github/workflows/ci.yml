@@ -1,16 +1,12 @@
 name: CI
 
-# Coolify deploys from main on push, and it does not run any of this first. So
-# a red run here is a warning about something already on its way out, not a
-# gate. That is worth knowing about within three minutes rather than from a
-# screenshot a week later.
+# Coolify deploys main without waiting for this, so a red run is a warning, not a gate.
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
 
-# nothing here writes to the repo, so the token gets no more than a checkout
 permissions:
   contents: read
 
@@ -29,8 +25,7 @@ jobs:
         with:
           bun-version: latest
 
-      # bun.lock is the lockfile in this repo, for the frontend as well as the
-      # server, so the install has to be bun's even though the tests run on node
+      # bun.lock is the lockfile for both the frontend and the server
       - name: install
         run: bun install --frozen-lockfile
 
@@ -55,8 +50,7 @@ jobs:
         with:
           bun-version: latest
 
-      # the runner spawns `npm run dev` and is itself a node script, so node has
-      # to be here too even though bun does the installing
+      # the test runner is a node script
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -64,8 +58,6 @@ jobs:
       - name: install
         run: bun install --frozen-lockfile
 
-      # playwright-core ships no browser on purpose: locally it drives the
-      # Chrome that is already installed, and here it drives this one
       - name: install chrome
         id: chrome
         uses: browser-actions/setup-chrome@v1
@@ -77,8 +69,6 @@ jobs:
         env:
           CHROME_PATH: ${{ steps.chrome.outputs.chrome-path }}
 
-      # the failure is almost always visual, and a screenshot of the moment it
-      # broke saves reproducing it by hand
       - name: keep the screenshots
         if: failure()
         uses: actions/upload-artifact@v4

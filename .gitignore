@@ -3,14 +3,10 @@ dist
 .DS_Store
 *.local
 
-# env: never commit real secrets, .env.example is the documented template
 .env
 .env.*
 !.env.example
 
-# local postgres volume from docker-compose
 .pgdata
 
-# photographs of failing assertions, rewritten every run
 tests/screenshots
-

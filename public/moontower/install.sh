@@ -4,13 +4,9 @@
 #   curl -fsSL https://tanushchauhan.com/moontower/install.sh | sh -s -- \
 #       --token mt_enroll_… --name "vps"
 #
-# To upgrade a machine that is already enrolled, with no token and no downtime:
+# Upgrade an enrolled machine (keeps its key and history):
 #
 #   curl -fsSL https://tanushchauhan.com/moontower/install.sh | sh -s -- --upgrade
-#
-# That replaces the agent and its unit files and leaves the key, the schedule
-# and the server's history alone. Enrolling is a one-time thing; a server never
-# has to be removed and re-added to pick up a new version.
 #
 # What it does, so you can check before running it as root:
 #   1. creates a system user `moontower` with no login shell and no home
@@ -19,10 +15,7 @@
 #   4. writes that key to /etc/moontower/config, mode 0600, owned by moontower
 #   5. installs a systemd timer (or a cron entry) to run it every 30 seconds
 #
-# It does not install a package manager repo, a daemon, Docker, or anything
-# that stays resident. The agent runs for a few milliseconds and exits.
-#
-# Uninstall: /usr/local/lib/moontower/uninstall.sh
+# Nothing stays resident. Uninstall: /usr/local/lib/moontower/uninstall.sh
 
 set -eu
 
@@ -35,8 +28,7 @@ CONF_DIR="/etc/moontower"
 STATE_DIR="/var/lib/moontower"
 USER_NAME="moontower"
 
-# kept before the parse loop shifts them away, so the sudo hint below can echo
-# back the command the caller actually typed rather than a bare re-run
+# kept so the sudo hint can echo the original command
 ORIGINAL_ARGS="$*"
 
 while [ $# -gt 0 ]; do
@@ -49,18 +41,14 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# Root first, before anything looks at the config. That file is 0600 and owned
-# by the agent's own user, so every test against it is false for an ordinary
-# user, and checking it first meant a missing sudo reported itself as "nothing
-# to upgrade" on a machine that was in fact enrolled.
+# root first: the config is 0600, so as a normal user it looks absent
 [ "$(id -u)" -eq 0 ] || {
     echo "moontower: needs root. try:" >&2
     echo "  curl -fsSL $HUB/moontower/install.sh | sudo sh -s -- $ORIGINAL_ARGS" >&2
     exit 1
 }
 
-# An install with no token on a machine that already holds a key is an upgrade,
-# not a mistake. Treating it as one is what makes "re-run the installer" true.
+# no token on an enrolled machine means upgrade
 if [ "$UPGRADE" -eq 0 ] && [ -z "$TOKEN" ] && [ -f "$CONF_DIR/config" ]; then
     UPGRADE=1
 fi
@@ -99,13 +87,9 @@ chmod 0755 "$LIB/moontower.sh"
 chown -R "$USER_NAME" "$STATE_DIR"
 
 # ---------- 3. enrol (new installs only) ----------
-# An upgrade must never touch the config: the key in it is the machine's
-# identity, and rewriting it is how you would lose a server's history.
+# an upgrade never touches the config, since the key is the machine's identity
 if [ "$UPGRADE" -eq 0 ]; then
-# Sent as a body field rather than a query string so the single-use token does
-# not end up in any proxy or access log along the way.
-# `.` is a special builtin, so a missing file exits the shell before any
-# `|| fallback` can run. Test for it first.
+# `.` exits the shell if the file is missing, so test first
 os_name=Linux
 if [ -r /etc/os-release ]; then
     os_name=$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-Linux}")
@@ -135,20 +119,15 @@ MOONTOWER_HUB="$HUB"
 MOONTOWER_KEY="$KEY"
 MOONTOWER_STATE="$STATE_DIR/cpu"
 
-# Which systemd units to report, space separated, ".service" optional. Left
-# unset the agent uses its built-in list of the usual suspects and skips
-# anything this machine does not have installed.
-#
-# It lives here rather than in the hub on purpose. These names become arguments
-# to a command, so accepting them over the network would mean a compromise of
-# the website could run whatever it liked on this machine.
+# Which systemd units to report, space separated, ".service" optional.
+# Unset, the agent uses its built-in list and skips what is not installed.
+# Set here rather than by the hub, because these become command arguments.
 #MOONTOWER_UNITS="nginx mariadb dovecot"
 EOF
 fi
 
 # ---------- 5. schedule ----------
-# rewritten on upgrade too, so a change to the sandbox or the interval lands
-# without anyone having to know the unit files moved
+# rewritten on upgrade too
 if command -v systemctl >/dev/null 2>&1 && [ -d /etc/systemd/system ]; then
     cat > /etc/systemd/system/moontower.service <<EOF
 [Unit]
@@ -159,7 +138,6 @@ After=network-online.target
 Type=oneshot
 User=$USER_NAME
 ExecStart=$LIB/moontower.sh
-# it reads /proc and posts one request, so it needs nothing else
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
@@ -204,7 +182,7 @@ echo "moontower: removed. Delete the server in the hub to revoke its key."
 EOF
 chmod 0755 "$LIB/uninstall.sh"
 
-# first reading now, so the hub shows the server immediately rather than in 30s
+# first reading now, so the server shows up immediately
 su -s /bin/sh "$USER_NAME" -c "$LIB/moontower.sh" || true
 
 if [ "$UPGRADE" -eq 1 ]; then

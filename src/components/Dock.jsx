@@ -31,12 +31,10 @@ const Dock = () => {
     ([, win]) => win.isOpen && win.isMinimized
   );
 
-  // As on a Mac: clicking a running app brings it forward rather than
-  // quitting it. Closing is the red button's job.
+  // a running app comes to the front rather than closing
   const activateApp = (app) => {
     if (!app.canOpen) return;
 
-    // Trash is a Finder shortcut straight into the junk drawer.
     if (app.id === "trash") return openFinderWindow(locations.trash);
 
     if (app.id === "finder") {
@@ -44,7 +42,6 @@ const Dock = () => {
       const shown = open
         .filter((k) => !windows[k].isMinimized)
         .sort((a, b) => windows[a].zIndex - windows[b].zIndex);
-      // raise them all, keeping their order, with the frontmost last
       if (shown.length) return shown.forEach(focusWindow);
       if (open.length) return restoreWindow(open[0]);
       return openFinderWindow(locations.work);
@@ -105,8 +102,7 @@ const Dock = () => {
     <section id="dock">
       <div ref={dockRef} className="dock-container">
         {dockApps.map((app, i) => (
-          // the slot takes the click, not the button: the button rises as it
-          // magnifies, and a pointer resting where it was should still open it
+          // the slot takes the click, so it still works under a raised icon
           <div key={app.id} className="dock-slot" onClick={() => activateApp(app)}>
             {i === dockApps.length - 1 && <span className="dock-divider" />}
             <button

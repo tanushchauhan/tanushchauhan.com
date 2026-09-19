@@ -10,12 +10,9 @@ import { openFile } from "../utils/files.js";
 
 const Finder = ({ windowKey }) => {
   const { windows, openWindow, quickLook, setQuickLook } = useWindowStore();
-  // each Finder window carries its own location in its window data
   const activeLocation = windows[windowKey].data ?? locations.work;
 
-  // Visits made in this window. When there is nothing to go back to, Back
-  // climbs to the enclosing folder instead, so a project opened from the
-  // desktop can still reach the list it came from.
+  // with no history, Back goes to the enclosing folder
   const [history, setHistory] = useState({ back: [], forward: [] });
   const isOpen = windows[windowKey].isOpen;
   useEffect(() => {
@@ -53,19 +50,13 @@ const Finder = ({ windowKey }) => {
     openFile(item, openWindow);
   };
 
-  /*
-   * Selection, the way Finder does it: a click selects, a double-click opens,
-   * and Space shows the selection in Quick Look. The selection is an id rather
-   * than an index so it survives the folder's contents being re-rendered, and
-   * it is dropped whenever the window moves to another folder.
-   */
+  // click selects, double-click opens, Space opens Quick Look
   const items = activeLocation.children ?? [];
   const [selectedId, setSelectedId] = useState(null);
   const selected = items.find((item) => item.id === selectedId) ?? null;
   useEffect(() => setSelectedId(null), [activeLocation.id]);
 
-  // Only the frontmost window listens to the keyboard, as on a Mac. Two open
-  // Finders would otherwise both answer a Space.
+  // only the frontmost window takes keys
   const isFront =
     isOpen &&
     !windows[windowKey].isMinimized &&
@@ -73,7 +64,6 @@ const Finder = ({ windowKey }) => {
       (w) => !w.isOpen || w.isMinimized || w.zIndex <= windows[windowKey].zIndex
     );
   const previewing = quickLook?.windowKey === windowKey;
-  // a preview outlives nothing: closing or leaving the folder takes it down
   useEffect(() => {
     if (useWindowStore.getState().quickLook?.windowKey === windowKey) setQuickLook(null);
   }, [isOpen, activeLocation.id, windowKey, setQuickLook]);
@@ -81,14 +71,12 @@ const Finder = ({ windowKey }) => {
   useEffect(() => {
     if (!isFront) return;
     const onKey = (e) => {
-      // typing somewhere is typing, not a shortcut
       if (e.target.closest?.("input, textarea, [contenteditable]")) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       if (e.key === " " && selected) {
         e.preventDefault();
         if (previewing) return setQuickLook(null);
-        // where the icon is, so the panel can zoom out of it
         const icon = document.querySelector(`#${windowKey} ul.content li.selected :is(.app-icon, img)`);
         const r = icon?.getBoundingClientRect();
         setQuickLook({
@@ -104,8 +92,7 @@ const Finder = ({ windowKey }) => {
         openItem(selected);
         return;
       }
-      // arrows walk the items in order; with Quick Look open the preview
-      // follows, which is how you flick through a folder on a Mac
+      // with Quick Look open, the preview follows the selection
       const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
       if (step && items.length) {
         e.preventDefault();
@@ -163,7 +150,6 @@ const Finder = ({ windowKey }) => {
         </div>
 
         <div className="finder-main">
-          {/* a click on empty space clears the selection, as it does in Finder */}
           <ul className="content" onClick={(e) => e.target === e.currentTarget && setSelectedId(null)}>
             {items.map((item) => (
               <li
@@ -171,7 +157,6 @@ const Finder = ({ windowKey }) => {
                 className={clsx(item.position, item.id === selectedId && "selected")}
                 onClick={() => {
                   setSelectedId(item.id);
-                  // Quick Look open on something else follows the click
                   if (previewing) setQuickLook({ item, windowKey });
                 }}
                 onDoubleClick={() => {
@@ -189,9 +174,6 @@ const Finder = ({ windowKey }) => {
             ))}
           </ul>
 
-          {/* The status bar Finder has at the foot of a window. It also carries
-              the two shortcuts, because a click that selects instead of opens
-              is a Mac habit a visitor may not share. */}
           <p className="finder-status">
             {selected ? (
               <>

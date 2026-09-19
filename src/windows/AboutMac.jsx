@@ -6,7 +6,6 @@ import { locations, wallpaperFor } from "#constants";
 import useWindowStore from "#store/window.js";
 import { registerVisit } from "../utils/visit.js";
 
-// set by vite.config.js at build time
 const BUILD = __BUILD__;
 
 const duration = (seconds) => {
@@ -18,14 +17,6 @@ const duration = (seconds) => {
   return `${Math.max(1, m)}m`;
 };
 
-/*
- * What the machine is, and how it is doing right now. The spec sheet used to
- * put a GPA in the Memory slot and a scholarship in the Startup Disk, which is
- * a boast wearing a joke's clothes. Now every row is a fact about the site you
- * are looking at, and the ones that change are read when the window opens:
- * how long the server has been up since the last deploy, which build this is,
- * how many people have been here, and the display you are looking at it on.
- */
 const useLiveSpecs = (isOpen) => {
   const [health, setHealth] = useState(null);
   const [visitors, setVisitors] = useState(null);
@@ -55,8 +46,7 @@ const useLiveSpecs = (isOpen) => {
 const AboutMac = () => {
   const { openWindow, windows, wallpaper, theme } = useWindowStore();
   const { health, visitors } = useLiveSpecs(windows.about?.isOpen);
-  // read from the root rather than the setting, which can be "auto"; theme is
-  // still read above so that changing it re-renders this
+  // the resolved theme, since the setting can be "auto"
   const dark = theme && document.documentElement.classList.contains("dark");
 
   const openAboutMe = () => {
@@ -67,7 +57,6 @@ const AboutMac = () => {
   const specs = [
     ["Chip", `React ${BUILD.react} on Vite ${BUILD.vite}`],
     ["Server", "Bun, Hono and Postgres"],
-    // a restart is a deploy here, so uptime doubles as "last deployed"
     health && ["Uptime", `${duration(health.uptimeSeconds)} since the last deploy`],
     [
       "Build",
@@ -88,8 +77,6 @@ const AboutMac = () => {
       </div>
 
       <div className="about-body">
-        {/* the machine, drawn, with whatever wallpaper is on the desktop on
-            its screen, the way a Mac shows you your own */}
         <div className="machine" aria-hidden="true">
           <div className="screen">
             <img src={wallpaperFor(wallpaper, dark)} alt="" />

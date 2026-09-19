@@ -4,15 +4,7 @@ import useWindowStore from "#store/window.js";
 import AppIcon from "./AppIcon.jsx";
 import { openFile } from "../utils/files.js";
 
-/*
- * Quick Look: a glance at the selected item without opening a window for it.
- * A floating panel over everything, the way the Mac shows one, holding the
- * file itself rather than a thumbnail: the text of a text file, the picture of
- * a picture, where a link goes, and what is inside a folder.
- *
- * Space and Escape close it; those keys belong to Finder, which also moves the
- * preview along when the arrows move the selection.
- */
+/* Quick Look: a preview of the selected Finder item. */
 const Preview = ({ item }) => {
   if (item.kind === "folder") {
     const children = item.children ?? [];
@@ -51,7 +43,6 @@ const Preview = ({ item }) => {
     );
   }
 
-  // a link: where it goes, which is the thing you want to know before a new tab
   return (
     <div className="ql-link">
       <AppIcon icon={item.icon} className="link-chip" />
@@ -89,11 +80,7 @@ const QuickLook = () => {
           ? "Open with Preview"
           : "Open with TextEdit";
 
-  // The panel zooms out of the icon it previews, as it does on a Mac: the
-  // animation starts it at the icon's position, measured from the centre of
-  // the screen where the panel comes to rest. Without an icon it grows in
-  // place. Moving through a folder with the arrows keeps the same panel, so
-  // this only plays when it opens.
+  // zooms out of the icon, measured from the centre where the panel rests
   const origin = quickLook.origin;
   const from = origin
     ? {

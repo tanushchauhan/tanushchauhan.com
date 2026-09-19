@@ -5,16 +5,8 @@ import { visitors } from "../db/schema.ts";
 import { clientIp, hashIp, rateLimit } from "../lib/ratelimit.ts";
 
 /**
- * The visitor counter.
- *
- * Called once per page load, and again by the terminal's `visitor` command,
- * which shares the page's request rather than making its own. A person is one
- * row however many times they come back, and the number they are given is the
- * row id: handed out on the first visit, never reassigned.
- *
- * Looked up before it is inserted rather than written with ON CONFLICT, because
- * a conflicting insert still spends a sequence value in Postgres, and a counter
- * that skips a number every time somebody reloads is not much of a counter.
+ * The visitor counter. The visitor number is the row id. It is looked up before
+ * inserting, because a conflicting insert would still use up a sequence value.
  */
 const limiter = rateLimit({ limit: 60, windowMs: 10 * 60 * 1000 });
 
@@ -37,8 +29,7 @@ visitRoutes.post("/", async (c) => {
       .where(eq(visitors.ipHash, ipHash))
       .returning();
   } else {
-    // two first visits from one address at the same moment: the one that loses
-    // the race reads the row the other one wrote
+    // two first visits at once: the loser reads the winner's row
     const [inserted] = await db.insert(visitors).values({ ipHash }).onConflictDoNothing().returning();
     row =
       inserted ??

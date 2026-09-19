@@ -12,14 +12,10 @@ import { Sun, Moon, Grid3x3, GitCommitVertical, Box, Activity, Globe, Network } 
 
 gsap.registerPlugin(Draggable);
 
-const POLL_MS = 15 * 60 * 1000; // GitHub is cached for 5 min server-side anyway
-const SYSTEM_POLL_MS = 30 * 1000; // matches the server's sampling interval
+const POLL_MS = 15 * 60 * 1000;
+const SYSTEM_POLL_MS = 30 * 1000;
 
-/**
- * One tinted glyph chip per card. The colour rides on the card as `--accent`
- * rather than being hardcoded here, so the chip and anything else that wants to
- * pick it up (the sha pill, the live dot) always agree.
- */
+/** Each card sets --accent, which the chip, sha pill and live dot all use. */
 const Head = ({ icon, children }) => (
   <header>
     <span className="ico">{icon}</span>
@@ -27,10 +23,7 @@ const Head = ({ icon, children }) => (
   </header>
 );
 
-/* ---------- Austin clock ----------
- * The menu bar already shows the visitor their own time, so repeating it would
- * be dead weight. What they cannot know is whether I am awake.
- */
+/* ---------- Austin clock ---------- */
 const AustinClock = () => {
   const [now, setNow] = useState(() => new Date());
 
@@ -60,19 +53,14 @@ const AustinClock = () => {
     weekday: "long",
   }).format(now);
 
-  // rough waking hours, so the card says something a bare clock does not
   const asleep = hour24 >= 2 && hour24 < 9;
 
   return (
     <article
       className="widget w-clock"
-      // amber while I am likely up, indigo overnight: the card reads at a
-      // glance before you have parsed a single word of it
       style={{ "--accent": asleep ? "#8ea2f6" : "#f5a524" }}
     >
       <Head icon={asleep ? <Moon /> : <Sun />}>Austin, TX</Head>
-      {/* centred, because the grid stretches every card to the tallest in the
-          row and a clock has less to say than a heatmap */}
       <div className="body">
         <p className="big">
           {get("hour")}:{get("minute")}
@@ -122,9 +110,6 @@ const LatestCommit = ({ data }) => (
       <>
         <p className="repo">{data.repo}</p>
         <p className="msg">{data.message}</p>
-        {/* pushed to the bottom of the card: this row is a footer, and the grid
-            stretches this card to the height of the heatmap beside it, which
-            otherwise left a lot of dead space under the message */}
         <p className="sub meta">
           {data.url ? (
             <a className="sha" href={data.url} target="_blank" rel="noopener noreferrer">
@@ -133,7 +118,6 @@ const LatestCommit = ({ data }) => (
           ) : (
             <span className="sha">{data.sha}</span>
           )}
-          {/* one unit: a narrow card was breaking the date after the comma */}
           <span className="whitespace-nowrap">
             {dayjs(data.at).format("MMM D, YYYY")}
           </span>
@@ -166,10 +150,7 @@ const NowBuilding = ({ data }) => (
   </article>
 );
 
-/* ---------- system ----------
- * Only rendered when I am signed in. The endpoint is behind requireAuth too:
- * hiding a card in the client would be decoration, not a boundary.
- */
+/* ---------- system (signed in only) ---------- */
 const duration = (seconds) => {
   if (!Number.isFinite(seconds)) return "n/a";
   const d = Math.floor(seconds / 86400);
@@ -180,10 +161,7 @@ const duration = (seconds) => {
   return `${m}m`;
 };
 
-/**
- * `values` draws a sparkline, `pct` draws a fill bar. A rate wants its shape
- * over time; a capacity wants how much of it is gone.
- */
+/** `values` draws a sparkline, `pct` draws a fill bar. */
 const Stat = ({ label, value, unit, values, pct, warn }) => (
   <div className={clsx("stat", warn && "warn")}>
     <p className="k">{label}</p>
@@ -191,33 +169,22 @@ const Stat = ({ label, value, unit, values, pct, warn }) => (
       {value}
       {unit && <span className="unit">{unit}</span>}
     </p>
-    {/* stroke stays currentColor: a var() in an SVG presentation attribute is
-        not reliably supported, so the CSS sets `color` on the svg instead */}
+    {/* the CSS sets `color` on the svg, since var() in SVG attributes is unreliable */}
     {pct == null ? <Sparkline values={values} height={22} /> : <Bar pct={pct} />}
   </div>
 );
 
 const gb = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`);
 
-/* Capacities read as "used / total UNIT", with the unit said once. Three stats
-   on a half-width card leave about 113px each, and "4.2 GB / 8.0 GB" does not
-   fit in that: it wrapped between the "8.0" and its "GB". */
+// "4.2 / 8.0 GB", with the unit once, so it fits a third of a half-width card
 const gbValue = (mb) => (mb >= 1024 ? (mb / 1024).toFixed(1) : String(mb));
 const gbUnit = (mb) => (mb >= 1024 ? "GB" : "MB");
 
-/*
- * Moontower: the fleet card. One tab per reporting machine, the hub itself
- * being just another row rather than a special case.
- *
- * Deliberately the shortest card here. It is a fifth card in a grid that was
- * already close to the dock, so the uptime and environment ride along in the
- * header rather than taking a line of their own.
- */
+/* ---------- Moontower ---------- */
 const System = ({ data }) => {
   const fleet = data?.servers ?? [];
   const [active, setActive] = useState(0);
-  // a server disappearing (revoked while the tab is open) must not leave the
-  // card pointing at nothing
+  // the tab's server may have been removed
   const server = fleet[Math.min(active, Math.max(0, fleet.length - 1))] ?? null;
   const s = server?.sample;
   const history = server?.history ?? [];
@@ -229,10 +196,7 @@ const System = ({ data }) => {
         {data && (
           <span className="tail">
             {server?.uptimeSeconds != null && `up ${duration(server.uptimeSeconds)}`}
-            {/* Load rides next to the core count because one is meaningless
-                without the other: 4.0 is a saturated 4-core box and a bored
-                16-core one. Amber once there are more runnable processes than
-                cores to run them, which is the point it starts queueing. */}
+            {/* amber once load exceeds the core count */}
             {s?.load1 != null && (
               <span className={clsx(server?.cores && s.load1 > server.cores && "warn")}>
                 {" · "}load {s.load1.toFixed(2)}
@@ -261,15 +225,7 @@ const System = ({ data }) => {
         </div>
       )}
 
-      {/*
-        The collapsed form, for when the block cannot afford the card.
-        Rendered always and shown by the fit ladder, so the tier stays a
-        question about CSS the way every other tier is.
-
-        Every machine at once rather than the selected one: the tabs are the
-        first thing the collapse gives up, so a summary of one server would be
-        a summary of whichever tab happened to be open.
-      */}
+      {/* collapsed summary of every machine, shown by the fit tiers */}
       {fleet.length > 0 && (
         <p className="glance">
           {fleet.map((srv) => {
@@ -314,8 +270,6 @@ const System = ({ data }) => {
               }
               values={history.map((h) => h.memPct)}
             />
-            {/* only when the agent actually reported it: an older agent, or a
-                machine where statfs failed, must not show a confident 0% */}
             {s?.diskPct != null && (
               <Stat
                 label="Disk"
@@ -326,15 +280,10 @@ const System = ({ data }) => {
                     : "%"
                 }
                 pct={s.diskPct}
-                // the number that actually needs to catch your eye, since a
-                // full disk takes everything down and nothing else warns first
                 warn={s.diskPct >= 85}
               />
             )}
           </div>
-          {/* A summary, not a list. What matters at a glance is whether
-              anything is broken; which unit it was is a question for the
-              terminal, and twelve green dots on a card is just noise. */}
           {server.units?.length > 0 && (
             <p className="sub units">
               {(() => {
@@ -356,8 +305,7 @@ const System = ({ data }) => {
                     {server.failedUnits > 0 && (
                       <span className="warn"> · {server.failedUnits} failed elsewhere</span>
                     )}
-                    {/* a unit that is up but has restarted 40 times today is
-                        the thing a plain up/down dot hides completely */}
+                    {/* up, but restarting repeatedly */}
                     {!server.failedUnits && flapping.length > 0 && (
                       <span className="warn">
                         {" "}
@@ -372,7 +320,6 @@ const System = ({ data }) => {
 
           <p className="sub app-mem">
             {server.stale ? (
-              /* a frozen number presented as live is worse than no number */
               <span className="warn">
                 not reporting · last seen{" "}
                 {server.lastSeenAt
@@ -382,8 +329,6 @@ const System = ({ data }) => {
             ) : (
               <>
                 {server.appMemMb != null && `this site is using ${gb(server.appMemMb)}`}
-                {/* about this process rather than the machine, which is why it
-                    lives on the footer and not in the header beside uptime */}
                 {server.slug === "hub" && data.deployedSecondsAgo != null &&
                   ` · deployed ${duration(data.deployedSecondsAgo)} ago`}
                 {server.slug === "hub" && ` · ${data.env}`}
@@ -404,16 +349,8 @@ const System = ({ data }) => {
 };
 
 /* ---------- tailnet ----------
- * Every device on the tailnet, including the ones with no Moontower agent: a
- * laptop, a phone. Its own card because it is its own source: Moontower is
- * what my machines say about themselves, this is what Tailscale's control
- * plane says about them, and the two disagree in useful ways.
- *
- * Offline dims rather than turns red. A laptop with its lid shut is not a
- * fault, and a card that went red every night would teach me to ignore it.
- * The amber notes are the two things worth acting on: a client with an update
- * waiting, and a node key close enough to expiry that the device is about to
- * drop off.
+ * Offline dims rather than turning red, since a closed laptop is not a fault.
+ * Amber marks a pending update or a key close to expiry.
  */
 const EXPIRY_WARN_MS = 14 * 86400 * 1000;
 
@@ -424,7 +361,6 @@ const Tailnet = ({ data }) => {
   const state = (d) => {
     if (d.online) return "online";
     const seconds = (Date.now() - new Date(d.lastSeen)) / 1000;
-    // a day's granularity is plenty for something that has been off that long
     return seconds >= 86400 ? `${Math.floor(seconds / 86400)}d ago` : `${duration(seconds)} ago`;
   };
 
@@ -472,29 +408,16 @@ const Tailnet = ({ data }) => {
   );
 };
 
-/* ---------- services ----------
- * The applications, as opposed to the machines above.
- *
- * A separate card because it answers a separate question. Moontower says nginx
- * and docker are running, which is the plumbing; this says the site behind them
- * actually returns a page. The interesting outage is the one where every unit
- * on the box is green and the thing is still down, and only a real request over
- * the real network catches that.
- */
+/* ---------- services ---------- */
 const Services = ({ data }) => {
   const list = data?.services ?? [];
-  /* Three states, not two. A service whose last reading has gone stale is not
-     up and it is not down: the probe loop stopped, and the honest thing is to
-     say so rather than keep showing the number it left behind. */
+  // a stale reading is neither up nor down
   const unknown = list.filter((s) => s.ok === null || s.stale);
   const down = list.filter((s) => s.ok === false && !s.stale);
   const up = list.filter((s) => s.ok === true && !s.stale);
-  // one number for the whole healthy set: the slowest is the only one that
-  // would ever make me look, and an average would hide it
+  // show the slowest; an average would hide it
   const latencies = up.map((s) => s.latencyMs).filter((v) => typeof v === "number");
   const slowest = latencies.length ? Math.max(...latencies) : null;
-  // everything that is not a problem, in one list: the card gives a row each
-  // when there is room and collapses them to a line when there is not
   const quiet = [...unknown, ...up];
   const tail = down.length
     ? `${down.length} down`
@@ -516,17 +439,13 @@ const Services = ({ data }) => {
         </p>
       ) : (
         <>
-          {/* Only what is broken gets a row of its own. Four green lines saying
-              nothing is wrong is four lines of nothing, and it was costing this
-              card an entire grid row it did not need. */}
+          {/* only broken services get their own row */}
           <ul className="svc">
             {down.map((s) => (
               <li key={s.slug} className="bad">
                 <i className="d d-bad" />
                 <span className="n">{s.name}</span>
                 <span className="t">
-                  {/* how long it has been broken beats the status code, which
-                      is usually just 502 either way */}
                   {s.since
                     ? `down ${duration((Date.now() - new Date(s.since)) / 1000)}`
                     : (s.error ?? "down")}
@@ -544,9 +463,7 @@ const Services = ({ data }) => {
             ))}
           </ul>
 
-          {/* The same healthy set as one line. Both are rendered and the fit
-              tiers choose: with room a row each is more useful, and when the
-              grid is under pressure four green rows are four rows of nothing. */}
+          {/* the healthy ones as a single line; the fit tiers pick which to show */}
           {quiet.length > 0 && (
             <p className="sub healthy">
               <i className={clsx("d", unknown.length ? "d-wait" : "d-ok")} />
@@ -560,7 +477,7 @@ const Services = ({ data }) => {
   );
 };
 
-/** Shared by the desktop grid and the mobile row, so they cannot drift apart. */
+/** Shared by the desktop grid and the mobile row. */
 const useWidgetData = () => {
   const [github, setGithub] = useState(null);
   const [building, setBuilding] = useState(null);
@@ -569,7 +486,6 @@ const useWidgetData = () => {
     let cancelled = false;
 
     const load = async () => {
-      // nothing to refresh while the tab is in the background
       if (document.hidden) return;
       try {
         const [gh, b] = await Promise.all([
@@ -580,15 +496,13 @@ const useWidgetData = () => {
         if (gh) setGithub(gh);
         if (b) setBuilding(b);
       } catch {
-        /* the cards keep their last good state rather than flashing an error */
       }
     };
 
     load();
     const timer = setInterval(load, POLL_MS);
     document.addEventListener("visibilitychange", load);
-    // and immediately when I change something myself, rather than at whatever
-    // point in the next fifteen minutes the timer happens to come round
+    // refresh right away after an edit from the terminal
     const stopListening = onRefreshWidgets(load);
     return () => {
       cancelled = true;
@@ -603,17 +517,13 @@ const useWidgetData = () => {
   return { github, building, authed };
 };
 
-/**
- * Polls only while signed in and only while the tab is visible. The endpoint
- * 401s for everyone else, so polling it anonymously would be a request per
- * visitor per 30 seconds in exchange for nothing.
- */
+/** Polls only while signed in and the tab is visible. */
 const useSystemData = (enabled) => {
   const [system, setSystem] = useState(null);
 
   useEffect(() => {
     if (!enabled) {
-      setSystem(null); // signing out must drop the numbers, not freeze them
+      setSystem(null);
       return;
     }
 
@@ -629,7 +539,6 @@ const useSystemData = (enabled) => {
         const body = await res.json();
         if (!cancelled) setSystem(body);
       } catch {
-        /* keep the last good reading rather than flashing an error */
       }
     };
 
@@ -647,12 +556,8 @@ const useSystemData = (enabled) => {
 };
 
 /**
- * The cards, in order, so both layouts render the same set. `wide` marks the
- * ones that need the full width on mobile: a heatmap and a commit message are
- * unreadable in a half-width tile, a clock is not.
- *
- * System is appended rather than inserted, so signing in adds a row underneath
- * instead of reshuffling the cards I already know the positions of.
+ * The cards, in order, for both layouts. `wide` cards span the full width on
+ * mobile. Signed-in cards are appended so the others do not move.
  */
 const cards = ({ github, building, system, authed }) => [
   { id: "clock", node: <AustinClock /> },
@@ -663,8 +568,7 @@ const cards = ({ github, building, system, authed }) => [
     ? [
         { id: "system", wide: true, node: <System data={system} /> },
         { id: "services", wide: true, node: <Services data={system} /> },
-        // only once the server says it has a credential: a card that could
-        // only ever say "not configured" is not worth its space in the grid
+        // only once the server has a Tailscale credential
         ...(system?.tailnet?.configured
           ? [{ id: "tailnet", wide: true, node: <Tailnet data={system.tailnet} /> }]
           : []),
@@ -673,34 +577,14 @@ const cards = ({ github, building, system, authed }) => [
 ];
 
 /* ---------- fitting above the dock ----------
- * The block hangs from a fixed offset under the nameplate and grows downwards;
- * the dock is pinned to the bottom. Nothing in CSS stops them meeting, and a
- * media query cannot tell them apart either, because how tall this gets is a
- * question about content: a live contributions heatmap is 31px that an empty
- * card does not spend, which is the whole margin at 1470x806.
- *
- * So measure. Try each tier in order and stop at the first that clears the
- * dock. Trying them in order is what keeps this from oscillating: the answer
- * depends only on the untightened layout, so re-running it lands on the same
- * tier rather than relaxing, colliding and tightening again.
- *
- * The last tier is the floor. If even that collides there is nothing further to
- * give, and running out of rungs has to leave the block at its smallest rather
- * than back at full size, so the loop falls through with `bare` still applied.
- *
- * A tier that buys nothing at the current width costs a measurement and is
- * stepped over, which is how `min` behaves above 1360px: see the CSS.
+ * How tall the block gets depends on its content, so CSS cannot keep it clear
+ * of the dock. Each tier is tried in order until one fits; the last one stays
+ * applied even if it does not.
  */
 const FIT_TIERS = ["", "tight", "lean", "compact", "min", "core", "bare"];
 const DOCK_CLEARANCE = 20;
 
-/**
- * Mobile: a grid on the first springboard page. No dragging.
- *
- * `authed: false` is not a bug. A fifth card overflows this page by 111px, and
- * a springboard page that scrolls vertically stops feeling like a springboard,
- * so the system card gets a page of its own instead (see MobileSystem).
- */
+/** Mobile: a grid on the first springboard page. The signed-in cards get their own page. */
 export const MobileWidgets = () => {
   const data = useWidgetData();
   return (
@@ -714,10 +598,6 @@ export const MobileWidgets = () => {
   );
 };
 
-/**
- * The signed-in springboard page. Alone on its page it has room for the stats
- * to be readable, which they were not squeezed under the other four cards.
- */
 export const MobileSystem = () => {
   const authed = useAuthStore((s) => s.status === "authed");
   const system = useSystemData(authed);
@@ -726,8 +606,6 @@ export const MobileSystem = () => {
       <div className="widget-slot wide">
         <System data={system} />
       </div>
-      {/* both signed-in cards, since they answer the same question at two
-          levels and this page has the room the desktop grid does not */}
       <div className="widget-slot wide">
         <Services data={system} />
       </div>
@@ -740,24 +618,13 @@ export const MobileSystem = () => {
   );
 };
 
-/**
- * Which grid a set of drag offsets was measured against. Bump GEOMETRY when the
- * block's own spacing changes, since offsets taken before it are then describing
- * a layout that no longer exists; the card list covers the rest, because signing
- * in adds a row and moves everything under it.
- */
+/** Bump when the block's spacing changes, so old drag offsets are dropped. */
 const GEOMETRY = 3;
 const signature = (list) => `${GEOMETRY}:${list.map((c) => c.id).join(",")}`;
 
-/**
- * Restores a saved offset without letting it put a card somewhere unreachable.
- * The offset was taken in whatever window happened to be open at the time, so
- * reopening the site smaller can leave a card under the dock or off the edge.
- * Only on restore, not on drag: dragging is already bounded, and a card the
- * visitor deliberately parked somewhere should stay parked there.
- */
+/** Restores a saved offset, clamped so a card cannot land off screen or under the dock. */
 const restore = (el, pos, area) => {
-  const base = el.getBoundingClientRect(); // untransformed: nothing set yet
+  const base = el.getBoundingClientRect();
   const clamp = (v, lo, hi) => (hi < lo ? 0 : Math.min(hi, Math.max(lo, v)));
   gsap.set(el, {
     x: clamp(pos.x, area.left - base.left, area.right - base.right),
@@ -774,7 +641,6 @@ const Widgets = () => {
   const list = cards({ ...data, system });
   const layout = signature(list);
 
-  // same drag-and-persist contract as the desktop folders in Home.jsx
   useGSAP(
     () => {
       const slots = rootRef.current?.querySelectorAll(".widget-slot");
@@ -790,9 +656,7 @@ const Widgets = () => {
         bottom: dock ? dock.getBoundingClientRect().top - 8 : bounds.bottom,
       };
 
-      // Clear first. React does not own these transforms, so a card that moved
-      // under the previous layout would still be carrying that offset, and
-      // restore would measure its home position from the wrong place.
+      // reset first: GSAP transforms outlive the previous layout
       gsap.set(slots, { x: 0, y: 0 });
 
       const saved = useWindowStore.getState().widgetPos[layout] ?? {};
@@ -802,8 +666,7 @@ const Widgets = () => {
       });
 
       const instances = Draggable.create(slots, {
-        // the element, not the selector: useGSAP's scope resolves selector
-        // strings inside rootRef, where "main" does not exist
+        // the element, not a selector: useGSAP resolves selectors inside rootRef
         bounds: main,
         onDragEnd() {
           setWidgetPos(layout, this.target.dataset.id, { x: this.x, y: this.y });
@@ -811,40 +674,33 @@ const Widgets = () => {
       });
       return () => instances.forEach((i) => i.kill());
     },
-    // re-run when the card set changes: the session resolves a moment after
-    // mount, so a one-shot effect would leave that fifth card undraggable, and
-    // the offsets it should be replaying change with it
+    // the session resolves after mount, which changes the card set
     { scope: rootRef, dependencies: [layout] }
   );
 
-  // Measured, not guessed: see FIT_TIERS. Re-run whenever anything that decides
-  // a card's height lands, and on resize.
   useEffect(() => {
     const el = rootRef.current;
     const dock = document.querySelector("#dock");
     if (!el || !dock) return;
 
     const fit = () => {
-      // fonts.ready can resolve after an unmount, and a detached node measures
-      // as zero, which would read as "everything fits"
+      // a detached node measures as zero and would always "fit"
       if (!el.isConnected) return;
       for (const tier of FIT_TIERS) {
         el.dataset.fit = tier;
-        // reading a rect flushes the pending style change, so every tier is
-        // measured under its own rules rather than the previous tier's
         const clear = dock.getBoundingClientRect().top - el.getBoundingClientRect().bottom;
         if (clear >= DOCK_CLEARANCE) return;
       }
     };
 
     fit();
-    // a late webfont reflows the cards after the first pass
+    // a late webfont reflows the cards
     document.fonts?.ready.then(fit);
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
   }, [data.github, data.building, system, data.authed]);
 
-  // "Clean Up" empties widgetPos: snap every card back to its home position
+  // Clean Up: snap every card home
   useEffect(() => {
     if (Object.keys(widgetPos).length === 0 && rootRef.current) {
       gsap.to(rootRef.current.querySelectorAll(".widget-slot"), {
@@ -857,8 +713,6 @@ const Widgets = () => {
   }, [widgetPos]);
 
   return (
-    // the fifth card has to come from somewhere: signing in slides the block
-    // up towards the nameplate rather than down into the dock
     <section
       id="widgets"
       className={clsx(data.authed && "authed", list.some((c) => c.id === "tailnet") && "with-tailnet")}
@@ -867,7 +721,6 @@ const Widgets = () => {
       {list.map(({ id, node }) => (
         <div
           key={id}
-          // placement is the stylesheet's: see the signed-in grid in index.css
           className="widget-slot"
           data-id={id}
         >

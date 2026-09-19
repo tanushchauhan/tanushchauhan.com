@@ -7,11 +7,7 @@ import useWindowStore from "#store/window.js";
 
 const MESSAGE_MAX = 500;
 
-/**
- * `active` is what triggers the first fetch. The desktop passes the window's
- * open state, since WindowWrapper keeps every window mounted and merely hides
- * it. Mobile mounts this only when the app is opened, so the default is fine.
- */
+/** `active` triggers the first fetch; desktop windows stay mounted while hidden. */
 export const GuestbookBody = ({ active = true }) => {
   const [entries, setEntries] = useState([]);
   const [status, setStatus] = useState("idle"); // idle | loading | error
@@ -34,8 +30,6 @@ export const GuestbookBody = ({ active = true }) => {
     }
   }, []);
 
-  // fetched when first opened rather than on page load, so a visitor who never
-  // opens it costs the API nothing
   const loadedRef = useRef(false);
   useEffect(() => {
     if (active && !loadedRef.current) {
@@ -55,7 +49,7 @@ export const GuestbookBody = ({ active = true }) => {
       const res = await fetch("/api/guestbook", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        // `website` is the honeypot: left empty by anyone using the real form
+        // `website` is the honeypot
         body: JSON.stringify({ name: name.trim(), message: trimmed, website: "" }),
       });
       const data = await res.json().catch(() => ({}));
@@ -129,7 +123,6 @@ export const GuestbookBody = ({ active = true }) => {
                 {dayjs(entry.createdAt).format("MMM D, YYYY")}
               </time>
             </header>
-            {/* rendered as text, never HTML */}
             <p>{entry.message}</p>
           </article>
         ))}

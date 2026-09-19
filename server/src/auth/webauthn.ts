@@ -12,12 +12,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import { credentials } from "../db/schema.ts";
 
-/**
- * Passkeys are bound to an origin, so these are not cosmetic: a credential
- * registered against localhost will not work on tanushchauhan.com and vice
- * versa. Wrong values fail at verification time with an opaque browser error,
- * so refuse to start instead.
- */
+/** Passkeys are bound to the origin, so bad values should fail at startup. */
 export const rpID = Bun.env.RP_ID ?? "localhost";
 export const origin = Bun.env.ORIGIN ?? "http://localhost:3001";
 export const rpName = "tanushchauhan.com";
@@ -28,21 +23,14 @@ if (Bun.env.NODE_ENV === "production" && (rpID === "localhost" || origin.startsW
   );
 }
 
-/**
- * There is one user, but WebAuthn still wants a stable user handle. It must not
- * change: authenticators key discoverable credentials on it, and changing it
- * would orphan every registered passkey.
- */
+// must never change, or every registered passkey is orphaned
 const USER_ID = new TextEncoder().encode("tanush");
 const USER_NAME = "tanush@utexas.edu";
 
 /* ---------- challenge store ----------
- * A challenge is issued by /options and consumed by /verify moments later.
- * Held in memory deliberately: it is short lived, single use, and worthless
- * after consumption, so persisting it would add a table for no security gain.
- * A redeploy mid-login just means retrying the prompt. This is sound only
- * because the app runs as a single container, which is verified, and is the
- * first thing to revisit if that ever changes. */
+ * In memory: challenges are short lived and single use, and the app runs as
+ * one container.
+ */
 type Pending = { challenge: string; expiresAt: number };
 const pending = new Map<string, Pending>();
 const CHALLENGE_TTL_MS = 5 * 60 * 1000;
@@ -89,14 +77,11 @@ export const registrationOptions = async (challengeId: string) => {
     userDisplayName: "Tanush Chauhan",
     attestationType: "none",
     authenticatorSelection: {
-      // resident key, so login needs no username field at all: the browser
-      // offers the passkey directly
+      // discoverable credentials, so login needs no username
       residentKey: "required",
       requireResidentKey: true,
-      // this unlocks infrastructure, so always demand Touch ID or Face ID
       userVerification: "required",
     },
-    // stops the same authenticator being enrolled twice
     excludeCredentials: existing.map((cred) => ({
       id: cred.id,
       transports: cred.transports ? JSON.parse(cred.transports) : undefined,
@@ -107,16 +92,7 @@ export const registrationOptions = async (challengeId: string) => {
   return options;
 };
 
-/**
- * Verifies a registration response and returns the row that *would* be saved,
- * without saving it.
- *
- * Splitting verify from persist is what lets the caller order things safely:
- * authorize, verify, then burn the one-time token, then write. If this method
- * wrote the credential itself, the caller would have to consume the token
- * before knowing whether the ceremony succeeded, and a cancelled Touch ID
- * prompt would strand the user with a spent token and no passkey.
- */
+/** Verifies a registration and returns the row to save, without saving it. */
 export const verifyRegistration = async (
   challengeId: string | undefined,
   response: RegistrationResponseJSON,
@@ -172,8 +148,6 @@ export const authenticationOptions = async (challengeId: string) => {
   const options = await generateAuthenticationOptions({
     rpID,
     userVerification: "required",
-    // empty: discoverable credentials mean the authenticator decides which
-    // passkey to offer, which is what removes the username step
     allowCredentials: [],
   });
 

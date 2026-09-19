@@ -59,9 +59,8 @@ const StatusBar = () => {
 /* ---------------- individual apps ---------------- */
 
 const ProjectsApp = () => {
-  // simple drill-down: list of locations -> folder contents -> file sheets
-  const [stack, setStack] = useState([]); // array of folder objects
-  const [file, setFile] = useState(null); // txt/img being previewed
+  const [stack, setStack] = useState([]);
+  const [file, setFile] = useState(null);
   const current = stack[stack.length - 1];
 
   const openItem = (item) => {
@@ -248,8 +247,7 @@ const AboutApp = () => {
   );
 };
 
-/* The phone's half of the Control Center. Same three settings, in the shape a
-   phone expects them: a list of rows rather than a panel of tiles. */
+/* The phone's Control Center: the same settings as a list. */
 const SettingsApp = () => {
   const { theme, setTheme, glass, setGlass, wallpaper, setWallpaper, soundOn, toggleSound } =
     useWindowStore();
@@ -297,7 +295,6 @@ const SettingsApp = () => {
       <ul className="m-settings">
         {wallpapers.map((paper) => (
           <li key={paper.id} onClick={() => setWallpaper(paper.id)}>
-            {/* both halves, same as the desktop swatch */}
             <span className="m-swatch">
               <img src={paper.light} alt="" />
               <img src={paper.dark} alt="" />
@@ -341,7 +338,6 @@ const APP_SCREENS = {
 
 /* ---------------- springboard ---------------- */
 
-/** Loosest first. Each rung gives up a little more of the home page's air. */
 const FIT_TIERS = ["", "tight", "compact", "bare"];
 
 const SpringboardIcon = ({ app, onOpen }) => (
@@ -361,18 +357,8 @@ const MobileExperience = () => {
   const authed = useAuthStore((s) => s.status === "authed");
   const pageCount = authed ? 3 : 2;
 
-  /*
-   * Safari's address bar and toolbar take about 190px of an iPhone's screen,
-   * and the home page was laid out for the height you only get once they hide.
-   * With them showing it overflowed by around 100px, which turns the page into
-   * something you scroll rather than something you swipe: the vertical gesture
-   * is right there under your thumb and the horizontal one is what you wanted.
-   *
-   * Rather than guess at breakpoints, measure. Tighten one rung at a time until
-   * the content fits the height that actually exists, and start again from the
-   * top every time that height changes, so hiding the toolbars gives the space
-   * back instead of leaving the page permanently squeezed.
-   */
+  // Safari's toolbars change the usable height, so measure and tighten one
+  // rung at a time until the page fits, starting over whenever it changes
   useEffect(() => {
     const shell = shellRef.current;
     const home = homeRef.current;
@@ -387,15 +373,7 @@ const MobileExperience = () => {
 
     fit();
 
-    /* The widget data arrives after the first paint and changes the height, so
-     * this has to react to content as well as to the viewport. Watch the
-     * children rather than the page: the page is the fixed frame, its own box
-     * never moves when the content inside it grows, and observing it meant the
-     * first measurement was the only one that ever ran.
-     *
-     * Re-running is safe. The ladder always restarts from the top, so the same
-     * content lands on the same rung and the observer settles instead of
-     * oscillating. */
+    // watch the children, since the page's own box never changes size
     const observer = new ResizeObserver(fit);
     for (const child of home.children) observer.observe(child);
     window.addEventListener("resize", fit);
@@ -408,8 +386,7 @@ const MobileExperience = () => {
     };
   }, [authed]);
 
-  // derive the active page from scroll position rather than tracking gestures:
-  // works for swipes, dot taps, and keyboard scrolling alike
+  // the active page comes from scroll position, which covers swipes and dot taps
   const onPageScroll = (e) => {
     const el = e.currentTarget;
     const next = Math.round(el.scrollLeft / el.clientWidth);
@@ -449,8 +426,6 @@ const MobileExperience = () => {
             </div>
           </section>
 
-          {/* appended, so signing in adds a page rather than renumbering the
-              two every visitor already sees */}
           {authed && (
             <section className="m-page">
               <MobileSystem />
@@ -458,8 +433,6 @@ const MobileExperience = () => {
           )}
         </div>
 
-        {/* the dock and dots sit outside .m-pages so they stay put while the
-            pages move, exactly as on iOS */}
         <div className="m-dots">
           {Array.from({ length: pageCount }, (_, i) => i).map((i) => (
             <button

@@ -1,15 +1,4 @@
-/**
- * Canned API responses.
- *
- * The dev server has no GITHUB_TOKEN and no fleet reporting into it, so left
- * alone it renders a smaller, emptier desktop than production does. That
- * difference is not cosmetic: without the contributions heatmap the card is
- * 76px shorter, and 76px is most of the clearance the widget block has above
- * the dock. A layout test against the bare dev server would pass while the
- * deployed site collided.
- *
- * So every test stubs the API to the shape production returns.
- */
+/** Canned API responses, shaped like production, so layout tests see real card heights. */
 
 const days = () => {
   const out = [];
@@ -94,7 +83,6 @@ export const fleet = {
       ],
     },
   ],
-  // a laptop that is shut, a phone, and two servers, one with a key expiring
   tailnet: {
     configured: true,
     ok: true,
@@ -106,7 +94,6 @@ export const fleet = {
       { name: "macbook", os: "macOS", online: false, lastSeen: new Date(Date.now() - 2 * 86400000).toISOString(), address: "100.64.0.4", version: "1.88.1", updateAvailable: false, keyExpiry: null },
     ],
   },
-  // one of everything the Services card can show: healthy, slow, and down
   services: [
     {
       slug: "portfolio", name: "Portfolio", url: "https://tanushchauhan.com", server: "hub",
@@ -144,10 +131,7 @@ export const guestbookEntries = [
   },
 ];
 
-/**
- * Routes are matched most-recently-registered first, so a spec can override
- * any of these by calling page.route again after this returns.
- */
+/** A spec can override any route by registering it again. */
 export const installFixtures = async (page, { authed = true, building } = {}) => {
   await page.route("**/api/widgets/github", (r) => r.fulfill({ json: github }));
   await page.route("**/api/widgets/building", (r) =>

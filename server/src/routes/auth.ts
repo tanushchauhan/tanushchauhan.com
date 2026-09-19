@@ -22,19 +22,13 @@ import {
 } from "../auth/session.ts";
 import { clientIp, hashIp, rateLimit } from "../lib/ratelimit.ts";
 
-// Tight, because these are the endpoints that actually mint credentials and
-// sessions. Generous enough that a cancelled Touch ID prompt followed by a few
-// retries never trips it.
+// allows a cancelled Touch ID prompt and a few retries
 const ceremonyLimiter = rateLimit({ limit: 20, windowMs: 10 * 60 * 1000 });
 
-// /me is polled by every page load, so it cannot share the strict budget or a
-// visitor who reloads a handful of times would lock themselves out of logging
-// in. Reading your own session proves nothing and creates nothing; the limit
-// here is only to stop it being used as a cheap way to hammer the database.
+// /me runs on every page load, so it gets its own looser budget
 const readLimiter = rateLimit({ limit: 120, windowMs: 10 * 60 * 1000 });
 
-// pairs a browser with the challenge issued to it, so one caller cannot consume
-// another's; short lived and cleared as soon as the ceremony finishes
+// ties a browser to the challenge it was issued
 const CHALLENGE_COOKIE = "tc_challenge";
 
 const setChallengeCookie = (c: Context, id: string) =>
@@ -48,10 +42,7 @@ const setChallengeCookie = (c: Context, id: string) =>
 
 export const authRoutes = new Hono();
 
-// Every auth path is rate limited before any work is done. Anything that mints
-// a credential or a session gets the strict budget; everything else gets the
-// loose one. Defaulting to strict means a new endpoint added here is limited
-// tightly until someone deliberately relaxes it.
+// anything not listed here gets the strict budget
 const LOOSE = new Set(["/me", "/passkeys"]);
 
 authRoutes.use("*", async (c, next) => {
@@ -66,14 +57,11 @@ authRoutes.use("*", async (c, next) => {
   await next();
 });
 
-/** Who am I, and does this deployment have any passkeys yet? */
 authRoutes.get("/me", async (c) => {
   const session = await readSession(c);
   const total = await countCredentials();
 
   if (!session) {
-    // no passkeys yet means login is impossible and the shell is the only way
-    // in, which the terminal surfaces rather than showing a dead prompt
     return c.json({ authenticated: false, needsEnrollment: total === 0 });
   }
 
@@ -93,23 +81,17 @@ authRoutes.get("/me", async (c) => {
 });
 
 /* ---------- registration ----------
- * The gate, in one place: you may enrol a passkey if you already hold a
- * session, or if you present a break-glass token minted from inside the
- * container. Nothing else qualifies.
- *
- * Open registration while zero credentials exist would make first run easier,
- * and is deliberately not allowed: this site is publicly reachable, so between
- * deploying and enrolling there would be an unauthenticated endpoint handing
- * out permanent admin credentials to whoever called it first. Requiring a
- * token costs one command and closes the window entirely. */
+ * Enrolling a passkey needs an existing session or a bootstrap token from
+ * `bun run admin:token`. There is no open registration, even before the first
+ * passkey exists.
+ */
 const mayRegister = async (c: Context, token: string | undefined) =>
   Boolean(await readSession(c)) || bootstrapTokenIsValid(token);
 
 authRoutes.post("/register/options", async (c) => {
   const body = await c.req.json().catch(() => ({}));
 
-  // validated but never consumed here: a cancelled Touch ID prompt must not
-  // burn the token and send you back to the shell for another one
+  // checked, not consumed, so a cancelled prompt keeps the token usable
   if (!(await mayRegister(c, body?.bootstrapToken))) {
     return c.json({ error: "not authorized to register a passkey" }, 403);
   }
@@ -120,17 +102,7 @@ authRoutes.post("/register/options", async (c) => {
   return c.json(options);
 });
 
-/*
- * Order matters here, and it is the reason verify and persist are separate:
- *
- *   1. authorize, without consuming the token
- *   2. verify the ceremony, which writes nothing
- *   3. burn the token atomically, rejecting if someone else already used it
- *   4. only now write the credential
- *
- * Consuming earlier would strand a cancelled prompt with a spent token.
- * Writing earlier would let an unauthorized caller register a passkey.
- */
+// authorize, verify, then consume the token, and only then save the credential
 authRoutes.post("/register/verify", async (c) => {
   const body = await c.req.json().catch(() => null);
   if (!body?.response) return c.json({ error: "expected a registration response" }, 400);
@@ -154,14 +126,13 @@ authRoutes.post("/register/verify", async (c) => {
 
   if (!result.ok) return c.json({ error: result.error }, 400);
 
-  // the ceremony is proven; spend the token before writing anything
   if (!usingSession && !(await consumeBootstrapToken(body?.bootstrapToken))) {
     return c.json({ error: "enrollment token was already used" }, 403);
   }
 
   const credentialId = await saveCredential(result.record);
 
-  // registering also logs you in, so first run does not need a second ceremony
+  // registering also signs you in
   await createSession(c, credentialId);
   return c.json({ ok: true, nickname });
 });
@@ -196,7 +167,7 @@ authRoutes.post("/logout", async (c) => {
   return c.json({ ok: true });
 });
 
-/* ---------- passkey management, behind the login ---------- */
+/* ---------- passkey management ---------- */
 
 authRoutes.get("/passkeys", requireAuth, async (c) => {
   const rows = await db
@@ -214,8 +185,7 @@ authRoutes.get("/passkeys", requireAuth, async (c) => {
 
 authRoutes.delete("/passkeys/:id", requireAuth, async (c) => {
   const total = await countCredentials();
-  // removing the last passkey would lock the account out of its own admin
-  // surface, recoverable only by shelling in for a bootstrap token
+  // removing the last one would lock the account out
   if (total <= 1) {
     return c.json({ error: "cannot remove the only passkey" }, 409);
   }
@@ -228,7 +198,6 @@ authRoutes.delete("/passkeys/:id", requireAuth, async (c) => {
 
   if (!removed.length) return c.json({ error: "no such passkey" }, 404);
 
-  // a revoked passkey must not leave live sessions behind
   await destroyAllSessions();
   return c.json({ ok: true });
 });

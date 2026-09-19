@@ -47,9 +47,8 @@ export const play = (name) => {
   if (!enabled) return;
   try {
     const ac = getCtx();
-    if (ac.state === "suspended") return; // autoplay-blocked: skip silently
+    if (ac.state === "suspended") return;
     RECIPES[name]?.(ac);
   } catch {
-    /* audio unavailable, never break the UI over a blip */
   }
 };

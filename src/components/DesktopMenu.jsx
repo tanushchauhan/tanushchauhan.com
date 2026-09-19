@@ -9,7 +9,6 @@ const DesktopMenu = () => {
 
   useEffect(() => {
     const onContextMenu = (e) => {
-      // desktop background only; windows, dock, and menu bar keep defaults
       if (!e.target.closest("main")) return;
       if (e.target.closest(".window, #dock, #spotlight")) return;
       e.preventDefault();
@@ -26,10 +25,7 @@ const DesktopMenu = () => {
     const onKey = (e) => e.key === "Escape" && setMenu(null);
 
     document.addEventListener("contextmenu", onContextMenu);
-    // pointerdown and capture, for the same reason as the Control Center: the
-    // widgets are draggables, they preventDefault on pointerdown, and that
-    // suppresses the mouse events a bubble-phase mousedown listener waits for.
-    // This menu stayed open when you clicked one.
+    // pointerdown in the capture phase, as in the Control Center
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("keydown", onKey);
     return () => {
@@ -41,9 +37,7 @@ const DesktopMenu = () => {
 
   if (!menu) return null;
 
-  // The menu is placed in viewport coordinates and folders in #home's, which
-  // starts under the menu bar, so a folder used to land 64px below the click.
-  // Centred on the pointer, the way a Mac drops a new folder where you asked.
+  // centred on the pointer, converted from viewport to #home coordinates
   const newFolder = () => {
     const home = document.querySelector("#home")?.getBoundingClientRect();
     addDesktopFolder({
@@ -68,9 +62,6 @@ const DesktopMenu = () => {
       <button type="button" onClick={() => run(resetFolderPos)}>
         <LayoutGrid className="size-4" /> Clean Up
       </button>
-      {/* it opens the picker now. It used to flip the theme, which changed the
-          wallpaper in the sense that the night version came up, and was the
-          one item in this menu that did not do what it said. */}
       <button type="button" onClick={() => run(() => setControlCenter(true))}>
         <ImageIcon className="size-4" /> Change Wallpaper
       </button>

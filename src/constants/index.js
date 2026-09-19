@@ -9,12 +9,7 @@ export const navIcons = [
   { id: 2, img: "/icons/search.svg" },
 ];
 
-/**
- * Each wallpaper is a pair, because light and dark are not a filter over one
- * image here: the Austin one is the same hills at golden hour and after dark,
- * and picking a wallpaper should not stop the theme from meaning anything.
- * The first entry is the default and the one every visitor lands on.
- */
+/** Each wallpaper is a light and dark pair. The first is the default. */
 export const wallpapers = [
   {
     id: "austin",
@@ -36,8 +31,7 @@ export const wallpapers = [
     note: "No scenery, for when the windows are the subject",
     light: "/images/wallpaper-graphite.svg",
     dark: "/images/wallpaper-graphite-night.svg",
-    // the one daytime sky that is pale at the top, so the menu bar over it
-    // takes dark ink; every night version is dark up there
+    // pale at the top, so the menu bar uses dark ink
     paleSky: true,
   },
 ];
@@ -46,13 +40,11 @@ export const DEFAULT_WALLPAPER = wallpapers[0].id;
 
 const wallpaperById = (id) => wallpapers.find((w) => w.id === id) ?? wallpapers[0];
 
-/** Falls back rather than throwing: a saved id can outlive its wallpaper. */
 export const wallpaperFor = (id, dark) => {
   const paper = wallpaperById(id);
   return dark ? paper.dark : paper.light;
 };
 
-/** Whether the resolved wallpaper is light where the menu bar sits. */
 export const paleSky = (id, dark) => !dark && Boolean(wallpaperById(id).paleSky);
 
 export const dockApps = [
@@ -101,7 +93,6 @@ export const techStack = [
   },
 ];
 
-// Safari "reading list": the things I would point at first.
 export const highlights = [
   {
     id: 1,
@@ -111,7 +102,6 @@ export const highlights = [
     description:
       "A study of how robots can read social context from motion. I built the control baselines the learned representations were measured against, across 260 Optuna trials and 10-seed sweeps.",
     image: "/images/posters/poster-corl.svg",
-    // no page to link yet: the proceedings appear with the conference
     link: "https://www.corl.org/",
     cta: "CoRL 2026, in Austin this November",
   },
@@ -235,9 +225,7 @@ export const gallery = [
     group: "Projects",
     image: "/images/posters/poster-systems.svg",
   },
-  // `focus: "top"` anchors the thumbnail crop to the top of the source, so the
-  // portrait keeps the face and the poster keeps its header instead of showing
-  // a band of body text. Everything else is already 16:9 and crops centred.
+  // `focus: "top"` crops the thumbnail from the top instead of the centre
   {
     id: 9,
     name: "me.png",
@@ -731,15 +719,8 @@ export const locations = {
 };
 
 /* ---------------- window data, by reference ----------------
- *
- * A window's `data` is a node out of this file, and the window store persists
- * it. A copy written to localStorage months ago then outlives the copy in the
- * build: change a project's blurb and anyone who had that folder open still
- * reads the old one, because nothing on a reload goes looking for a newer
- * version. Clearing site data was the only cure.
- *
- * So the store saves a reference and resolves it against the current build on
- * the way back in. Positions and sizes still persist; the words never do.
+ * The store persists a node's id rather than a copy, so a reload always shows
+ * the current text.
  */
 const nodes = new Map(); // id -> node
 const owners = new Map(); // a file's payload -> the id of the node holding it
@@ -757,16 +738,9 @@ const index = (node) => {
 
 Object.values(locations).forEach(index);
 
-/** The folder a node sits in, or undefined at the top. Finder's Back uses it. */
 export const parentOf = (id) => parents.get(id);
 
-/**
- * What to persist for a window.
- *
- * A photo opened from the gallery is built on the fly and has no node behind
- * it, so there is nothing to look up and it is kept whole. It is two fields
- * and a path, which is about as little as a snapshot can go stale by.
- */
+/** What to persist for a window. A gallery photo has no node, so it is kept whole. */
 export const refFor = (data) => {
   if (!data) return null;
   const owner = owners.get(data);
@@ -775,10 +749,7 @@ export const refFor = (data) => {
   return data;
 };
 
-/**
- * The other direction, run on hydrate. A reference this build no longer has
- * resolves to null, and the store reads that as a window to leave shut.
- */
+/** Resolves a saved reference; null means the window stays shut. */
 export const derefData = (saved) => {
   if (!saved?.ref) return saved ?? null;
   const node = nodes.get(saved.ref);

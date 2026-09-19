@@ -10,9 +10,7 @@ export const run = async ({ browser, t }) => {
   // ---------- output is there to be copied ----------
   await runCommand(page, "neofetch", 800);
 
-  /* The body scrolls to the bottom after each command, so the first line is off
-     screen and a drag at its coordinates lands on the desktop. Pick a line that
-     is actually inside the visible body. */
+  // the first line has scrolled off, so pick one inside the visible body
   const line = await page.evaluate(() => {
     const body = document.querySelector(".term-body").getBoundingClientRect();
     const found = [...document.querySelectorAll(".term-body .out")]
@@ -63,10 +61,7 @@ export const run = async ({ browser, t }) => {
     (await runCommand(page, "echo Keeps My Case")).includes("Keeps My Case")
   );
 
-  // ---------- the games, over output that has scrolled ----------
-  /* Everything above has pushed the prompt well down, which is the state the
-     games used to break in: the canvas was placed against the top of the
-     scrolled content and drew above the visible part of the window. */
+  // ---------- the games, over scrolled output ----------
   const overlay = () =>
     page.evaluate(() => {
       const body = document.querySelector("#terminal .term-body");

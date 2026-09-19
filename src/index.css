@@ -8,45 +8,34 @@
   --color-burnt: #bf5700;
   --color-burnt-light: #ff8a3d;
 
-  /* One radius per kind of thing, and every window shares the first. The
-     panels and menus are a little rounder than the windows, the dock is a
-     pill, and anything inset takes its container's radius minus the gap. */
+  /* inset elements use their container's radius minus the gap */
   --radius-window: 20px;
   --radius-panel: 22px;
   --radius-dock: 30px;
   --radius-menu: 14px;
 }
 
-/* Ink is whatever reads on glass: black over a light tint, white over a dark
-   one. `text-ink/60` and friends follow the theme without a dark: variant.
-   Inline, so a surface that sets its own --glass-ink gets matching text. */
+/* `text-ink/60` and friends follow the glass tint without a dark: variant */
 @theme inline {
   --color-ink: rgb(var(--glass-ink));
 }
 
 /* ---------------- glass ----------------
-   The chrome is glass: a tint over a blur, a bright rim where the light
-   catches the edge, and a soft shadow lifting it off the desktop. Every
-   surface reads the same handful of variables, so the theme swaps the tint
-   and the Control Center's glass setting swaps how much shows through.
-
-   Content is not glass. Text sits on --surface, which is nearly solid, the
-   way a window's body stays readable however busy the wallpaper is. */
+   Chrome is glass; content sits on --surface, which is nearly solid. */
 :root {
   --glass-tint: 255 255 255;
   --glass-ink: 0 0 0;
   --glass-alpha: 0.5;
   --glass-blur: 36px;
-  --glass-rim: 0.65; /* the 1px highlight along the top edge */
-  --glass-edge: 0.45; /* the gradient ring around the whole frame */
+  --glass-rim: 0.65;
+  --glass-edge: 0.45;
   --glass-fg: rgb(var(--glass-ink) / 0.85);
   --glass-fg-2: rgb(var(--glass-ink) / 0.55);
   --glass-line: rgb(var(--glass-ink) / 0.08);
   --surface: rgb(255 255 255 / 0.94);
   --surface-2: rgb(0 0 0 / 0.045);
 
-  /* the menu bar has no background of its own, so its ink is chosen by the
-     wallpaper under it; App sets data-bar from the wallpaper's own note */
+  /* the menu bar has no background, so its ink follows the wallpaper (data-bar) */
   --bar-fg: rgb(255 255 255 / 0.92);
   --bar-invert: 1;
 }
@@ -87,8 +76,6 @@
   --bar-invert: 0;
 }
 
-/* tinted glass gives the menu bar a band of its own, so the ink follows the
-   theme rather than the wallpaper */
 :root[data-glass="tinted"] {
   --bar-fg: var(--glass-fg);
   --bar-invert: 0;
@@ -98,8 +85,7 @@
   --bar-invert: 1;
 }
 
-/* the system setting wins over ours: someone who has asked their OS for less
-   transparency gets the tinted look whatever the Control Center says */
+/* the OS setting for reduced transparency wins over the Control Center */
 @media (prefers-reduced-transparency: reduce) {
   :root,
   :root[data-glass],
@@ -110,10 +96,7 @@
   }
 }
 
-/* The recipe. The tint is painted on the padding box and the rim on the
-   border box, so the 1px border shows the blurred backdrop through a gradient
-   that is brightest at the top left, where the light comes from. A surface
-   can dim or brighten itself with --alpha without touching the theme. */
+/* tint on the padding box, gradient rim on the border box */
 @utility glass {
   --glass-fill: rgb(var(--glass-tint) / var(--alpha, var(--glass-alpha)));
   border: 1px solid transparent;
@@ -153,11 +136,7 @@ body {
   @apply bg-[#0b0c1e];
 }
 
-/* --wallpaper is set on the root by App, which is the only place that knows
-   both which wallpaper is chosen and whether the theme resolved to dark. The
-   fallback is the default pair, so the first paint has a sky before the effect
-   has run. It is painted on the root rather than on main so the menu bar,
-   which has no background of its own, sits on the wallpaper too. */
+/* set by App; the fallback is the default pair, for the first paint */
 #root {
   @apply flex h-dvh w-dvw flex-col bg-cover bg-center;
   background-image: var(--wallpaper, url("/images/wallpaper-austin.svg"));
@@ -168,10 +147,7 @@ main {
   @apply relative w-full flex-1 overflow-hidden;
 }
 
-/* ---------------- navbar ----------------
-   Transparent, the way the Tahoe menu bar is: the wallpaper runs right up to
-   the top of the screen and the text sits on it with a shadow for legibility.
-   The ink comes from --bar-fg, which follows the wallpaper. */
+/* ---------------- navbar ---------------- */
 nav {
   @apply relative z-[5000] flex items-center justify-between px-5 py-1.5;
   color: var(--bar-fg);
@@ -182,8 +158,7 @@ nav {
   text-shadow: none;
 }
 
-/* tinted glass: a frosted band, which is what macOS draws when the menu bar
-   background is switched on */
+/* tinted glass gives the menu bar a frosted band */
 :root[data-glass="tinted"] nav {
   background: rgb(var(--glass-tint) / 0.72);
   -webkit-backdrop-filter: blur(30px) saturate(1.4);
@@ -216,7 +191,6 @@ nav time {
   @apply text-sm font-medium tabular-nums opacity-85;
 }
 
-/* black glyphs in the SVGs; inverted whenever the bar's ink is white */
 .bar-glyph {
   filter: invert(var(--bar-invert)) drop-shadow(0 1px 1px rgb(0 0 0 / 0.2));
 }
@@ -239,7 +213,7 @@ nav time {
   @apply glass;
 }
 
-/* concentric: the panel's radius less the padding around the tile */
+/* concentric with the panel */
 .cc-tile {
   @apply rounded-[14px] p-2.5;
   background: var(--surface-2);
@@ -249,7 +223,6 @@ nav time {
   @apply text-[11px] font-semibold tracking-wide text-ink/55 uppercase;
 }
 
-/* appearance and glass: three across, the chosen one filled */
 .cc-segmented,
 .cc-glass {
   @apply mt-2 grid grid-cols-3 gap-1;
@@ -265,8 +238,6 @@ nav time {
   @apply bg-burnt text-white hover:bg-burnt;
 }
 
-/* the glass buttons show their own setting: a small tile that is the amount
-   of see-through each choice gives */
 .cc-glass .chip {
   @apply size-5 rounded-md;
   border: 1px solid rgb(var(--glass-ink) / 0.2);
@@ -285,8 +256,6 @@ nav time {
   @apply flex cursor-pointer flex-col items-center gap-1;
 }
 
-/* the swatch is the light and dark halves side by side, split down the middle,
-   so a wallpaper is shown as the pair it is */
 .cc-paper .swatch {
   @apply relative flex h-11 w-full overflow-hidden rounded-lg ring-1 ring-ink/15 transition-all;
 }
@@ -335,9 +304,7 @@ nav time {
   @apply translate-x-4;
 }
 
-/* ---------------- welcome nameplate ----------------
-   Anchored top-left rather than filling the desktop: it still says whose site
-   this is, but it no longer occupies the space the widgets need. */
+/* ---------------- welcome nameplate ---------------- */
 #welcome {
   @apply pointer-events-none absolute top-12 left-8 flex flex-col items-start text-left;
 }
@@ -356,7 +323,6 @@ nav time {
   @apply pointer-events-none mt-3 max-w-xs text-xs leading-relaxed font-medium tracking-wide text-white/60;
 }
 
-/* the nameplate follows the menu bar's ink: dark on the one pale wallpaper */
 :root[data-bar="dark"] #welcome :is(h1, p) {
   @apply text-black/85;
 }
@@ -375,8 +341,7 @@ nav time {
   @apply glass;
 }
 
-/* Reaches down through the dock's padding and halfway across each gap, so the
-   whole column under an icon is its target. */
+/* the whole column under an icon is its target, including the gaps */
 .dock-slot {
   @apply relative -mx-1.5 -my-2 flex cursor-pointer justify-center self-stretch px-1.5 py-2;
   align-items: flex-end;
@@ -401,7 +366,7 @@ nav time {
   @apply absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-ink/70;
 }
 
-/* minimized-window tiles: tiny window mockups on the right side of the dock */
+/* minimized windows */
 .dock-icon.min-tile {
   @apply flex flex-col items-stretch overflow-hidden rounded-lg;
   background: rgb(var(--glass-tint) / 0.75);
@@ -436,12 +401,8 @@ nav time {
 }
 
 /* ---------------- app icons ----------------
-   A tile and a glyph. The tile is a rounded square with a gradient, a sheen
-   across the top half and a rim, which is the layered look of a Tahoe icon
-   done in CSS so the glass setting can restyle it: clear turns every tile
-   into frosted white with a white glyph, tinted into the site's orange.
-   Each app sets its two gradient stops below; folders and documents are
-   shapes with no tile at all. */
+   A gradient tile, a sheen and a rim, drawn in CSS so the glass setting can
+   restyle them. Folders and documents have no tile. */
 .app-icon {
   @apply relative block aspect-square shrink-0 overflow-hidden;
   border-radius: 22.37%;
@@ -479,7 +440,6 @@ nav time {
   display: none;
 }
 
-/* the petals overlap like tinted film, darker where two cross */
 .app-icon .petal {
   mix-blend-mode: multiply;
   opacity: 0.92;
@@ -522,8 +482,7 @@ nav time {
   --ic-b: #6e6e73;
 }
 
-/* the whole set, monochrome: frosted white tiles over the wallpaper, and
-   every coloured part of a glyph turned to white at some strength */
+/* clear: frosted white tiles, white glyphs */
 :root[data-glass="clear"] .app-icon:not([data-shape]) {
   --ic-a: rgb(255 255 255 / 0.62);
   --ic-b: rgb(255 255 255 / 0.3);
@@ -543,7 +502,7 @@ nav time {
   backdrop-filter: blur(10px) saturate(1.4);
 }
 
-/* and tinted: dark tiles in the site's own orange */
+/* tinted: dark tiles in the site's orange */
 :root[data-glass="tinted"] .app-icon:not([data-shape]) {
   --ic-a: #a3541f;
   --ic-b: #57280a;
@@ -561,8 +520,7 @@ nav time {
   --ic-tab-opacity: 0.4;
 }
 
-/* multiply turns a white or cream petal invisible, so the two monochrome
-   looks lay them over each other plainly instead */
+/* multiply hides pale petals, so the monochrome looks stack them plainly */
 :root:is([data-glass="clear"], [data-glass="tinted"]) .app-icon .petal {
   mix-blend-mode: normal;
   opacity: 0.5;
@@ -573,53 +531,34 @@ nav time {
 }
 
 /* ---------------- selection ----------------
-   The body sets select-none for the whole desktop, which is right for the
-   chrome: you should not be able to drag a highlight across the dock, a folder
-   label, or the menu bar. It was wrong for everything inside a window. A real
-   Mac lets you select the text in a window, and here it meant a visitor could
-   not copy my email address out of the Contact window or quote a line back at
-   me from the guestbook.
-
-   So: window and app-screen content is selectable, and the parts you grab
-   rather than read are not. */
+   Window content is selectable; the chrome and anything you drag is not. */
 .window,
 .m-scroll,
 .m-sheet {
   @apply select-text;
 }
 
-/* the title bar is a handle, and a drag along it should move the window rather
-   than highlight its name */
 .window #window-header,
 .m-back {
   @apply select-none;
 }
 
-/* Finder items are icons you click, not prose. Dragging across the grid
-   highlighting five file names is not what that gesture is for. */
 .finder-body .content li,
 .finder-body .sidebar {
   @apply select-none;
 }
 
 /* ---------------- windows (generic) ---------------- */
-/* Glass frame, solid body. The frame is what shows around the edges and
-   behind the toolbar; every window body paints itself on --surface, so the
-   words inside never sit on the wallpaper. One radius for all of them. */
+/* glass frame, solid body */
 .window {
   @apply absolute flex-col rounded-window;
   @apply glass;
   display: none;
 
-  /* How far a resize handle reaches past the frame. Half the grab band: the
-     handles are twice this thick and centred on the edge. */
+  /* how far resize handles reach past the frame */
   --rh-reach: 6px;
 
-  /* Clips the content to the rounded frame the way overflow-hidden did, but
-     leaves the handles a margin to hang out into. Both land on Safari 16.4,
-     which is already the floor for the rest of the stylesheet. Anything older
-     clips at the edge and gets an inside-only grab band: narrower than it
-     should be, but that is what it always was. */
+  /* clips to the rounded frame but leaves the handles room outside it */
   overflow: clip;
   overflow-clip-margin: var(--rh-reach);
 
@@ -631,25 +570,17 @@ nav time {
     border-radius 0.25s ease;
 }
 
-/* The width and height transition above is for maximize, where the jump is the
-   point. Under the pointer it is lag, so a live resize turns it off. */
+/* no transition while resizing by hand */
 .window.resizing {
   transition: none;
 }
 
-/* One cursor for the whole drag, and no text picked up along the way: the
-   terminal body opts back into selection, so a resize that crosses it would
-   otherwise highlight output. */
 body.resizing,
 body.resizing * {
   user-select: none !important;
 }
 
-/* Resize handles, straddling the frame rather than sitting inside it. A band
-   that starts at the edge and only goes inward means aiming at the pixel row
-   where the window stops, and missing it by one lands you in the content. This
-   one is 12px wide with the edge down the middle, which is about what macOS
-   gives you. */
+/* resize handles straddle the edge, 12px wide, like macOS */
 .rh {
   @apply absolute z-20;
   --out: calc(var(--rh-reach) * -1);
@@ -686,9 +617,7 @@ body.resizing * {
   left: var(--out);
 }
 
-/* Above the edges they overlap, so a corner drag wins over a straight one.
-   Three reaches square puts the inner edge 12px in, clear of the traffic
-   lights, which start 16px from the corner. */
+/* corners sit above the edges so a corner drag wins */
 .rh-nw,
 .rh-ne,
 .rh-sw,
@@ -730,11 +659,8 @@ body.resizing * {
   --inner-r: 0px;
 }
 
-/* The clip margin that lets the resize handles hang outside the frame also
-   widens the rounded clip, so a square child corner shows through just past
-   the frame's curve. On a dark toolbar that read as a black box behind the
-   corner. Rounding the top and bottom children to the frame's inner radius
-   keeps them inside it. */
+/* the clip margin widens the rounded clip, so the first and last children
+   are rounded to the frame's inner radius */
 .window {
   --inner-r: calc(var(--radius-window) - 1px);
 }
@@ -745,13 +671,11 @@ body.resizing * {
 
 .window > :nth-last-child(1 of :not(.rh)) {
   border-radius: 0 0 var(--inner-r) var(--inner-r);
-  /* clip-path rather than overflow, which would stop a body that scrolls */
+  /* clip-path rather than overflow, so a scrolling body still scrolls */
   clip-path: inset(0 round 0 0 var(--inner-r) var(--inner-r));
 }
 
-/* The uniform toolbar: a frosted band across the top of every window, a
-   little denser than the frame so the controls read against a busy backdrop,
-   and no hairline under it. */
+/* the toolbar, a little denser than the frame */
 #window-header {
   @apply relative flex h-11 shrink-0 cursor-grab items-center gap-3 px-4 active:cursor-grabbing;
   background: rgb(var(--glass-tint) / 0.3);
@@ -766,7 +690,6 @@ body.resizing * {
   @apply flex items-center gap-2;
 }
 
-/* Back and Forward, a small glass pill after the traffic lights */
 .finder-nav {
   @apply ml-2 flex items-center rounded-full p-0.5;
   background: rgb(var(--glass-ink) / 0.06);
@@ -810,9 +733,7 @@ body.resizing * {
   color: var(--glass-fg-2);
 }
 
-/* ---------------- terminal ----------------
-   Dark glass whatever the theme: the body is a black terminal and the frame
-   around it takes the same tint, so the toolbar is smoked rather than milky. */
+/* ---------------- terminal ---------------- */
 #terminal {
   @apply flex w-[620px] flex-col;
   --glass-tint: 22 22 26;
@@ -832,7 +753,6 @@ body.resizing * {
   color: rgb(255 255 255 / 0.85);
 }
 
-/* holds the scroller and, over it, the matrix and snake canvases */
 .term-frame {
   @apply relative flex min-h-0 flex-1 flex-col;
 }
@@ -871,7 +791,6 @@ body.resizing * {
   @apply glass;
 }
 
-/* concentric with the menu: 14px less the 4px of padding */
 .desktop-menu button {
   @apply flex w-full cursor-pointer items-center gap-2.5 rounded-[10px] px-2.5 py-1.5 text-sm font-medium text-ink/85 hover:bg-burnt hover:text-white;
 }
@@ -898,8 +817,7 @@ body.resizing * {
   color: var(--glass-fg);
 }
 
-/* flex-1 min-h-0 so the body is the part that takes up the slack when the
-   window is resized, and the part that shrinks and scrolls when it runs out */
+/* the body takes the slack when resized */
 #safari .blog {
   @apply min-h-0 flex-1 overflow-y-auto p-6;
   background: var(--surface);
@@ -949,7 +867,7 @@ body.resizing * {
   height: 480px;
 }
 
-/* extra Finder instances cascade down-right like real macOS */
+/* extra Finder windows cascade down-right */
 #finder2 {
   top: 19vh;
   left: 22vw;
@@ -964,10 +882,7 @@ body.resizing * {
   @apply flex h-full flex-1 overflow-hidden;
 }
 
-/* The sidebar is glass and runs to the window's edge, so the desktop shows
-   through it; the content pane beside it is solid. Only the selected row's
-   icon keeps its colour, the rest are grey, which is how Golden Gate quietens
-   a sidebar. */
+/* only the selected row's icon keeps its colour */
 .sidebar {
   @apply w-48 shrink-0 space-y-5 overflow-y-auto p-3;
   background: rgb(var(--glass-tint) / 0.12);
@@ -1001,7 +916,6 @@ body.resizing * {
   @apply truncate text-sm font-medium text-ink/80;
 }
 
-/* the content pane and, under it, the status bar */
 .finder-main {
   @apply flex min-w-0 flex-1 flex-col;
   background: var(--surface);
@@ -1020,8 +934,6 @@ body.resizing * {
   @apply font-medium text-ink/70;
 }
 
-/* Selected, as Finder draws it: a grey well behind the icon and the name in
-   an accent pill */
 [id^="finder"] ul.content li.selected {
   @apply bg-ink/10 hover:bg-ink/10;
 }
@@ -1039,7 +951,7 @@ body.resizing * {
   @apply size-14 object-contain;
 }
 
-/* white SVG icons (e.g. GitHub) need a dark chip to be visible on white */
+/* white SVG icons need a dark chip */
 [id^="finder"] ul.content li img.link-chip {
   @apply rounded-2xl bg-neutral-800 p-3 shadow-sm;
 }
@@ -1054,7 +966,7 @@ body.resizing * {
   @apply w-[440px];
   top: 14vh;
   left: 30vw;
-  /* fixed height so .gb-list is the part that scrolls, like #terminal */
+  /* fixed height so .gb-list scrolls */
   height: 520px;
 }
 
@@ -1118,7 +1030,6 @@ body.resizing * {
 }
 
 .gb-entry p {
-  /* long unbroken strings must wrap rather than widen the window */
   @apply mt-1 text-sm break-words whitespace-pre-wrap text-neutral-700 dark:text-neutral-300;
 }
 
@@ -1182,8 +1093,6 @@ body.resizing * {
   @apply font-normal text-neutral-400;
 }
 
-/* three across in 16:9, matching the shape of the project cards themselves so
-   nothing important gets cropped out of a screenshot or wordmark */
 #photos .gallery {
   @apply grid grid-cols-3 gap-4;
 }
@@ -1225,9 +1134,6 @@ body.resizing * {
   @apply mx-auto size-28 rounded-full object-cover;
 }
 
-/* The source images are all 16:9, so a 16:9 frame with object-contain crops
-   nothing and letterboxes nothing. The dark mat only shows if a future image
-   is a different shape. */
 #txtFile .txt-body img.banner {
   @apply aspect-video w-full rounded-lg bg-neutral-900 object-contain;
 }
@@ -1239,8 +1145,7 @@ body.resizing * {
   max-height: 74vh;
 }
 
-/* the body scrolls rather than the image shrinking, so a tall document-shaped
-   image (the get-to-know-me poster) stays readable instead of being squeezed */
+/* tall images scroll rather than shrink */
 #imgFile .img-body {
   @apply min-h-0 flex-1 overflow-y-auto p-4;
   background: var(--surface);
@@ -1261,8 +1166,7 @@ body.resizing * {
   left: 40vw;
 }
 
-/* one sheet of glass, no toolbar band: the panel is small enough to be a
-   single surface, as it is on a Mac */
+/* a single sheet of glass, no toolbar band */
 #about #window-header {
   background: none;
 }
@@ -1271,8 +1175,7 @@ body.resizing * {
   @apply flex flex-col items-center px-7 pt-1 pb-6 text-center;
 }
 
-/* The machine: a screen showing the current wallpaper on a thin base. Drawn
-   rather than a picture, so it can carry the wallpaper and follow the theme. */
+/* drawn, so the screen can show the current wallpaper */
 #about .machine {
   @apply flex flex-col items-center;
 }
@@ -1309,8 +1212,6 @@ body.resizing * {
   @apply mt-0.5 text-xs text-ink/50;
 }
 
-/* Two columns, labels right-aligned against the values, the way the Mac lays
-   out its spec sheet */
 #about dl {
   @apply mt-5 grid w-full grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-left text-[12px];
 }
@@ -1335,19 +1236,15 @@ body.resizing * {
   @apply mt-4 text-[10px] text-ink/35;
 }
 
-/* ---------------- quick look ----------------
-   A floating glass panel over everything, like Spotlight. The preview itself
-   sits on the solid surface, the same rule as a window body. */
+/* ---------------- quick look ---------------- */
 #quick-look {
   @apply fixed top-1/2 left-1/2 z-[7500] flex max-h-[76vh] w-[560px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-window;
   @apply glass;
   animation: ql-in 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
-/* The centring above is Tailwind's `translate` property, which composes with
-   `transform` rather than being replaced by it. So the keyframe moves the panel
-   only by the icon's offset from centre; putting the -50% in here as well had
-   it start half a panel off to the side and slide over. */
+/* Tailwind centres with the `translate` property, which composes with
+   `transform`, so this only moves by the icon's offset from centre */
 @keyframes ql-in {
   from {
     transform: translate(var(--ql-from-x, 0px), var(--ql-from-y, 0px)) scale(0.08);
@@ -1573,8 +1470,7 @@ body.resizing * {
   padding-top: env(safe-area-inset-top);
 }
 
-/* keep the moon in frame on a narrow screen: every night wallpaper puts its
-   light source to the right of centre */
+/* the night wallpapers put the moon right of centre */
 .dark #mobile {
   background-position: 72% center;
 }
@@ -1596,8 +1492,7 @@ body.resizing * {
   padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
 }
 
-/* iOS-style pages: each child is exactly one screen wide and snaps. The dock
-   and page dots sit outside this, so they stay put while pages move. */
+/* one screen per page, snapping; the dock and dots stay put */
 .m-pages {
   @apply flex min-h-0 flex-1 snap-x snap-mandatory overflow-x-auto overflow-y-hidden;
   scrollbar-width: none;
@@ -1643,9 +1538,8 @@ body.resizing * {
 }
 
 /* ---- home page fit rungs ----
-   Chosen by measurement in MobileExperience, not by breakpoint: the height that
-   matters is whatever Safari has left after its toolbars, and that changes
-   while you are looking at it. Cumulative, loosest first. */
+   Picked by measurement in MobileExperience, since Safari's toolbars change
+   the usable height. Cumulative, loosest first. */
 
 #mobile:is([data-fit="tight"], [data-fit="compact"], [data-fit="bare"]) .m-widget {
   @apply mb-2 px-3.5 py-2.5;
@@ -1663,8 +1557,6 @@ body.resizing * {
   @apply mt-1.5 text-2xl;
 }
 
-/* the tagline is the first thing to go: the h1 above it already says the name,
-   and the same words are one tap away in About */
 #mobile:is([data-fit="compact"], [data-fit="bare"]) .m-widget .tagline {
   @apply hidden;
 }
@@ -1710,7 +1602,6 @@ body.resizing * {
   text-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
 }
 
-/* a floating pill, off the bottom edge the way the iOS dock is */
 .m-dock {
   @apply mx-auto mt-auto flex w-full max-w-sm items-start justify-around rounded-[2rem] px-2 pt-3 pb-2;
   @apply glass;
@@ -1740,8 +1631,6 @@ body.resizing * {
   }
 }
 
-/* the toolbar is a frosted band like the desktop windows' toolbar, and the
-   Done button is a glass pill, which is how iOS 26 draws its controls */
 .m-sheet-header {
   @apply flex shrink-0 items-center justify-between px-4 py-2.5;
   background: rgb(var(--glass-tint) / 0.5);
@@ -1780,7 +1669,6 @@ body.resizing * {
   @apply bg-white/40;
 }
 
-/* mobile app content */
 .m-scroll {
   @apply flex-1 overflow-y-auto;
 }
@@ -1830,8 +1718,7 @@ body.resizing * {
   @apply w-full rounded-2xl;
 }
 
-/* the About header portrait is an avatar, not a full-bleed figure, so it needs
-   to win over the rule above (unlayered CSS outranks Tailwind utilities here) */
+/* unlayered CSS outranks Tailwind utilities, so this wins over the rule above */
 .m-txt img.m-avatar {
   @apply mx-auto size-24 rounded-full object-cover;
 }
@@ -1888,15 +1775,12 @@ body.resizing * {
   @apply text-xs text-neutral-500 dark:text-neutral-400;
 }
 
-/* the glass row's preview: a tile at the opacity that choice gives the glass */
 .m-glass-chip {
   @apply size-9 shrink-0 rounded-lg;
   border: 1px solid rgb(var(--glass-ink) / 0.2);
   background: rgb(var(--glass-tint) / var(--chip));
 }
 
-/* the wallpaper pair at row-icon size, split down the middle like the desktop
-   swatch so the two halves read as one wallpaper */
 .m-swatch {
   @apply flex size-9 shrink-0 overflow-hidden rounded-lg ring-1 ring-ink/15;
 }
@@ -1905,9 +1789,7 @@ body.resizing * {
   @apply h-full w-1/2 object-cover;
 }
 
-/* ---------------- desktop widgets ----------------
-   A 2x2 block on the left, balancing the project folders on the right. Sized
-   so the pair of columns still clears the centre of the wallpaper. */
+/* ---------------- desktop widgets ---------------- */
 #widgets {
   @apply pointer-events-none absolute top-56 left-8 z-[5] grid w-[34rem] grid-cols-2 gap-4;
 }
@@ -1916,11 +1798,7 @@ body.resizing * {
   @apply pointer-events-auto cursor-grab active:cursor-grabbing;
 }
 
-/* Glass like the rest of the chrome, but never clearer than 0.6: the wallpaper
-   has a bright orange band running straight through the widget column, and
-   any thinner than that it bleached the heatmap's empty cells until the grid
-   read as blotchy rather than as a grid. Light glass and dark ink in the day
-   theme, the reverse at night, the way the widgets on a Mac desktop go. */
+/* never clearer than 0.6, or the orange band in the wallpaper bleaches the heatmap */
 .widget {
   @apply flex h-full flex-col rounded-panel p-5 text-ink/90;
   @apply glass;
@@ -1930,8 +1808,6 @@ body.resizing * {
   outline-offset: -1px;
 }
 
-/* every card carries its own --accent, so one rule tints the glyph chip, the
-   live dot and the sha pill without any of them naming a colour */
 .widget-slot:hover .widget {
   outline-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
@@ -1974,8 +1850,7 @@ body.resizing * {
   @apply mt-2 text-xs text-ink/50;
 }
 
-/* a footer, not a third paragraph: mt-auto pins it to the bottom edge, since
-   the grid stretches these cards to the tallest one in the row */
+/* pinned to the bottom, since the grid stretches cards to the tallest */
 .widget .sub.meta {
   @apply mt-auto flex items-center gap-2 pt-3;
 }
@@ -2005,8 +1880,6 @@ body.resizing * {
   @apply mt-1.5 text-sm leading-snug text-ink/85;
 }
 
-/* "Now building" is one short line in an otherwise empty card, so it gets to
-   be the headline rather than body copy */
 .widget .msg.lead {
   @apply mt-3 text-base leading-snug font-medium text-ink/90;
 }
@@ -2015,51 +1888,28 @@ body.resizing * {
   @apply mt-3 text-sm leading-snug text-ink/45;
 }
 
-/* the command to type, on its own line: backticks in a rendered card read as
-   punctuation someone forgot to remove */
 .widget .empty code {
   @apply mt-1.5 block rounded-md bg-black/25 px-2 py-1 text-[12px] text-ink/70;
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
 }
 
-/* ---------------- system card (signed in only) ----------------
-   Two stats side by side rather than two more cards: the grid is already as
-   tall as it can be without meeting the dock, so this buys one row, not two. */
+/* ---------------- system card (signed in only) ---------------- */
 #widgets .widget-slot.wide {
   @apply col-span-2;
 }
 
-/* Signed in the block carries two more cards, and the answer is width, not
-   compression: there is 635px of empty wallpaper between this column and the
-   project folders at 1470px, so growing sideways costs nothing while squeezing
-   vertically costs the dock clearance. The two signed-in cards then share the
-   third row instead of taking one each.
-
-   Only when signed in. What a visitor sees is a deliberate 2x2 against the
-   wallpaper, and it should not change shape because I happen to be logged in
-   somewhere else. */
+/* signed in, the block grows sideways rather than downwards */
 #widgets.authed {
   @apply top-48 gap-3;
 }
 
-/* Narrow, the signed-in cards take rows under the 2x2: the fleet card across
-   the full width, where three stats fit on a line, and Services and Tailnet
-   sharing the row under it. Without a Tailnet card Services has that row to
-   itself. */
+/* narrow: the fleet card spans the width, Services and Tailnet share a row */
 #widgets.authed .widget-slot[data-id="system"],
 #widgets.authed:not(.with-tailnet) .widget-slot[data-id="services"] {
   @apply col-span-2;
 }
 
-/* The width only exists on a wide desktop. At 1100px the folders start at 878
-   and a 46rem grid would run within 110px of them, so below this the cards go
-   back to the rows above and the fit ladder handles the height as before.
-
-   With a Tailnet card the grid grows a third column rather than a fourth row.
-   The device list is the one card whose length is up to me rather than the
-   design, so it gets the column that can run tall, beside the four public
-   cards, and the fleet card takes two thirds of the bottom row. The block
-   comes out no taller than it was without it. */
+/* wide: Tailnet gets a third column, the fleet card two thirds of the bottom row */
 @media (min-width: 1360px) {
   #widgets.authed {
     @apply w-[46rem];
@@ -2093,18 +1943,10 @@ body.resizing * {
 }
 
 /* ---------------- fitting above the dock ----------------
-   How tall this block is depends on its content, not on the viewport: a live
-   heatmap adds 31px that an empty contributions card does not, and signing in
-   adds two more cards, so a media query picking a height threshold is guessing
-   at a number it cannot see. These tiers are chosen by measurement instead
-   (see FIT_TIERS in Widgets.jsx), which is why they key off data-fit.
+   Tiers are picked by measurement (FIT_TIERS in Widgets.jsx). Each tier
+   includes the ones above it. */
 
-   Each tier includes the ones above it, so they are written as "this tier and
-   everything below it" rather than repeated four times. */
-
-/* --- tier one: padding. Everything it gives up is whitespace, so the cards
-   stay exactly as legible; the site's own memory footprint goes because it is
-   the least important line on the least important card. --- */
+/* --- tight: padding --- */
 #widgets[data-fit]:not([data-fit=""]) {
   @apply gap-2;
 }
@@ -2125,16 +1967,11 @@ body.resizing * {
   @apply hidden;
 }
 
-/* the attribute wins over the SVG's own height, so the sparkline shortens with
-   everything else rather than being the one thing that never gives */
 #widgets[data-fit="tight"] .w-system .stat svg {
   @apply mt-1 h-8;
 }
 
-/* --- tier one and a half: the graphs get shorter before anything takes them
-   away. A 20px sparkline still shows the shape of the last 45 minutes, which
-   is the whole reason it is there, and the spacing around the stats goes with
-   it. This is the step most laptop windows land on when signed in. --- */
+/* --- lean: shorter sparklines --- */
 #widgets[data-fit="lean"] .w-system .stat svg {
   @apply mt-0.5 h-5;
 }
@@ -2151,10 +1988,7 @@ body.resizing * {
   @apply mt-1.5;
 }
 
-/* --- tier two: the fleet card gives up its decoration. Losing the shape of the
-   last 45 minutes beats losing the card, which is what the tiers below cost.
-   Without this step the gap between tiers was a whole card wide and a 1440x900
-   window fell through it over a single pixel. --- */
+/* --- compact: no sparklines --- */
 #widgets[data-fit="compact"] .w-system .stat svg,
 #widgets[data-fit="compact"] .w-system .stat .capacity,
 #widgets[data-fit="compact"] .w-system .units,
@@ -2166,36 +2000,17 @@ body.resizing * {
   @apply flex;
 }
 
-/* --- tier three: the fleet card collapses to one line per machine, keeping the
-   two numbers worth glancing at. Below 1360px the signed-in cards are stacked,
-   so shrinking this one shortens the block and this tier is where a laptop
-   window usually lands. Above 1360px they share a row whose height is the
-   taller of the two, so this buys nothing there and the ladder walks straight
-   past it, which is the same thing the old tier did and needs no special
-   case. --- */
-/* The tail goes with them. It reports the uptime, load and core count of the
-   selected tab, and the strip lists every machine at once, so left in place it
-   would attach one machine's numbers to all of them. */
+/* --- min: the fleet card becomes one line per machine --- */
+/* the tail describes one tab, so it goes when every machine is listed */
 #widgets:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .w-system :is(.tabs, .stats, .units, .app-mem, .empty, header .tail) {
   display: none;
 }
 
-/* A strip, not a shrunken card. Keeping the card's padding and radius around
-   one line of text cost 86px of block height, which is most of what removing
-   the card outright saves, so the tier would have been worth almost nothing.
-   Laid flat it costs about 34px and the tier earns its place.
-
-   It keeps a background: this sits over the bright band of the wallpaper, and
-   that is the whole reason the cards are not transparent either. */
-/* `.widget.w-system` and the extra attribute are load bearing: tier one sets
-   the padding through `#widgets[data-fit]:not([data-fit=""]) .widget`, which
-   outranks a plainer selector here and quietly kept the card's padding. */
+/* the extra specificity beats the tight tier's padding rule */
 #widgets[data-fit]:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .widget.w-system {
   @apply h-auto flex-row flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-1.5 shadow-none;
 }
 
-/* the row is as tall as the taller card when the two share one, and a strip
-   has no business being stretched to a card's height */
 #widgets:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .widget-slot[data-id="system"] {
   @apply self-start;
 }
@@ -2204,38 +2019,27 @@ body.resizing * {
   @apply mt-0 flex;
 }
 
-/* --- tier four: the fleet card goes after all, rather than services, which is
-   the one that says whether anything is broken. This is the rung the collapsed
-   line was inserted above: a window that used to land here now stops one tier
-   earlier and keeps the numbers. --- */
+/* --- core: the fleet card goes --- */
 #widgets:is([data-fit="core"], [data-fit="bare"]) .widget-slot[data-id="system"] {
   display: none;
 }
 
-/* Tailnet goes with it on a narrow window, where it shares a row with
-   Services and a device list is the taller of the two. Services stays: it is
-   the card that says whether something is broken. On a wide window Tailnet
-   has a column to itself and costs no height, so it stays there. */
+/* narrow windows drop Tailnet too; Services stays */
 @media (max-width: 1359px) {
   #widgets:is([data-fit="core"], [data-fit="bare"]) .widget-slot[data-id="tailnet"] {
     display: none;
   }
 
-  /* before that, from the tier where Services folds its healthy rows into a
-     line, the device list folds into the count in the header, so the row they
-     share is no taller than Services alone */
   #widgets:is([data-fit="compact"], [data-fit="min"]) .w-tailnet .devices {
     display: none;
   }
 }
 
-/* --- the floor: the whole signed-in row goes. --- */
+/* --- bare: the whole signed-in row goes --- */
 #widgets[data-fit="bare"] .widget-slot:is([data-id="services"], [data-id="tailnet"]) {
   display: none;
 }
 
-/* The collapsed fleet card. Hidden until the ladder asks for it, and laid out
-   as a wrapping row so a third machine costs a line rather than an overflow. */
 .w-system .glance {
   @apply mt-2 hidden flex-wrap gap-x-4 gap-y-1 text-[11px] text-ink/55;
 }
@@ -2244,14 +2048,11 @@ body.resizing * {
   @apply font-medium text-ink/85;
 }
 
-/* uptime and environment, pushed to the far end of the header row so they cost
-   no vertical space; dropped rather than wrapped when the card is too narrow */
 .w-system header .tail {
   @apply ml-auto truncate pl-2 text-[10px] font-medium tracking-normal text-ink/40 normal-case;
 }
 
-/* one tab per reporting machine; only rendered when there is more than one, so
-   a single-server setup never pays for the chrome */
+/* only rendered with more than one machine */
 .w-system .tabs {
   @apply mt-2.5 -mb-0.5 flex gap-1 overflow-x-auto;
   scrollbar-width: none;
@@ -2278,8 +2079,6 @@ body.resizing * {
   @apply text-ink/35;
 }
 
-/* amber, not the card accent: a server that stopped reporting should not look
-   like part of the normal palette */
 .w-system .tabs .dot-stale {
   @apply block size-1.5 rounded-full bg-amber-400/80;
 }
@@ -2288,7 +2087,6 @@ body.resizing * {
   @apply text-amber-300/80;
 }
 
-/* the unit summary line, between the stats and the footer */
 .w-system .units {
   @apply mt-2 flex items-center gap-1.5 text-[11px] text-ink/50;
 }
@@ -2305,9 +2103,7 @@ body.resizing * {
   @apply bg-rose-400/90;
 }
 
-/* ---------------- tailnet card (signed in only) ----------------
-   A row per device, the same shape as a Services row. Offline dims instead of
-   turning red: a shut laptop is not a fault. */
+/* ---------------- tailnet card (signed in only) ---------------- */
 .w-tailnet .devices {
   @apply mt-2.5 flex min-h-0 flex-col gap-2 overflow-y-auto;
 }
@@ -2317,7 +2113,6 @@ body.resizing * {
   @apply flex items-center gap-2 text-xs text-ink/80;
 }
 
-/* the second line sits under the name, past the dot */
 .w-tailnet .detail {
   @apply mt-0.5 pl-3.5 text-[11px] text-ink/45;
 }
@@ -2334,8 +2129,7 @@ body.resizing * {
   @apply ml-auto shrink-0 whitespace-nowrap;
 }
 
-/* Narrow, the card shares a row with Services, and a second line per device
-   would make it the tallest thing in the block. The terminal has the detail. */
+/* narrow: one line per device */
 @media (max-width: 1359px) {
   .w-tailnet .detail {
     @apply hidden;
@@ -2370,10 +2164,7 @@ body.resizing * {
   @apply ml-auto truncate pl-2 text-[10px] font-medium tracking-normal text-ink/40 normal-case;
 }
 
-/* ---------------- services card (signed in only) ----------------
-   Two columns of one-line rows. The dot carries the state, so the row stays
-   short enough that this card costs the grid far less height than the fleet
-   card above it. */
+/* ---------------- services card (signed in only) ---------------- */
 .w-services .svc {
   @apply mt-2.5 flex flex-col gap-1;
 }
@@ -2383,9 +2174,7 @@ body.resizing * {
   @apply flex items-center gap-2 text-xs text-ink/70;
 }
 
-/* the everything-is-fine line: the whole healthy set on one row, dimmer than a
-   failure and truncated rather than wrapped, since its job is to be scanned and
-   not read. Hidden while the rows themselves fit; see the fit tiers. */
+/* the healthy set on one line, shown by the fit tiers */
 .w-services .healthy {
   @apply mt-2 hidden text-[11px] text-ink/45;
 }
@@ -2402,8 +2191,6 @@ body.resizing * {
   @apply bg-emerald-400/90;
 }
 
-/* rose rather than the card accent: down should never look like part of the
-   normal palette, the same reason a stale server tab goes amber */
 .w-services .svc .d-bad {
   @apply bg-rose-400;
   box-shadow: 0 0 0 3px rgb(251 113 133 / 0.2);
@@ -2417,13 +2204,10 @@ body.resizing * {
   @apply truncate;
 }
 
-/* the timing pushes right and never wraps: a slow response should not be able
-   to reflow the name next to it */
 .w-services .svc .t {
   @apply ml-auto shrink-0 text-[11px] whitespace-nowrap text-ink/40 tabular-nums;
 }
 
-/* a down row is the only thing on this card that gets full-strength text */
 .w-services .svc li.bad .n {
   @apply text-ink/90;
 }
@@ -2444,8 +2228,6 @@ body.resizing * {
   @apply mt-2.5 grid grid-cols-2 gap-4;
 }
 
-/* disk joins CPU and memory once a machine reports it; before that the card
-   stays on two so it never shows an empty third column */
 .w-system .stats.three {
   @apply grid-cols-3 gap-3;
 }
@@ -2458,8 +2240,6 @@ body.resizing * {
   @apply mt-0.5 text-xl leading-none font-semibold tabular-nums;
 }
 
-/* three-up on a half-width card is the tightest this gets, so the numbers give
-   a little rather than breaking across lines */
 .w-system .stats.three .stat .v {
   @apply text-lg whitespace-nowrap;
 }
@@ -2473,12 +2253,7 @@ body.resizing * {
   color: var(--accent);
 }
 
-/* The capacity bar, for disk. Same vertical rhythm as a sparkline so a
-   three-column row lines up whichever kind of stat is in it.
-
-   Named `capacity` rather than `bar`: unscoped, this rule reached every other
-   `.bar` on the site, and the pill background and radius landed on the
-   Spotlight search field as a stray capsule inside the panel. */
+/* capacity bar for disk, the same height as a sparkline */
 .capacity {
   @apply mt-[0.6rem] w-full overflow-hidden rounded-full bg-ink/12;
 }
@@ -2489,8 +2264,6 @@ body.resizing * {
   transition: width 0.4s ease;
 }
 
-/* amber wins over the card accent once the disk is nearly full: this is the
-   one number here that takes the whole machine down when it runs out */
 .w-system .stat.warn .v,
 .w-system header .tail .warn {
   @apply text-amber-300;
@@ -2500,13 +2273,11 @@ body.resizing * {
   @apply bg-amber-400;
 }
 
-/* one line, truncated: this is a footnote, and letting it wrap to a second line
-   makes the whole grid row taller for the least important text on the card */
 .w-system .app-mem {
   @apply mt-2 truncate text-[11px] text-ink/40;
 }
 
-/* contribution grid: burnt orange rather than GitHub green, to match the site */
+/* burnt orange rather than GitHub green */
 .widget .heatmap {
   @apply mt-4 block;
 }
@@ -2527,10 +2298,7 @@ body.resizing * {
   fill: rgb(255 168 79 / 1);
 }
 
-/* Narrow desktop windows keep the 2x2 and shrink it. A single column was the
-   first attempt and it was worse: four stacked cards ran into the dock, which
-   then meant hiding two of them. Two columns are half the height, so nothing
-   has to be dropped. Below 768px the mobile springboard takes over entirely. */
+/* narrow desktop windows keep the 2x2 and shrink it */
 @media (max-width: 1280px) {
   #widgets {
     @apply w-[27rem] gap-3;
@@ -2552,10 +2320,7 @@ body.resizing * {
     @apply text-xs;
   }
 
-  /* p-4 and gap-3 are already this block's baseline, so the signed-in layout
-     has to tighten past them to buy its fifth card any room. Lives here rather
-     than in the 1000px block so it covers 1280 too, which is where the fit is
-     tightest: an 800px-tall window with all five cards. */
+  /* signed in, the tightest case is 1280x800 with every card */
   #widgets.authed {
     @apply gap-2.5;
   }
@@ -2564,8 +2329,6 @@ body.resizing * {
     @apply p-3.5;
   }
 
-  /* the site's own footprint is the least important line on the card, so it is
-     what goes when the fifth card is competing with the dock for space */
   #widgets .w-system .app-mem {
     @apply hidden;
   }
@@ -2606,9 +2369,7 @@ body.resizing * {
   }
 }
 
-/* ---------------- mobile widgets ----------------
-   A horizontally snapping row above the app grid, the way iOS puts widgets on
-   the home screen. Pure CSS scroll-snap, so it swipes without any JS. */
+/* ---------------- mobile widgets ---------------- */
 .m-widgets {
   @apply grid grid-cols-2 gap-2.5;
 }

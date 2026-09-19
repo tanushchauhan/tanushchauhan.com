@@ -2,11 +2,6 @@ import { openPage, seed, win } from "../lib/harness.js";
 
 export const name = "finder: selection, quick look, back and forward";
 
-/*
- * A click selects and a double-click opens, as in Finder, and Space shows the
- * selection in Quick Look. The status bar is what tells a visitor that, so it
- * is checked along with the behaviour.
- */
 export const run = async ({ browser, t }) => {
   const page = await openPage(browser, {
     state: seed({ windows: { finder: win({ data: { ref: "about" } }) } }),

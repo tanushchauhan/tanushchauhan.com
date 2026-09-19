@@ -2,7 +2,6 @@ import { openPage, seed, storedState, settled } from "../lib/harness.js";
 
 export const name = "control center: appearance, wallpaper, sound";
 
-// the wallpaper is painted on the root so the transparent menu bar sits on it
 const wallpaperOf = (page) =>
   page.$eval("#root", (el) => getComputedStyle(el).backgroundImage);
 const isDark = (page) =>
@@ -127,7 +126,7 @@ export const run = async ({ browser, t }) => {
   await buttons[items.findIndex((i) => i.includes("Change Wallpaper"))].click();
   await page.waitForTimeout(500);
   t.check("and opens the picker", await page.isVisible(".control-center"));
-  t.check("rather than flipping the theme, as it used to", (await isDark(page)) === themeBefore);
+  t.check("and leaves the theme alone", (await isDark(page)) === themeBefore);
 
   await page.mouse.click(1100, 820);
   await page.waitForTimeout(300);

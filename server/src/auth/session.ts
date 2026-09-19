@@ -8,15 +8,12 @@ export const COOKIE_NAME = "tc_session";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-// refreshing on every request would mean a write per page load; a day of drift
-// on a 30 day session is a fine trade for keeping reads read-only
+// refresh at most daily, so most reads do not write
 const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
 
 /**
- * Required, with no development fallback. A default here would silently sign
- * production cookies with a publicly known value, so it is better to refuse to
- * start. Note this also salts the guestbook IP hashes, so rotating it logs
- * everyone out and orphans existing hashes.
+ * Required, with no fallback, so a known default can never sign production
+ * cookies. It also salts guestbook IP hashes.
  */
 const secret = () => {
   const value = Bun.env.SESSION_SECRET;
@@ -55,21 +52,14 @@ export const createSession = async (c: Context, credentialId: string) => {
     expires: expiresAt,
   });
 
-  // opportunistic cleanup, cheap because expires_at is indexed
   await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
 
   return { expiresAt };
 };
 
 /**
- * Resolves the caller's session, or null. Verifies the cookie signature and
- * that a matching unexpired row exists.
- *
- * It deliberately does not join against `credentials` to check the passkey
- * still exists: that would add a join to every authenticated request to cover
- * a case already handled at the source, since removing a passkey clears the
- * whole sessions table. If sessions ever stop being wiped on revocation, this
- * is where the check belongs.
+ * The caller's session, or null. Removing a passkey clears every session, so
+ * this does not check that the credential still exists.
  */
 export const readSession = async (c: Context) => {
   const token = await getSignedCookie(c, secret(), COOKIE_NAME);
@@ -111,13 +101,8 @@ export const destroySession = async (c: Context) => {
   deleteCookie(c, COOKIE_NAME, { path: "/" });
 };
 
-/** Revokes every session, used when a passkey is removed. */
 export const destroyAllSessions = () => db.delete(sessions);
 
-/**
- * Gate for anything behind the login. Stores the session on the context so
- * handlers do not have to look it up a second time.
- */
 export const requireAuth: MiddlewareHandler = async (c, next) => {
   const session = await readSession(c);
   if (!session) return c.json({ error: "authentication required" }, 401);

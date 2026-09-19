@@ -1,9 +1,4 @@
-/**
- * Starts a Vite dev server, or reuses one that is already listening.
- *
- * Shared by the test runner and the preview-image script, because both need a
- * site to point a browser at and neither should stop a server it did not start.
- */
+/** Starts a Vite dev server, or reuses one that is already listening. */
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -27,9 +22,7 @@ export const ensureServer = async (url) => {
   }
 
   console.log("starting a dev server…");
-  /* detached so the child gets its own process group. `npm run dev` is a
-     wrapper: killing it leaves the vite process it spawned holding the port,
-     and the next run finds a stale server it did not start and will not stop. */
+  // detached, so killing the group also stops the vite process npm spawned
   const child = spawn("npm", ["run", "dev"], {
     cwd: ROOT,
     stdio: "ignore",
@@ -57,13 +50,7 @@ export const stopServer = (child) => {
   }
 };
 
-/**
- * Where to find Chrome.
- *
- * `channel: "chrome"` finds the one installed in the usual place, which is what
- * happens on a laptop. CI installs Chrome into a tool cache that Playwright
- * does not know to look in, so it passes the path explicitly.
- */
+// CI passes Chrome's path; locally the installed Chrome is found by channel
 export const chromeOptions = () =>
   process.env.CHROME_PATH
     ? { executablePath: process.env.CHROME_PATH }

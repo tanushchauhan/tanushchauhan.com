@@ -50,6 +50,13 @@
       "when": 1789678404822,
       "tag": "0006_visitors",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1789849283047,
+      "tag": "0007_hub",
+      "breakpoints": true
     }
   ]
 }

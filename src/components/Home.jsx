@@ -31,7 +31,6 @@ const Home = () => {
     });
 
   useGSAP(() => {
-    // restore persisted folder drag offsets
     const saved = useWindowStore.getState().folderPos;
     document.querySelectorAll("#home .folder").forEach((el) => {
       const p = saved[el.dataset.id];
@@ -47,29 +46,21 @@ const Home = () => {
     return () => instances.forEach((instance) => instance.kill());
   }, [desktopFolders.length]);
 
-  // "Clean Up" empties folderPos: snap every icon back to its home position
+  // Clean Up: snap every icon home
   useEffect(() => {
     if (Object.keys(folderPos).length === 0)
       gsap.to("#home .folder", { x: 0, y: 0, duration: 0.3, ease: "power2.out" });
   }, [folderPos]);
 
-  /*
-   * The folders I make land where I right-clicked, and a drag offset is all
-   * the reset above can undo, so Clean Up used to leave them wherever they
-   * were: over a widget, or half under the dock. On a Mac it puts every icon
-   * on the grid, so this does too. The grid is read off the project folders'
-   * own home positions, which the stylesheet sets in viewport units, and the
-   * new folders take the empty cells, column by column from the right, then
-   * a fresh column further left once those run out.
-   */
+  // Clean Up also moves new folders into free cells of the project grid,
+  // column by column from the right
   useEffect(() => {
     const home = homeRef.current;
     if (!cleanUps || !home || !desktopFolders.length) return;
 
     const projectsEls = [...home.querySelectorAll("li.folder[data-project]")];
     if (!projectsEls.length) return;
-    // offsetLeft and offsetTop ignore transforms, so this is the home grid
-    // even while the snap-back animation is still running
+    // offsetLeft ignores transforms, so this is the home grid mid-animation
     const lefts = [...new Set(projectsEls.map((el) => el.offsetLeft))].sort((a, b) => b - a);
     const tops = [...new Set(projectsEls.map((el) => el.offsetTop))].sort((a, b) => a - b);
     const taken = new Set(projectsEls.map((el) => `${el.offsetLeft},${el.offsetTop}`));
@@ -91,7 +82,6 @@ const Home = () => {
       }
     }
     placeDesktopFolders(spots);
-    // only on a Clean Up, not whenever the folder list changes
   }, [cleanUps]);
 
   return (

@@ -4,12 +4,6 @@ import {
 
 export const name = "windows: dragging, resizing, maximizing";
 
-/**
- * Windows resize from any edge or corner. The invariants worth protecting:
- * a corner drag moves only the corner you grabbed, the minimum holds, the
- * window cannot be dragged off the desktop, the size persists, and the body
- * takes the space rather than the chrome.
- */
 export const run = async ({ browser, t }) => {
   const page = await openPage(browser, {
     state: seed({ windows: { terminal: win(), about: win({ zIndex: 1000 }) } }),
@@ -129,12 +123,8 @@ export const run = async ({ browser, t }) => {
   // ---------- the panels that do not resize ----------
   t.check("About This Mac has no handles", (await page.$$("#about .rh")).length === 0);
 
-  /* A window that was empty at mount. The text and image viewers render nothing
-     until they are handed a file, so they had no header for Draggable to take
-     as its trigger and it fell back to the whole window: a press on a resize
-     handle started a drag as well, and the grabbed edge moved at twice the
-     pointer while the opposite one came with it. */
-  await page.click("#terminal #window-controls .close"); // it covers the panel by now
+  // the text viewer has no header until it gets a file
+  await page.click("#terminal #window-controls .close");
   await page.waitForTimeout(400);
   await page.click("#about .about-body button");
   await page.waitForTimeout(900);

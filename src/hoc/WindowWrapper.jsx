@@ -7,8 +7,7 @@ import useWindowStore from "#store/window.js";
 
 gsap.registerPlugin(Draggable);
 
-/* Edges first, corners after, so a corner sits on top of the two edges it
- * overlaps and a diagonal drag wins over a straight one. */
+// corners last, so they sit above the edges they overlap
 const EDGES = ["n", "s", "e", "w", "nw", "ne", "sw", "se"];
 
 const DEFAULT_MIN = { w: 360, h: 240 };
@@ -26,9 +25,7 @@ const CURSOR = {
 
 const clamp = (value, low, high) => Math.min(Math.max(value, low), Math.max(low, high));
 
-/* An explicit height has to switch the stylesheet's max-height off. Those are
- * viewport fractions chosen for the default size, so they would quietly cap a
- * window the user had deliberately dragged taller. */
+// an explicit height turns off the stylesheet's max-height
 const applySize = (el, w, h) => {
   el.style.width = `${w}px`;
   el.style.height = `${h}px`;
@@ -36,9 +33,6 @@ const applySize = (el, w, h) => {
 };
 
 const WindowWrapper = (Component, windowKey, options = {}) => {
-  /* Not every window resizes. About This Mac does not on a real Mac either,
-   * and the small panels have no scrolling region to give the extra space to,
-   * so a taller one would just be a taller box with the same content in it. */
   const { resizable = true, min = DEFAULT_MIN } = options;
 
   const Wrapped = (props) => {
@@ -58,10 +52,8 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
         el.style.display = "flex";
         shownRef.current = true;
       } else if (!isOpen || !shownRef.current) {
-        // closed, or hydrated straight into a minimized state: stay hidden
         el.style.display = "none";
       }
-      // an actual minimize keeps display until its animation hides it
     }, [visible, isOpen]);
 
     useGSAP(() => {
@@ -71,7 +63,6 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
       if (visible) {
         const target = minTargetRef.current;
         if (target) {
-          // fly back out of the dock tile
           minTargetRef.current = null;
           gsap.fromTo(
             el,
@@ -93,10 +84,8 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
           );
         }
       } else if (isOpen && isMinimized) {
-        // hydrated as minimized (never shown this session): no animation to play
         if (!shownRef.current) return;
 
-        // fly into this window's minimized tile in the dock
         const baseX = Number(gsap.getProperty(el, "x"));
         const baseY = Number(gsap.getProperty(el, "y"));
         const er = el.getBoundingClientRect();
@@ -130,11 +119,9 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
       const el = ref.current;
       if (!el) return;
 
-      // restore the last dragged position and size from the persisted store
       const win = useWindowStore.getState().windows[windowKey];
       if (win.pos) gsap.set(el, { x: win.pos.x, y: win.pos.y });
-      // clamped on the way in as well as on the way out: a size dragged out on
-      // a 27" monitor must not open wider than the laptop it is restored on
+      // clamped, since a size from a big monitor may not fit this screen
       if (win.size) {
         const b = (el.closest("main") ?? document.body).getBoundingClientRect();
         applySize(
@@ -145,14 +132,8 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
       }
     }, []);
 
-    /* Draggable is created only once there is a header to grab, and this effect
-     * runs after every render until there is one.
-     *
-     * The text and image viewers render nothing at all until they are handed a
-     * file, so at mount they have no #window-header and the trigger used to
-     * fall back to the whole section. Pressing a resize handle then started a
-     * drag as well as a resize, and the grabbed edge ran at twice the pointer
-     * while the opposite one drifted along with it. */
+    // created once there is a header to grab: the viewers render nothing until
+    // they have a file, and without a header the whole window became the handle
     useEffect(() => {
       const el = ref.current;
       if (!el || dragRef.current) return;
@@ -167,14 +148,12 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
           setWindowPos(windowKey, { x: this.x, y: this.y });
         },
       });
-      // the effect below has already run for this value and will not run again
       if (isMaximized) instance.disable();
       dragRef.current = instance;
     });
 
     useEffect(() => () => dragRef.current?.kill(), []);
 
-    // a maximized window fills the desktop; drag is suspended until restored
     useEffect(() => {
       const el = ref.current;
       const drag = dragRef.current;
@@ -214,11 +193,7 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
         const dx = ev.clientX - sx;
         const dy = ev.clientY - sy;
 
-        /* East and south grow away from the window's own top left, so they
-         * only change the size. North and west move the window too, and that
-         * shift has to come from the clamped size rather than from the mouse:
-         * derive it from the pointer and the window keeps sliding after it has
-         * stopped growing. */
+        // north and west move the window too, by the clamped size change
         if (dir.includes("e")) w = clamp(r.width + dx, min.w, bounds.right - r.left);
         if (dir.includes("w")) w = clamp(r.width - dx, min.w, r.right - bounds.left);
         if (dir.includes("s")) h = clamp(r.height + dy, min.h, bounds.bottom - r.top);
@@ -241,7 +216,6 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
         if (next.x !== x0 || next.y !== y0) {
           setWindowPos(windowKey, { x: next.x, y: next.y });
         }
-        // the drag bounds were measured against the size we just changed
         dragRef.current?.update(true);
       };
 
@@ -259,7 +233,6 @@ const WindowWrapper = (Component, windowKey, options = {}) => {
       >
         <Component {...props} />
 
-        {/* nothing to grab on a window that fills the screen */}
         {resizable &&
           !isMaximized &&
           EDGES.map((dir) => (

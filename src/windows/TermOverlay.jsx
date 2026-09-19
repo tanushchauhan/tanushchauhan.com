@@ -42,8 +42,7 @@ export const MatrixOverlay = ({ onExit }) => {
       exited = true;
       onExit(["matrix: wake up, Tanush… the portfolio has you."]);
     };
-    // arm after the launching Enter keystroke has finished bubbling,
-    // otherwise it exits the effect the instant it starts
+    // wait for the launching Enter to finish, or it exits immediately
     const arm = setTimeout(() => window.addEventListener("keydown", exit), 200);
 
     return () => {

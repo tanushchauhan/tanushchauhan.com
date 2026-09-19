@@ -1,18 +1,10 @@
 #!/usr/bin/env node
 /**
- * The test runner.
- *
- * Built on playwright-core and the system Chrome rather than @playwright/test,
- * which is a deliberate trade: the test runner package downloads its own
- * browser builds on install, and this suite is not worth half a gigabyte on
- * every checkout. What we give up is parallelism and a reporter, neither of
- * which a suite this size misses.
+ * Runs the specs with playwright-core and the system Chrome.
  *
  *   npm test                 every spec, starting a dev server if none is up
  *   npm test -- windows      only specs whose name contains "windows"
  *   npm test -- --headed     watch it happen
- *
- * A dev server already listening on 5173 is reused and left running.
  */
 import { chromium } from "playwright-core";
 import { readdir, mkdir, rm } from "node:fs/promises";
@@ -46,7 +38,6 @@ const main = async () => {
   const server = await ensureServer(URL);
   globalThis.__TEST_URL__ = URL;
 
-  // last run's shots would otherwise be read as this run's
   await rm(SHOTS, { recursive: true, force: true });
   await mkdir(SHOTS, { recursive: true });
 
@@ -60,12 +51,7 @@ const main = async () => {
     const label = spec.name ?? file;
     console.log(`\n\x1b[1m${label}\x1b[0m`);
 
-    /* Every failure is photographed. These are layout and interaction
-       assertions, so "the card overlapped the dock by 9px" is a sentence you
-       can act on only with the picture next to it, and on CI there is no
-       browser left to look at afterwards. The shot is tracked rather than
-       awaited, because check is synchronous: tracking is what keeps the page
-       open long enough for the screenshot to be taken. */
+    // every failure is screenshotted
     const capture = (name) => {
       const page = currentPage();
       if (!page) return;
@@ -73,11 +59,10 @@ const main = async () => {
       track(
         page
           .screenshot({ path: dest })
-          .catch(() => {}) // a shot that fails must not become a second failure
+          .catch(() => {})
       );
     };
 
-    // one collector per spec, so a failure names the spec it came from
     const t = {
       check(name, ok, detail = "") {
         const line = `  ${ok ? "\x1b[32m✓\x1b[0m" : "\x1b[31m✗\x1b[0m"} ${name}`;
@@ -94,7 +79,6 @@ const main = async () => {
     try {
       await spec.run({ browser, t });
     } catch (error) {
-      // a spec that throws is a failure, not a reason to abandon the rest
       console.log(`  \x1b[31m✗\x1b[0m threw: ${error.message}`);
       failures.push(`${label}: threw ${error.message}`);
       capture("threw");

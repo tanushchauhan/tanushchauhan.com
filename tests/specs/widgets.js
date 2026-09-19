@@ -3,15 +3,8 @@ import { fleet } from "../lib/fixtures.js";
 
 export const name = "widgets: dock clearance, refresh, stale services";
 
-/** The clearance the fit ladder is aiming for. Matches DOCK_CLEARANCE. */
 const CLEARANCE = 20;
 
-/*
- * Laptop sizes that have actually been a problem, including the ones where the
- * widget block is tallest relative to the screen. The block's height depends on
- * its content, not the viewport, so a media query cannot fit it and only a
- * measured ladder can.
- */
 const SCREENS = [
   [1280, 800], [1440, 780], [1440, 900], [1470, 760],
   [1470, 806], [1512, 864], [1512, 950], [1680, 1050],
@@ -36,8 +29,7 @@ export const run = async ({ browser, t }) => {
       return {
         clear: dock.getBoundingClientRect().top - block.getBoundingClientRect().bottom,
         tier: block.dataset.fit || "(full)",
-        // on screen, not merely in the DOM: the tiers hide cards with
-        // display:none, which querySelector is perfectly happy to find
+        // visible, not merely in the DOM
         system: document.querySelector(".w-system")?.getClientRects().length > 0,
       };
     });
@@ -50,12 +42,7 @@ export const run = async ({ browser, t }) => {
     await page.close();
   }
 
-  /* ---------- the fleet card collapses before it disappears ----------
-   * A signed-in desktop with no Moontower on it and nothing to say why was a
-   * real report. These sizes are the band where the whole card does not fit:
-   * the strip has to be there instead, and it has to name every machine, not
-   * whichever tab happened to be selected.
-   */
+  // ---------- the fleet card collapses before it disappears ----------
   for (const [width, height] of [[1280, 800], [1100, 820], [1280, 780]]) {
     const page = await openPage(browser, { viewport: { width, height } });
     const seen = await page.evaluate(() => {
@@ -67,9 +54,7 @@ export const run = async ({ browser, t }) => {
         tier: block.dataset.fit || "(full)",
         clear: dock.getBoundingClientRect().top - block.getBoundingClientRect().bottom,
         strip: shown(strip) ? strip.innerText.replace(/\s+/g, " ") : "",
-        // the full card's furniture has to be gone, or the strip saved nothing
         stats: shown(document.querySelector(".w-system .stats")),
-        // one machine's uptime and load, next to a line listing them all
         tail: shown(document.querySelector(".w-system header .tail")),
         services: shown(document.querySelector(".w-services")),
       };
@@ -131,7 +116,7 @@ export const run = async ({ browser, t }) => {
   t.check("a rejected write leaves the card alone", (await card()) === stable);
   await page.close();
 
-  // ---------- a stale reading is not a verdict ----------
+  // ---------- stale readings ----------
   const withServices = async (services) => {
     const p = await openPage(browser, { state: seed({ windows: { terminal: win() } }) });
     await p.route("**/api/moontower/fleet", (r) => r.fulfill({ json: { ...fleet, services } }));

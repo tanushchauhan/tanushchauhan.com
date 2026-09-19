@@ -9,9 +9,7 @@ const NAME_MAX = 40;
 const MESSAGE_MAX = 500;
 const PAGE_SIZE = 50;
 
-// Counted before validation so malformed and honeypot requests consume quota
-// too, otherwise a bot could hammer the endpoint for free. Set high enough
-// that a person who mistypes and retries is never affected.
+// counted before validation, so malformed and honeypot requests use quota too
 const limiter = rateLimit({ limit: 5, windowMs: 10 * 60 * 1000 });
 
 const clean = (value: unknown) =>
@@ -35,17 +33,7 @@ guestbookRoutes.get("/", async (c) => {
   return c.json({ entries: rows });
 });
 
-/* ---------- moderation ----------
- * Anyone can write here, which is the point and also the problem: the entries
- * are mine to answer for whether I wrote them or not. `is_hidden` has been in
- * the schema since the table existed, but nothing could set it, so the only
- * way to take something down was a psql session against production. These are
- * that switch.
- *
- * Hiding is the normal move because it is reversible and keeps the row for the
- * rate limiter to reason about. Deleting is for the thing I do not want in the
- * database at all.
- */
+/* ---------- moderation ---------- */
 
 const MODERATION_PAGE = 200;
 
@@ -59,17 +47,12 @@ guestbookRoutes.get("/all", requireAuth, async (c) => {
   return c.json({
     entries: rows.map(({ ipHash, ...entry }) => ({
       ...entry,
-      // A spam run is one source and many rows, and picking it out by eye takes
-      // something to group by. Eight characters of an already salted hash is
-      // enough to match rows against each other and no use for anything else.
+      // a short prefix of the salted hash, enough to group a spam run
       source: ipHash ? ipHash.slice(0, 8) : null,
     })),
   });
 });
 
-// One entry per request, id in the path. A bulk endpoint would want a body on
-// DELETE, which is legal but not reliably forwarded, and moderation here is a
-// handful of rows at a time: the terminal loops.
 const parseId = (raw: string) => {
   const id = Number(raw);
   return Number.isInteger(id) && id > 0 ? id : null;
