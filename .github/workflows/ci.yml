@@ -10,6 +10,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# nothing here writes to the repo, so the token gets no more than a checkout
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true

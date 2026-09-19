@@ -97,12 +97,11 @@ authRoutes.get("/me", async (c) => {
  * session, or if you present a break-glass token minted from inside the
  * container. Nothing else qualifies.
  *
- * One option was to allow open registration whenever zero credentials
- * existed, to make first run easy. That is deliberately not implemented: this
- * site is already publicly reachable, so between deploying and enrolling there
- * would be an unauthenticated internet-facing endpoint handing out permanent
- * admin credentials to whoever called it first. Requiring a token costs one
- * command and closes the window entirely. */
+ * Open registration while zero credentials exist would make first run easier,
+ * and is deliberately not allowed: this site is publicly reachable, so between
+ * deploying and enrolling there would be an unauthenticated endpoint handing
+ * out permanent admin credentials to whoever called it first. Requiring a
+ * token costs one command and closes the window entirely. */
 const mayRegister = async (c: Context, token: string | undefined) =>
   Boolean(await readSession(c)) || bootstrapTokenIsValid(token);
 
