@@ -199,10 +199,25 @@ const useWindowStore = create(
           });
         }),
 
+      // Bumped by every Clean Up, and not persisted: Home watches it to put
+      // the folders I made onto the grid. An empty folderPos cannot be the
+      // signal, because that is also what every fresh load looks like.
+      cleanUps: 0,
+
       resetFolderPos: () =>
         set((state) => {
           state.folderPos = {};
           state.widgetPos = {};
+          state.cleanUps += 1;
+        }),
+
+      /** Clean Up's second half: new folders onto the grid, as { id: {x, y} }. */
+      placeDesktopFolders: (spots) =>
+        set((state) => {
+          state.desktopFolders.forEach((folder) => {
+            const spot = spots[folder.id];
+            if (spot) Object.assign(folder, spot);
+          });
         }),
 
       // open a folder in a Finder window: reuse the window already showing it,

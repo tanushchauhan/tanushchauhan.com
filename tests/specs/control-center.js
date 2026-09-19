@@ -133,6 +133,37 @@ export const run = async ({ browser, t }) => {
   await page.waitForTimeout(300);
   t.check("the desktop menu closes on a widget click too", !(await page.isVisible(".desktop-menu")));
 
+  // ---------- new folder, and clean up ----------
+  const folderAt = (sel) =>
+    page.$eval(sel, (el) => {
+      const r = el.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2, left: Math.round(r.left) };
+    });
+  await page.mouse.click(960, 640, { button: "right" });
+  await page.waitForTimeout(300);
+  await page.click('.desktop-menu button:has-text("New Folder")');
+  await page.waitForTimeout(300);
+  const made = await folderAt("#home .folder:not([data-project])");
+  t.check(
+    "a new folder lands where you right-clicked",
+    Math.abs(made.x - 960) < 30 && Math.abs(made.y - 640) < 50,
+    `centre at ${Math.round(made.x)},${Math.round(made.y)}`
+  );
+
+  await page.mouse.click(1100, 820, { button: "right" });
+  await page.waitForTimeout(300);
+  await page.click('.desktop-menu button:has-text("Clean Up")');
+  await page.waitForTimeout(700);
+  const columns = await page.$$eval("#home .folder[data-project]", (els) =>
+    els.map((el) => Math.round(el.getBoundingClientRect().left))
+  );
+  const tidied = await folderAt("#home .folder:not([data-project])");
+  t.check(
+    "clean up puts it on the grid with the project folders",
+    columns.includes(tidied.left),
+    `at ${tidied.left}, columns ${[...new Set(columns)].join(", ")}`
+  );
+
   // ---------- persistence ----------
   const before = await storedState(page);
   await page.reload({ waitUntil: "domcontentloaded" });

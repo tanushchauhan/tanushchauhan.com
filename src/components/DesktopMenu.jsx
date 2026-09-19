@@ -14,6 +14,8 @@ const DesktopMenu = () => {
       if (e.target.closest(".window, #dock, #spotlight")) return;
       e.preventDefault();
       setMenu({
+        clickX: e.clientX,
+        clickY: e.clientY,
         x: Math.min(e.clientX, window.innerWidth - 210),
         y: Math.min(e.clientY, window.innerHeight - 220),
       });
@@ -39,6 +41,17 @@ const DesktopMenu = () => {
 
   if (!menu) return null;
 
+  // The menu is placed in viewport coordinates and folders in #home's, which
+  // starts under the menu bar, so a folder used to land 64px below the click.
+  // Centred on the pointer, the way a Mac drops a new folder where you asked.
+  const newFolder = () => {
+    const home = document.querySelector("#home")?.getBoundingClientRect();
+    addDesktopFolder({
+      x: Math.max(0, menu.clickX - (home?.left ?? 0) - 56),
+      y: Math.max(0, menu.clickY - (home?.top ?? 0) - 40),
+    });
+  };
+
   const run = (action) => {
     action();
     setMenu(null);
@@ -48,7 +61,7 @@ const DesktopMenu = () => {
     <div className="desktop-menu" style={{ left: menu.x, top: menu.y }}>
       <button
         type="button"
-        onClick={() => run(() => addDesktopFolder({ x: menu.x, y: menu.y }))}
+        onClick={() => run(newFolder)}
       >
         <FolderPlus className="size-4" /> New Folder
       </button>
