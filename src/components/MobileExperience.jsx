@@ -431,7 +431,7 @@ const MobileExperience = () => {
         <div className="m-pages" ref={pagesRef} onScroll={onPageScroll}>
           <section className="m-page" ref={homeRef}>
             <div className="m-widget">
-              <p className="hello">Hey, I'm Tanush</p>
+              <p className="hello">Hey, I am Tanush</p>
               <h1>tanushchauhan.com</h1>
               <p className="tagline">
                 CS Honors + Math @ UT Austin · robotics researcher · hackathon regular
