@@ -1446,12 +1446,21 @@ body.resizing * {
 
 #home li.folder p {
   @apply w-full rounded text-xs leading-tight font-medium break-words text-white;
-  /* a tight halo as well as a drop shadow, so a label stays readable where the
-     wallpaper is brightest */
+  /* The moon in the night wallpaper is nearly white, and a shadow alone
+     disappears against it. Browsers that can paint a stroke behind the glyphs
+     get an outline; the rest get a heavier halo. */
   text-shadow:
     0 1px 2px rgb(0 0 0 / 0.85),
     0 0 4px rgb(0 0 0 / 0.7),
     0 0 9px rgb(0 0 0 / 0.5);
+}
+
+@supports (paint-order: stroke) {
+  #home li.folder p {
+    paint-order: stroke fill;
+    -webkit-text-stroke: 3px rgb(0 0 0 / 0.72);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+  }
 }
 
 /* ---------------- boot screen ---------------- */
@@ -1612,6 +1621,14 @@ body.resizing * {
     0 1px 2px rgb(0 0 0 / 0.8),
     0 0 4px rgb(0 0 0 / 0.6),
     0 0 9px rgb(0 0 0 / 0.45);
+}
+
+@supports (paint-order: stroke) {
+  .m-app p {
+    paint-order: stroke fill;
+    -webkit-text-stroke: 3px rgb(0 0 0 / 0.6);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+  }
 }
 
 .m-dock {
