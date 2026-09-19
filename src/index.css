@@ -1232,8 +1232,8 @@ body.resizing * {
 
 /* ---------------- about this mac ---------------- */
 #about {
-  @apply w-[320px];
-  top: 20vh;
+  @apply w-[340px];
+  top: 16vh;
   left: 40vw;
 }
 
@@ -1244,43 +1244,71 @@ body.resizing * {
 }
 
 #about .about-body {
-  @apply flex flex-col items-center px-8 pt-2 pb-6 text-center;
+  @apply flex flex-col items-center px-7 pt-1 pb-6 text-center;
 }
 
-#about .about-body img {
-  @apply size-20;
+/* The machine: a screen showing the current wallpaper on a thin base. Drawn
+   rather than a picture, so it can carry the wallpaper and follow the theme. */
+#about .machine {
+  @apply flex flex-col items-center;
+}
+
+#about .screen {
+  @apply relative h-[88px] w-[138px] overflow-hidden rounded-t-[9px] rounded-b-[3px] bg-neutral-900 p-[4px];
+  box-shadow: 0 0 0 1px rgb(var(--glass-ink) / 0.18);
+}
+
+#about .screen img {
+  @apply size-full rounded-t-[6px] rounded-b-[1px] object-cover;
+}
+
+#about .screen .notch {
+  @apply absolute top-[4px] left-1/2 h-[4px] w-[22px] -translate-x-1/2 rounded-b-[3px] bg-neutral-900;
+}
+
+#about .base {
+  @apply h-[6px] w-[164px] rounded-b-[6px];
+  background: linear-gradient(#d4d4d8, #a1a1aa);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+  clip-path: polygon(0 0, 100% 0, 97% 100%, 3% 100%);
+}
+
+.dark #about .base {
+  background: linear-gradient(#71717a, #3f3f46);
 }
 
 #about .about-body h3 {
-  @apply mt-4 text-lg font-bold;
+  @apply mt-4 text-xl font-semibold tracking-tight;
 }
 
 #about .about-body .version {
-  @apply text-xs text-neutral-500 dark:text-neutral-400;
+  @apply mt-0.5 text-xs text-ink/50;
 }
 
+/* Two columns, labels right-aligned against the values, the way the Mac lays
+   out its spec sheet */
 #about dl {
-  @apply mt-5 w-full space-y-1 text-sm;
+  @apply mt-5 grid w-full grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-left text-[12px];
 }
 
 #about dl div {
-  @apply flex justify-between gap-4;
+  @apply contents;
 }
 
 #about dt {
-  @apply font-semibold text-neutral-700 dark:text-neutral-300;
+  @apply text-right font-medium text-ink/80;
 }
 
 #about dd {
-  @apply text-neutral-500 dark:text-neutral-400;
+  @apply text-ink/55 tabular-nums;
 }
 
 #about .about-body button {
-  @apply mt-5 cursor-pointer rounded-lg bg-ink/10 px-4 py-1 text-sm font-medium transition-colors hover:bg-ink/15;
+  @apply mt-5 cursor-pointer rounded-full bg-ink/10 px-4 py-1 text-[13px] font-medium transition-colors hover:bg-ink/15;
 }
 
 #about .fine-print {
-  @apply mt-4 text-[10px] text-neutral-400 dark:text-neutral-500;
+  @apply mt-4 text-[10px] text-ink/35;
 }
 
 /* ---------------- spotlight ---------------- */

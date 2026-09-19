@@ -11,7 +11,9 @@ RUN bun install --frozen-lockfile
 COPY index.html jsconfig.json vite.config.js ./
 COPY public ./public
 COPY src ./src
-RUN bun run build
+# Coolify passes the commit being deployed; About This Mac shows it
+ARG SOURCE_COMMIT
+RUN SOURCE_COMMIT=$SOURCE_COMMIT bun run build
 
 # ---------- stage 2: server dependencies only ----------
 FROM oven/bun:1-alpine AS server-deps
