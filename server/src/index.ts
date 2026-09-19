@@ -47,8 +47,17 @@ app.all("/api/*", (c) => c.json({ error: "not found" }, 404));
 // hashed assets are immutable, the HTML shell is never cached, the rest gets an hour
 app.use("/*", async (c, next) => {
   await next();
-  if (c.req.method !== "GET" || !c.res.ok) return;
+  if (c.req.method !== "GET") return;
   if (c.res.headers.has("cache-control")) return;
+
+  /* An error must never be cached. During a deploy both containers are briefly
+     alive, so a request for a new asset can reach the old one and 404. A CDN
+     that stores that answer then serves a broken page for minutes after the
+     deploy has finished. */
+  if (!c.res.ok) {
+    c.res.headers.set("cache-control", "no-store");
+    return;
+  }
 
   const isHtml = c.res.headers.get("content-type")?.includes("text/html");
   c.res.headers.set(
