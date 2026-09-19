@@ -168,7 +168,7 @@ const COMMAND_NAMES = [
   "contact", "visitor", "neofetch", "echo", "date", "history", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
   "login", "logout", "enroll", "passkeys", "building", "moontower", "services",
-  "guestbook",
+  "tailnet", "guestbook",
 ];
 
 /** A default nickname for a newly enrolled passkey, so it is identifiable later. */
@@ -324,6 +324,7 @@ export const TerminalBody = () => {
         "  building [text]  read or set the 'now building' widget",
         "  moontower        the machines, and how to add one",
         "  services         the applications, probed over http",
+        "  tailnet          every device on the tailnet, and when it was last seen",
         "  guestbook        read the guestbook, hide or delete an entry",
       ]),
 
@@ -719,6 +720,58 @@ export const TerminalBody = () => {
         ]);
       } catch {
         return print(["services: could not reach the server."]);
+      }
+    },
+
+    /*
+     * The tailnet, read-only. It says what exists and whether it is connected;
+     * getting onto a device is `tailscale ssh`, from a machine on the tailnet,
+     * and never through this site.
+     */
+    tailnet: async () => {
+      if (auth.status !== "authed") {
+        return print(["tailnet: not signed in. run 'sudo' first."]);
+      }
+      try {
+        const res = await fetch("/api/moontower/fleet", { credentials: "same-origin" });
+        const data = await res.json();
+        if (!res.ok) return print([`tailnet: ${data.error}`]);
+        const t = data.tailnet;
+        if (!t?.configured) {
+          return print([
+            "tailnet: not configured.",
+            "  set TS_OAUTH_CLIENT_ID and TS_OAUTH_CLIENT_SECRET on the server,",
+            "  from an OAuth client with only the devices:core:read scope.",
+          ]);
+        }
+        if (!t.ok) return print([`tailnet: ${t.error}`]);
+
+        const since = (iso) => {
+          const s = (Date.now() - new Date(iso)) / 1000;
+          if (!Number.isFinite(s)) return "never";
+          if (s < 3600) return `${Math.max(1, Math.round(s / 60))}m ago`;
+          if (s < 86400) return `${Math.round(s / 3600)}h ago`;
+          return `${Math.round(s / 86400)}d ago`;
+        };
+        const soon = Date.now() + 14 * 86400 * 1000;
+        const online = t.devices.filter((d) => d.online).length;
+
+        return print([
+          `tailnet: ${online} of ${t.devices.length} online`,
+          ...t.devices.map((d) => {
+            const state = d.online ? "online" : since(d.lastSeen);
+            const notes = [
+              d.version && `v${d.version}${d.updateAvailable ? " (update available)" : ""}`,
+              // a key about to expire drops the device off the tailnet, which
+              // is worth hearing about before it happens rather than after
+              d.keyExpiry && new Date(d.keyExpiry) < soon &&
+                `key expires ${new Date(d.keyExpiry).toLocaleDateString()}`,
+            ].filter(Boolean);
+            return `  ${d.name.padEnd(16)} ${state.padEnd(9)} ${(d.os ?? "").padEnd(8)} ${(d.address ?? "").padEnd(16)} ${notes.join("  ")}`;
+          }),
+        ]);
+      } catch {
+        return print(["tailnet: could not reach the server."]);
       }
     },
 

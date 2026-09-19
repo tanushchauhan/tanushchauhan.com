@@ -1953,7 +1953,7 @@ body.resizing * {
 /* The tail goes with them. It reports the uptime, load and core count of the
    selected tab, and the strip lists every machine at once, so left in place it
    would attach one machine's numbers to all of them. */
-#widgets:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .w-system :is(.tabs, .stats, .units, .app-mem, .empty, header .tail) {
+#widgets:is([data-fit="min"], [data-fit="core"], [data-fit="bare"]) .w-system :is(.tabs, .stats, .units, .tailnet, .app-mem, .empty, header .tail) {
   display: none;
 }
 
@@ -2053,17 +2053,39 @@ body.resizing * {
   @apply mt-2 flex items-center gap-1.5 text-[11px] text-ink/50;
 }
 
-.w-system .units .dot-ok,
-.w-system .units .dot-bad {
+.w-system :is(.units, .tailnet) :is(.dot-ok, .dot-bad) {
   @apply block size-1.5 shrink-0 rounded-full;
 }
 
-.w-system .units .dot-ok {
+.w-system :is(.units, .tailnet) .dot-ok {
   @apply bg-emerald-400/80;
 }
 
 .w-system .units .dot-bad {
   @apply bg-rose-400/90;
+}
+
+/* The tailnet line on the fleet card: a wrapping row of names, each with a
+   dot. Offline devices dim rather than turn red: a laptop that is shut is not
+   a fault, and red here would cry wolf every night. */
+.w-system .tailnet {
+  @apply mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink/65;
+}
+
+.w-system .tailnet b {
+  @apply font-semibold text-ink/80;
+}
+
+.w-system .tailnet span {
+  @apply inline-flex items-center gap-1.5;
+}
+
+.w-system .tailnet .off {
+  @apply text-ink/35;
+}
+
+.w-system .tailnet .dot-off {
+  @apply block size-1.5 rounded-full bg-ink/25;
 }
 
 /* ---------------- services card (signed in only) ----------------

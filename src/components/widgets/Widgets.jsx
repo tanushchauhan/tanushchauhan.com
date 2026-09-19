@@ -205,6 +205,39 @@ const gb = (mb) => (mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${mb} MB`);
 const gbValue = (mb) => (mb >= 1024 ? (mb / 1024).toFixed(1) : String(mb));
 const gbUnit = (mb) => (mb >= 1024 ? "GB" : "MB");
 
+const ago = (iso) => (iso ? duration((Date.now() - new Date(iso)) / 1000) : "never");
+
+/*
+ * The tailnet, as one line under the fleet. Every device rather than only the
+ * ones running an agent, so a laptop or a phone shows up too, with a dot for
+ * whether it is connected. The detail (addresses, versions, key expiry) is the
+ * terminal's `tailnet` command; a card has room for the yes or no.
+ */
+const Tailnet = ({ data }) => {
+  if (!data?.configured) return null;
+  if (!data.ok) {
+    return (
+      <p className="sub tailnet">
+        <span className="warn">tailnet unreachable</span>
+      </p>
+    );
+  }
+  const online = data.devices.filter((d) => d.online).length;
+  return (
+    <p className="sub tailnet">
+      <b>
+        tailnet {online}/{data.devices.length}
+      </b>
+      {data.devices.map((d) => (
+        <span key={d.name} className={clsx(!d.online && "off")} title={d.online ? d.os : `last seen ${ago(d.lastSeen)} ago`}>
+          <i className={d.online ? "dot-ok" : "dot-off"} />
+          {d.name}
+        </span>
+      ))}
+    </p>
+  );
+};
+
 /*
  * Moontower: the fleet card. One tab per reporting machine, the hub itself
  * being just another row rather than a special case.
@@ -290,6 +323,12 @@ const System = ({ data }) => {
               </span>
             );
           })}
+          {data?.tailnet?.ok && (
+            <span>
+              <b>tailnet</b> {data.tailnet.devices.filter((d) => d.online).length}/
+              {data.tailnet.devices.length} online
+            </span>
+          )}
         </p>
       )}
 
@@ -369,6 +408,8 @@ const System = ({ data }) => {
               })()}
             </p>
           )}
+
+          <Tailnet data={data.tailnet} />
 
           <p className="sub app-mem">
             {server.stale ? (

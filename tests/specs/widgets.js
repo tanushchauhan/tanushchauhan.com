@@ -175,6 +175,17 @@ export const run = async ({ browser, t }) => {
   t.check("and still says how long", /down 23m/.test(text));
   await svc.close();
 
+  // ---------- the tailnet ----------
+  const tn = await withServices(fleet.services);
+  text = await tn.$eval(".w-system", (el) => el.innerText);
+  t.check("the fleet card counts the tailnet", text.includes("tailnet 3/4"));
+  t.check("and names a device with no agent on it", text.includes("iphone"));
+  const listing = await runCommand(tn, "tailnet");
+  t.check("the command lists every device", listing.includes("3 of 4 online") && listing.includes("macbook"));
+  t.check("says when an offline one was last seen", /macbook\s+2d ago/.test(listing));
+  t.check("and warns about a key about to expire", /vps.*key expires/.test(listing));
+  await tn.close();
+
   // ---------- nothing watched ----------
   const empty = await withServices([]);
   const emptyText = await empty.$eval(".w-services", (el) => el.innerText);

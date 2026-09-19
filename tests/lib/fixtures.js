@@ -94,6 +94,18 @@ export const fleet = {
       ],
     },
   ],
+  // a laptop that is shut, a phone, and two servers, one with a key expiring
+  tailnet: {
+    configured: true,
+    ok: true,
+    checkedAt: new Date().toISOString(),
+    devices: [
+      { name: "hub", os: "linux", online: true, lastSeen: new Date().toISOString(), address: "100.64.0.1", version: "1.88.1", updateAvailable: false, keyExpiry: null },
+      { name: "vps", os: "linux", online: true, lastSeen: new Date().toISOString(), address: "100.64.0.2", version: "1.86.2", updateAvailable: true, keyExpiry: new Date(Date.now() + 5 * 86400000).toISOString() },
+      { name: "iphone", os: "iOS", online: true, lastSeen: new Date().toISOString(), address: "100.64.0.3", version: "1.88.1", updateAvailable: false, keyExpiry: null },
+      { name: "macbook", os: "macOS", online: false, lastSeen: new Date(Date.now() - 2 * 86400000).toISOString(), address: "100.64.0.4", version: "1.88.1", updateAvailable: false, keyExpiry: null },
+    ],
+  },
   // one of everything the Services card can show: healthy, slow, and down
   services: [
     {

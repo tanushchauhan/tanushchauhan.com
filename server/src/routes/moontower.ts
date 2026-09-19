@@ -15,6 +15,7 @@ import {
 } from "../lib/moontower.ts";
 import { requireAuth } from "../auth/session.ts";
 import { latestSample } from "../lib/metrics.ts";
+import { tailnet } from "../lib/tailscale.ts";
 
 /**
  * The endpoints Moontower agents talk to. Both are unauthenticated in the
@@ -316,12 +317,17 @@ moontowerRoutes.get("/fleet", requireAuth, async (c) => {
 
   const cutoff = Date.now() - STALE_AFTER_MS;
 
-  const watched = await db.select().from(services).orderBy(services.createdAt);
+  const [watched, devices] = await Promise.all([
+    db.select().from(services).orderBy(services.createdAt),
+    tailnet(),
+  ]);
 
   return c.json({
     version: AGENT_VERSION,
     deployedSecondsAgo: Math.floor(process.uptime()),
     env: Bun.env.NODE_ENV ?? "development",
+    // every device on the tailnet, including the ones with no agent on them
+    tailnet: devices,
     // one poll feeds both cards: they are the same question asked at two levels
     services: watched.map((s) => ({
       slug: s.slug,

@@ -51,7 +51,8 @@ would be a poor terminal without them.
   that can only be minted from inside the container.
 - Moontower, a small fleet monitor. A POSIX `sh` agent on each machine reads
   `/proc` every 30 seconds and posts one request; the hub probes the sites
-  themselves over HTTP. Signed in, the desktop grows a card per machine.
+  themselves over HTTP. Signed in, the desktop grows a card per machine,
+  with a line for every device on my tailnet and whether it is connected.
 
 ## Stack
 
@@ -112,6 +113,7 @@ the short version:
 | `RP_ID`, `ORIGIN` | the WebAuthn relying party. Passkeys are bound to these, so a credential made on localhost will not work on the real domain. |
 | `TRUST_PROXY` | `true` behind Cloudflare or Traefik, so the rate limiter reads the caller's address from the proxy headers |
 | `GITHUB_TOKEN` | optional, read-only. The contributions calendar only exists in GitHub's GraphQL API, which needs a token even for public data. |
+| `TS_OAUTH_CLIENT_ID`, `TS_OAUTH_CLIENT_SECRET` | optional. A Tailscale OAuth client with only the `devices:core:read` scope, so the signed-in fleet card can list the tailnet. It cannot change anything or connect to a device. |
 | `PORT` | defaults to 3001 |
 
 Never commit `.env`. It is ignored, and `.env.example` is the template.
@@ -144,7 +146,10 @@ The agent has no channel through which the hub can run anything on it. The
 hub's reply is configuration and a version string, and which systemd units are
 reported is set in the config file on the machine, never sent from the hub. An
 auto-updating agent would turn a compromise of a portfolio site into root on a
-mail server, which is not a trade worth making. The scripts are in
+mail server, which is not a trade worth making. The same goes for the tailnet:
+the site asks Tailscale's API which devices exist with a read-only credential,
+it never joins the tailnet itself, and there is no way to open a shell from
+it. The scripts are in
 `public/moontower/` and are short enough to read before running them.
 
 ## Tests
