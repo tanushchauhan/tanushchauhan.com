@@ -1,8 +1,8 @@
 import { Hono, type Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, like } from "drizzle-orm";
 import { db } from "../db/index.ts";
-import { credentials } from "../db/schema.ts";
+import { bootstrapTokens, credentials } from "../db/schema.ts";
 import { bootstrapTokenIsValid, consumeBootstrapToken } from "../auth/bootstrap.ts";
 import {
   authenticationOptions,
@@ -43,7 +43,7 @@ const setChallengeCookie = (c: Context, id: string) =>
 export const authRoutes = new Hono();
 
 // anything not listed here gets the strict budget
-const LOOSE = new Set(["/me", "/passkeys"]);
+const LOOSE = new Set(["/me", "/passkeys", "/tokens"]);
 
 authRoutes.use("*", async (c, next) => {
   const path = c.req.path.replace(/^\/api\/auth/, "") || "/";
@@ -200,4 +200,38 @@ authRoutes.delete("/passkeys/:id", requireAuth, async (c) => {
 
   await destroyAllSessions();
   return c.json({ ok: true });
+});
+
+/* ---------- outstanding enrollment tokens ----------
+ * A minted token that was never used is invisible until it expires, so these
+ * list the live ones and let one be revoked early. */
+
+authRoutes.get("/tokens", requireAuth, async (c) => {
+  const rows = await db
+    .select({
+      tokenHash: bootstrapTokens.tokenHash,
+      createdAt: bootstrapTokens.createdAt,
+      expiresAt: bootstrapTokens.expiresAt,
+    })
+    .from(bootstrapTokens)
+    .where(and(isNull(bootstrapTokens.usedAt), gt(bootstrapTokens.expiresAt, new Date())))
+    .orderBy(desc(bootstrapTokens.createdAt));
+
+  // the hash, not the token: the plaintext is shown once and never stored
+  return c.json({
+    tokens: rows.map(({ tokenHash, ...rest }) => ({ id: tokenHash.slice(0, 8), ...rest })),
+  });
+});
+
+authRoutes.delete("/tokens/:id", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!/^[0-9a-f]{4,64}$/.test(id)) return c.json({ error: "not a token id" }, 400);
+
+  const removed = await db
+    .delete(bootstrapTokens)
+    .where(and(isNull(bootstrapTokens.usedAt), like(bootstrapTokens.tokenHash, `${id}%`)))
+    .returning({ tokenHash: bootstrapTokens.tokenHash });
+
+  if (!removed.length) return c.json({ error: `no live token starting ${id}` }, 404);
+  return c.json({ revoked: removed.length });
 });

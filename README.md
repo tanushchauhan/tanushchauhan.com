@@ -38,8 +38,9 @@ Austin), and live at [tanushchauhan.com](https://tanushchauhan.com).
 
 A real shell over a virtual filesystem that mirrors the Finder. `ls`, `cd`,
 `cat`, `grep`, `open` (which opens the real window), tab completion, history,
-and a session that survives reloads. `visitor` tells you which number you
-are. Also `neofetch`, `cowsay`, `fortune`, `matrix` and `snake`, because it
+and a session that survives reloads. `man` has a page for every command,
+`visitor` tells you which number you are, and `uptime` says how long the
+server has been up and which build it is running. Also `neofetch`, `cowsay`, `fortune`, `matrix` and `snake`, because it
 would be a poor terminal without them.
 
 **Things that talk to a server**

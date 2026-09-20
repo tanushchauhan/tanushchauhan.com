@@ -109,6 +109,27 @@ export const run = async ({ browser, t }) => {
     (await runCommand(page, "visitor")).includes("visitor number 1,204")
   );
 
+  // ---------- man, uptime, and the signed-in commands ----------
+  const man = await runCommand(page, "man tailnet");
+  t.check("man prints a usage line", man.includes("tailnet"));
+  t.check("and says what the command is for", /read only/i.test(man), man.slice(0, 120));
+  t.check(
+    "an unknown command has no page",
+    (await runCommand(page, "man nope")).includes("No manual entry for nope")
+  );
+  t.check("every command has one", (await runCommand(page, "man man")).includes("manual page"));
+
+  const up = await runCommand(page, "uptime");
+  t.check("uptime reports the age of the build", /up 2d 3h since the last deploy/.test(up), up.slice(0, 120));
+
+  const stats = await runCommand(page, "stats");
+  t.check("stats counts visitors", stats.includes("1,204"), stats.slice(0, 120));
+  t.check("and how many came back", /came back\s+301/.test(stats), stats.slice(0, 200));
+
+  const tokens = await runCommand(page, "tokens");
+  t.check("tokens lists an unspent token by hash", tokens.includes("a1b2c3d4"), tokens.slice(0, 120));
+  t.check("with the kind and when it expires", /passkey\s+expires in \d+m/.test(tokens), tokens.slice(0, 200));
+
   t.check("no page errors", page.pageErrors.length === 0, page.pageErrors.join(" | "));
   await page.close();
 

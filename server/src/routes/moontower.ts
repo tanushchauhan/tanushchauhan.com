@@ -1,7 +1,14 @@
 import { Hono, type Context } from "hono";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, like } from "drizzle-orm";
 import { db } from "../db/index.ts";
-import { HUB_SLUG, metricSamples, servers, services, type UnitState } from "../db/schema.ts";
+import {
+  agentEnrollments,
+  HUB_SLUG,
+  metricSamples,
+  servers,
+  services,
+  type UnitState,
+} from "../db/schema.ts";
 import { isProbeableUrl, probe, PROBE_STALE_MS } from "../lib/probes.ts";
 import { clientIp, hashIp, rateLimit } from "../lib/ratelimit.ts";
 import {
@@ -77,6 +84,36 @@ moontowerRoutes.post("/enroll-token", requireAuth, async (c) => {
     minutes: Math.round((expiresAt.getTime() - Date.now()) / 60000),
     command: `curl -fsSL ${origin}/moontower/install.sh | sh -s -- --token ${token} --name "NAME"`,
   });
+});
+
+/** Enrollment tokens minted but not yet spent. */
+moontowerRoutes.get("/tokens", requireAuth, async (c) => {
+  const rows = await db
+    .select({
+      tokenHash: agentEnrollments.tokenHash,
+      createdAt: agentEnrollments.createdAt,
+      expiresAt: agentEnrollments.expiresAt,
+    })
+    .from(agentEnrollments)
+    .where(and(isNull(agentEnrollments.usedAt), gt(agentEnrollments.expiresAt, new Date())))
+    .orderBy(desc(agentEnrollments.createdAt));
+
+  return c.json({
+    tokens: rows.map(({ tokenHash, ...rest }) => ({ id: tokenHash.slice(0, 8), ...rest })),
+  });
+});
+
+moontowerRoutes.delete("/tokens/:id", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!/^[0-9a-f]{4,64}$/.test(id)) return c.json({ error: "not a token id" }, 400);
+
+  const removed = await db
+    .delete(agentEnrollments)
+    .where(and(isNull(agentEnrollments.usedAt), like(agentEnrollments.tokenHash, `${id}%`)))
+    .returning({ tokenHash: agentEnrollments.tokenHash });
+
+  if (!removed.length) return c.json({ error: `no live token starting ${id}` }, 404);
+  return c.json({ revoked: removed.length });
 });
 
 /** Deleting a server revokes its key and drops its readings. */

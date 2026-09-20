@@ -8,6 +8,7 @@ import useAuthStore from "#store/auth.js";
 import { MatrixOverlay, SnakeOverlay } from "./TermOverlay.jsx";
 import { refreshWidgets } from "../utils/widgets.js";
 import { registerVisit } from "../utils/visit.js";
+import { MAN } from "#constants/man.js";
 
 const USER = "tanush@tanushchauhan.com";
 
@@ -157,12 +158,25 @@ const resolve = (cwd, raw) => {
 
 const pwdString = (path) => "~" + (path.length ? "/" + path.join("/") : "");
 
+/** Seconds as "3d 4h", "4h 20m" or "9m", the way uptime(1) reads. */
+const durationOf = (seconds) => {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d) return `${d}d ${h}h`;
+  if (h) return `${h}h ${m}m`;
+  return `${Math.max(1, m)}m`;
+};
+
+// set by vite.config.js at build time
+const BUILD = __BUILD__;
+
 const COMMAND_NAMES = [
-  "help", "ls", "cd", "cat", "open", "pwd", "whoami", "skills", "projects",
-  "contact", "visitor", "neofetch", "echo", "date", "history", "clear",
+  "help", "man", "ls", "cd", "cat", "open", "pwd", "whoami", "skills", "projects",
+  "contact", "visitor", "uptime", "neofetch", "echo", "date", "history", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
-  "login", "logout", "enroll", "passkeys", "building", "moontower", "services",
-  "tailnet", "guestbook",
+  "login", "logout", "enroll", "passkeys", "building", "stats", "tokens",
+  "moontower", "services", "tailnet", "guestbook",
 ];
 
 /** A default nickname for a newly enrolled passkey, so it is identifiable later. */
@@ -286,6 +300,7 @@ export const TerminalBody = () => {
   const commands = {
     help: () =>
       print([
+        "  man <command>    the manual page for a command",
         "  ls [-a] [dir]    list directory contents",
         "  cd <dir>         change directory (try 'cd projects/crave')",
         "  cat <file>       view file contents",
@@ -297,6 +312,7 @@ export const TerminalBody = () => {
         "  projects         what I have built, one line each",
         "  contact          how to reach me",
         "  visitor          which number you are",
+        "  uptime           how long the server has been up, and which build",
         "  neofetch         system information",
         "  echo <text>      print text",
         "  date             current date & time",
@@ -313,6 +329,8 @@ export const TerminalBody = () => {
         "  logout           end the session",
         "  passkeys         list registered passkeys",
         "  building [text]  read or set the 'now building' widget",
+        "  stats            visitor numbers",
+        "  tokens           one-time tokens that have not been used yet",
         "  moontower        the machines, and how to add one",
         "  services         the applications, probed over http",
         "  tailnet          every device on the tailnet, and when it was last seen",
@@ -429,6 +447,38 @@ export const TerminalBody = () => {
       ]);
     },
 
+    man: (args) => {
+      const name = (args[0] ?? "").toLowerCase();
+      if (!name) return print(["usage: man <command>. `help` lists them."]);
+
+      const entry = MAN[name];
+      if (!entry) return print([`No manual entry for ${name}.`]);
+
+      return print([
+        `  ${entry.usage}`,
+        "",
+        `  ${entry.summary}`,
+        ...entry.notes.map((note) => `  ${note}`),
+      ]);
+    },
+
+    uptime: async () => {
+      try {
+        const res = await fetch("/api/health");
+        if (!res.ok) throw new Error();
+        const { uptimeSeconds, env } = await res.json();
+        const build = [BUILD.commit, dayjs(BUILD.builtAt).format("MMM D YYYY")]
+          .filter(Boolean)
+          .join(" · ");
+        return print([
+          `  up ${durationOf(uptimeSeconds)} since the last deploy`,
+          `  build ${build}${env ? ` · ${env}` : ""}`,
+        ]);
+      } catch {
+        return print(["uptime: could not reach the server."]);
+      }
+    },
+
     neofetch: () => print([NEOFETCH]),
 
     echo: (args) => print([args.join(" ")]),
@@ -528,6 +578,76 @@ export const TerminalBody = () => {
         );
       } catch {
         print(["passkeys: could not reach the server."]);
+      }
+    },
+
+    stats: async () => {
+      if (auth.status !== "authed") return print(["stats: not signed in."]);
+      try {
+        const res = await fetch("/api/visit/stats", { credentials: "same-origin" });
+        if (!res.ok) throw new Error();
+        const s = await res.json();
+        const share = s.total ? Math.round((s.returning / s.total) * 100) : 0;
+        return print([
+          `  visitors      ${s.total.toLocaleString()} · ${s.visits.toLocaleString()} visits`,
+          `  today         ${s.seenToday} here, ${s.newToday} for the first time`,
+          `  this week     ${s.seenWeek} here, ${s.newWeek} for the first time`,
+          `  came back     ${s.returning.toLocaleString()} (${share}%)`,
+        ]);
+      } catch {
+        return print(["stats: could not reach the server."]);
+      }
+    },
+
+    tokens: async (args) => {
+      if (auth.status !== "authed") return print(["tokens: not signed in."]);
+      const [sub, id] = args;
+
+      if (sub === "revoke") {
+        if (!id) return print(["usage: tokens revoke <id>"]);
+        // the id says nothing about which kind it is, so try both
+        const results = await Promise.all(
+          ["/api/auth/tokens", "/api/moontower/tokens"].map((path) =>
+            fetch(`${path}/${encodeURIComponent(id)}`, {
+              method: "DELETE",
+              credentials: "same-origin",
+            })
+              .then((r) => r.ok)
+              .catch(() => false)
+          )
+        );
+        return print([
+          results.some(Boolean) ? `revoked ${id}.` : `tokens: no live token starting ${id}.`,
+        ]);
+      }
+
+      if (sub) return print(["usage: tokens [revoke <id>]"]);
+
+      try {
+        const kinds = [
+          ["passkey", "/api/auth/tokens"],
+          ["agent", "/api/moontower/tokens"],
+        ];
+        const lists = await Promise.all(
+          kinds.map(async ([kind, path]) => {
+            const res = await fetch(path, { credentials: "same-origin" });
+            if (!res.ok) throw new Error();
+            const { tokens = [] } = await res.json();
+            return tokens.map((t) => ({ ...t, kind }));
+          })
+        );
+
+        const live = lists.flat();
+        if (!live.length) return print(["  (none outstanding)"]);
+
+        return print(
+          live.map((t) => {
+            const minutes = Math.max(0, Math.round((new Date(t.expiresAt) - Date.now()) / 60000));
+            return `  ${t.id}  ${t.kind.padEnd(8)} expires in ${minutes}m`;
+          })
+        );
+      } catch {
+        return print(["tokens: could not reach the server."]);
       }
     },
 
@@ -911,7 +1031,7 @@ export const TerminalBody = () => {
     const completingCommand = tokens.length <= 1;
 
     let candidates;
-    if (completingCommand) {
+    if (completingCommand || tokens[0]?.toLowerCase() === "man") {
       candidates = COMMAND_NAMES.filter((c) => c.startsWith(last.toLowerCase()));
     } else {
       const slash = last.lastIndexOf("/");

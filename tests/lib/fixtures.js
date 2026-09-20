@@ -152,6 +152,23 @@ export const installFixtures = async (page, { authed = true, building } = {}) =>
   await page.route("**/api/guestbook", (r) =>
     r.fulfill({ json: { entries: guestbookEntries } })
   );
+  await page.route("**/api/health", (r) =>
+    r.fulfill({ json: { ok: true, uptimeSeconds: 2 * 86400 + 3 * 3600, env: "production" } })
+  );
+  await page.route("**/api/visit/stats", (r) =>
+    r.fulfill({
+      json: {
+        total: 1204, visits: 3120, newToday: 18, seenToday: 42,
+        newWeek: 120, seenWeek: 260, returning: 301,
+      },
+    })
+  );
+  await page.route("**/api/auth/tokens", (r) =>
+    r.fulfill({
+      json: { tokens: [{ id: "a1b2c3d4", createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 9 * 60000).toISOString() }] },
+    })
+  );
+  await page.route("**/api/moontower/tokens", (r) => r.fulfill({ json: { tokens: [] } }));
   await page.route("**/api/visit", (r) =>
     r.fulfill({ json: { number: 1204, visits: 1, since: "2026-09-01T00:00:00Z", total: 1204 } })
   );
