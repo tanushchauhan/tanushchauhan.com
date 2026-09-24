@@ -27,13 +27,12 @@ import useAuthStore from "#store/auth.js";
 import { setSoundEnabled } from "./utils/sound.js";
 import { registerVisit } from "./utils/visit.js";
 import { paleSky, wallpaperFor } from "#constants";
+import { useAppearance } from "./utils/appearance.js";
 
 const MOBILE_QUERY = "(max-width: 767px)";
 
 const App = () => {
-  const theme = useWindowStore((state) => state.theme);
-  const glass = useWindowStore((state) => state.glass);
-  const wallpaper = useWindowStore((state) => state.wallpaper);
+  const { dark, glass, wallpaper } = useAppearance();
   const soundOn = useWindowStore((state) => state.soundOn);
 
   useEffect(() => {
@@ -57,19 +56,12 @@ const App = () => {
 
   // every wallpaper is a light/dark pair, so theme and wallpaper resolve together
   useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const apply = () => {
-      const dark = theme === "dark" || (theme === "auto" && media.matches);
-      const root = document.documentElement;
-      root.classList.toggle("dark", dark);
-      root.dataset.glass = glass;
-      root.dataset.bar = paleSky(wallpaper, dark) ? "dark" : "light";
-      root.style.setProperty("--wallpaper", `url("${wallpaperFor(wallpaper, dark)}")`);
-    };
-    apply();
-    media.addEventListener("change", apply);
-    return () => media.removeEventListener("change", apply);
-  }, [theme, glass, wallpaper]);
+    const root = document.documentElement;
+    root.classList.toggle("dark", dark);
+    root.dataset.glass = glass;
+    root.dataset.bar = paleSky(wallpaper, dark) ? "dark" : "light";
+    root.style.setProperty("--wallpaper", `url("${wallpaperFor(wallpaper, dark)}")`);
+  }, [dark, glass, wallpaper]);
 
   if (isMobile) {
     return (

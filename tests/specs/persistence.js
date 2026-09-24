@@ -55,7 +55,7 @@ export const run = async ({ browser, t }) => {
   const version = await page.evaluate(
     () => JSON.parse(localStorage.getItem("tanushos-v1")).version
   );
-  t.check("and the saved state was migrated rather than dropped", version === 3, `v${version}`);
+  t.check("and the saved state was migrated rather than dropped", version === 4, `v${version}`);
   await page.close();
 
   // ---------- a fresh save ----------

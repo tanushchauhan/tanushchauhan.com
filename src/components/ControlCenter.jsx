@@ -3,6 +3,7 @@ import { Sun, Moon, MonitorCog, Volume2, VolumeX, Check } from "lucide-react";
 import clsx from "clsx";
 import { wallpapers } from "#constants";
 import useWindowStore from "#store/window.js";
+import { useAppearance } from "../utils/appearance.js";
 
 const THEMES = [
   { value: "auto", label: "Auto", icon: MonitorCog },
@@ -22,13 +23,13 @@ const ControlCenter = () => {
     setControlCenter,
     theme,
     setTheme,
-    glass,
     setGlass,
-    wallpaper,
     setWallpaper,
     soundOn,
     toggleSound,
   } = useWindowStore();
+  // what is on screen, which is what the ticks should follow
+  const { glass, wallpaper } = useAppearance();
   const ref = useRef(null);
 
   useEffect(() => {

@@ -38,7 +38,7 @@ export const seed = ({ windows = {}, ...rest } = {}) =>
       desktopFolders: [],
       ...rest,
     },
-    version: 3,
+    version: 4,
   });
 
 let open = null;

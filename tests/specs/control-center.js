@@ -39,7 +39,7 @@ export const run = async ({ browser, t }) => {
   // ---------- glass ----------
   const glassOf = () => page.evaluate(() => document.documentElement.dataset.glass);
   t.check("three glass levels are offered", (await page.$$(".cc-glass button")).length === 3);
-  t.check("tinted is the default", (await glassOf()) === "tinted");
+  t.check("light opens on regular", (await glassOf()) === "regular");
   await page.click(".cc-glass button:nth-child(1)"); // Clear
   await page.waitForTimeout(300);
   t.check("clear applies to the root", (await glassOf()) === "clear");
@@ -47,16 +47,26 @@ export const run = async ({ browser, t }) => {
     "and the chrome gets thinner",
     parseFloat(await page.$eval(".dock-container", (el) => getComputedStyle(el).getPropertyValue("--glass-alpha"))) < 0.3
   );
-  await page.click(".cc-glass button:nth-child(2)"); // Regular
-  await page.waitForTimeout(300);
-  t.check("regular applies", (await glassOf()) === "regular");
   await page.click(".cc-glass button:nth-child(3)"); // Tinted
   await page.waitForTimeout(300);
-  t.check("and tinted again", (await glassOf()) === "tinted");
+  t.check("tinted applies", (await glassOf()) === "tinted");
   t.check(
     "and the menu bar grows a band",
     (await page.$eval("nav", (el) => getComputedStyle(el).backdropFilter)) !== "none"
   );
+
+  // ---------- dark opens on its own defaults ----------
+  const night = await openPage(browser, { colorScheme: "dark" });
+  t.check(
+    "dark opens on tinted",
+    (await night.evaluate(() => document.documentElement.dataset.glass)) === "tinted"
+  );
+  t.check(
+    "with the graphite wallpaper",
+    (await wallpaperOf(night)).includes("graphite-night"),
+    await wallpaperOf(night)
+  );
+  await night.close();
 
   // ---------- wallpaper ----------
   t.check("every wallpaper is offered", (await page.$$(".cc-paper")).length === 3);

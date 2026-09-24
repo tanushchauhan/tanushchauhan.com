@@ -22,6 +22,7 @@ import { MobileWidgets, MobileSystem } from "./widgets/Widgets.jsx";
 import AppIcon from "./AppIcon.jsx";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
+import { useAppearance } from "../utils/appearance.js";
 
 /* ---------------- app registry ---------------- */
 const APPS = [
@@ -249,8 +250,8 @@ const AboutApp = () => {
 
 /* The phone's Control Center: the same settings as a list. */
 const SettingsApp = () => {
-  const { theme, setTheme, glass, setGlass, wallpaper, setWallpaper, soundOn, toggleSound } =
-    useWindowStore();
+  const { theme, setTheme, setGlass, setWallpaper, soundOn, toggleSound } = useWindowStore();
+  const { glass, wallpaper } = useAppearance();
   const options = [
     { value: "auto", label: "Auto", icon: MonitorCog, note: "Match this device" },
     { value: "light", label: "Light", icon: Sun, note: "Daytime, whichever wallpaper" },

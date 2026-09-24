@@ -42,12 +42,11 @@ const state = JSON.stringify({
     },
     nextZIndex: 1010,
     theme: "light",
-    wallpaper: "graphite",
     folderPos: {},
     widgetPos: {},
     soundOn: false,
   },
-  version: 3,
+  version: 4,
 });
 
 const main = async () => {

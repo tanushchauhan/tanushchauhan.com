@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { play, setSoundEnabled } from "../utils/sound.js";
-import { DEFAULT_WALLPAPER, derefData, refFor } from "../constants/index.js";
+import { derefData, refFor } from "../constants/index.js";
 
 const INITIAL_Z_INDEX = 1000;
 
@@ -43,8 +43,9 @@ const useWindowStore = create(
       spotlightOpen: false,
       controlCenterOpen: false,
       theme: "auto", // "auto" | "light" | "dark"
-      glass: "tinted", // "clear" | "regular" | "tinted"
-      wallpaper: DEFAULT_WALLPAPER,
+      // null means "whatever suits the appearance", see APPEARANCE_DEFAULTS
+      glass: null, // "clear" | "regular" | "tinted"
+      wallpaper: null,
       folderPos: {}, // desktop folder drag offsets, keyed by project id
       // widget drag offsets, keyed by layout and then by widget id, since an
       // offset only means something in the grid it was measured in
@@ -246,7 +247,7 @@ const useWindowStore = create(
     })),
     {
       name: "tanushos-v1",
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => {
         if (version < 1) persisted = { ...persisted, theme: "auto" };
         if (version < 2) persisted = { ...persisted, widgetPos: {} };
@@ -266,6 +267,10 @@ const useWindowStore = create(
             ),
           };
         }
+        /* v3 stored a wallpaper and a glass level for everyone, including the
+           people who never picked one. Clearing them hands those back to the
+           appearance; a deliberate pick is two clicks away in Control Center. */
+        if (version < 4) persisted = { ...persisted, wallpaper: null, glass: null };
         return persisted;
       },
       // rebuilt from the defaults so windows added since are filled in

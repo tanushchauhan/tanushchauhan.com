@@ -5,6 +5,7 @@ import { WindowControls } from "#components";
 import { locations, wallpaperFor } from "#constants";
 import useWindowStore from "#store/window.js";
 import { registerVisit } from "../utils/visit.js";
+import { useAppearance } from "../utils/appearance.js";
 
 const BUILD = __BUILD__;
 
@@ -60,10 +61,9 @@ const Build = () => {
 };
 
 const AboutMac = () => {
-  const { openWindow, windows, wallpaper, theme } = useWindowStore();
+  const { openWindow, windows } = useWindowStore();
   const { health, visitors } = useLiveSpecs(windows.about?.isOpen);
-  // the resolved theme, since the setting can be "auto"
-  const dark = theme && document.documentElement.classList.contains("dark");
+  const { dark, wallpaper } = useAppearance();
 
   const openAboutMe = () => {
     const aboutTxt = locations.about.children.find((c) => c.id === "about-me");

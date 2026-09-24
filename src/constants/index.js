@@ -36,7 +36,11 @@ export const wallpapers = [
   },
 ];
 
-export const DEFAULT_WALLPAPER = "graphite";
+/** What a visitor gets before they pick anything, per appearance. */
+export const APPEARANCE_DEFAULTS = {
+  light: { wallpaper: "austin", glass: "regular" },
+  dark: { wallpaper: "graphite", glass: "tinted" },
+};
 
 const wallpaperById = (id) => wallpapers.find((w) => w.id === id) ?? wallpapers[0];
 
