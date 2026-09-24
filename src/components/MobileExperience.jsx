@@ -343,7 +343,7 @@ const FIT_TIERS = ["", "tight", "compact", "bare"];
 
 const SpringboardIcon = ({ app, onOpen }) => (
   <button type="button" className="m-app" onClick={() => onOpen(app.id)}>
-    <AppIcon icon={app.icon} alt={app.name} />
+    <AppIcon icon={app.icon} />
     <p>{app.name}</p>
   </button>
 );

@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+/* Georama is the wordmark and nothing else, so these carry only its glyphs.
+   Changing the wordmark means regenerating them. */
+@font-face {
+  font-family: "Georama";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/georama-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Georama";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/georama-700-italic.woff2") format("woff2");
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
@@ -1578,14 +1596,21 @@ body.resizing * {
 }
 
 .m-dots {
-  @apply flex items-center justify-center gap-1.5 py-3;
+  @apply flex items-center justify-center;
 }
 
+/* the dot is drawn by ::before, so the button can be a comfortable target
+   without the row growing around it */
 .m-dots button {
-  @apply size-1.5 cursor-pointer rounded-full bg-white/35 transition-all;
+  @apply my-[3px] flex size-6 cursor-pointer items-center justify-center;
 }
 
-.m-dots button.on {
+.m-dots button::before {
+  content: "";
+  @apply size-1.5 rounded-full bg-white/35 transition-all;
+}
+
+.m-dots button.on::before {
   @apply w-4 bg-white/90;
 }
 
