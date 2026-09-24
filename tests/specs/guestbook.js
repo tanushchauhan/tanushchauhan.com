@@ -1,6 +1,6 @@
 import { openPage, seed, win, runCommand } from "../lib/harness.js";
 
-export const name = "guestbook: moderation from the terminal";
+export const name = "guestbook: moderation from the terminal and the window";
 
 const entries = [
   { id: 7, name: "spammer", message: "buy   cheap   things now", createdAt: "2026-07-30T10:00:00Z", isHidden: false, source: "abcdef01" },
@@ -79,4 +79,61 @@ export const run = async ({ browser, t }) => {
   t.check("deleting refuses too", (await runCommand(anon, "guestbook rm 5")).includes("not signed in"));
   t.check("and nothing is ever sent", reached === 0, `${reached} requests`);
   await anon.close();
+
+  // ---------- the window, signed in ----------
+  const sentFromWindow = [];
+  const win2 = await openPage(browser, { state: seed({ windows: { guestbook: win() } }) });
+  await win2.route("**/api/guestbook/all", (r) => r.fulfill({ json: { entries } }));
+  await win2.route("**/api/guestbook/*", (r) => {
+    const request = r.request();
+    if (request.method() === "GET") return r.fallback();
+    sentFromWindow.push({ method: request.method(), body: request.postData() });
+    const id = Number(request.url().split("/").pop());
+    return r.fulfill({
+      json: request.method() === "DELETE" ? { removed: id } : { id, isHidden: true },
+    });
+  });
+  await win2.reload();
+  await win2.waitForTimeout(1500);
+
+  t.check("the window lists hidden entries too", (await win2.$$(".gb-entry")).length === 3);
+  t.check("and marks them", (await win2.$$(".gb-entry.hidden-entry")).length === 1);
+
+  const first = win2.locator(".gb-entry").first();
+  await first.hover();
+  await first.locator('[aria-label="Hide"]').click();
+  await win2.waitForTimeout(400);
+  t.check(
+    "hiding from the window sends a PATCH",
+    sentFromWindow.at(-1)?.method === "PATCH" &&
+      JSON.parse(sentFromWindow.at(-1).body).hidden === true
+  );
+  t.check("and the row dims without a reload", (await win2.$$(".gb-entry.hidden-entry")).length === 2);
+
+  await first.hover();
+  await first.locator('[aria-label="Delete"]').click();
+  await win2.waitForTimeout(300);
+  t.check("one click on delete only asks", sentFromWindow.at(-1)?.method === "PATCH");
+  t.check("showing the confirmation in place", (await win2.$$(".gb-delete.armed")).length === 1);
+
+  await first.locator('[aria-label="Delete for good"]').click();
+  await win2.waitForTimeout(400);
+  t.check("the second click deletes", sentFromWindow.at(-1)?.method === "DELETE");
+  t.check("and the entry goes", (await win2.$$(".gb-entry")).length === 2);
+  await win2.close();
+
+  // ---------- the window, signed out ----------
+  const anonWindow = await openPage(browser, {
+    authed: false,
+    state: seed({ windows: { guestbook: win() } }),
+  });
+  await anonWindow.route("**/api/guestbook", (r) =>
+    r.fulfill({ json: { entries: entries.filter((e) => !e.isHidden) } })
+  );
+  await anonWindow.reload();
+  await anonWindow.waitForTimeout(1500);
+
+  t.check("a visitor sees only what is visible", (await anonWindow.$$(".gb-entry")).length === 2);
+  t.check("and no moderation controls", (await anonWindow.$$(".gb-actions")).length === 0);
+  await anonWindow.close();
 };

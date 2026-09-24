@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import clsx from "clsx";
 import dayjs from "dayjs";
-import { Send } from "lucide-react";
+import { Eye, EyeOff, Send, Trash2 } from "lucide-react";
 import WindowWrapper from "#hoc/WindowWrapper.jsx";
 import { WindowControls } from "#components";
 import useWindowStore from "#store/window.js";
+import useAuthStore from "#store/auth.js";
 
 const MESSAGE_MAX = 500;
 
@@ -15,12 +17,17 @@ export const GuestbookBody = ({ active = true }) => {
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [confirming, setConfirming] = useState(null);
   const listRef = useRef(null);
+  const authed = useAuthStore((s) => s.status === "authed");
 
+  // signed in the list includes hidden entries, so they can be brought back
   const load = useCallback(async () => {
     setStatus("loading");
     try {
-      const res = await fetch("/api/guestbook");
+      const res = await fetch(authed ? "/api/guestbook/all" : "/api/guestbook", {
+        credentials: "same-origin",
+      });
       if (!res.ok) throw new Error("request failed");
       const data = await res.json();
       setEntries(data.entries ?? []);
@@ -28,15 +35,43 @@ export const GuestbookBody = ({ active = true }) => {
     } catch {
       setStatus("error");
     }
-  }, []);
+  }, [authed]);
 
-  const loadedRef = useRef(false);
+  const loadedRef = useRef(null);
   useEffect(() => {
-    if (active && !loadedRef.current) {
-      loadedRef.current = true;
+    if (active && loadedRef.current !== authed) {
+      loadedRef.current = authed;
       load();
     }
-  }, [active, load]);
+  }, [active, authed, load]);
+
+  const moderate = async (entry, action) => {
+    setError("");
+    const url = `/api/guestbook/${entry.id}`;
+    const options =
+      action === "remove"
+        ? { method: "DELETE" }
+        : {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ hidden: !entry.isHidden }),
+          };
+
+    try {
+      const res = await fetch(url, { ...options, credentials: "same-origin" });
+      if (!res.ok) throw new Error();
+
+      setEntries((prev) =>
+        action === "remove"
+          ? prev.filter((e) => e.id !== entry.id)
+          : prev.map((e) => (e.id === entry.id ? { ...e, isHidden: !e.isHidden } : e))
+      );
+    } catch {
+      setError(action === "remove" ? "could not delete that" : "could not change that");
+    } finally {
+      setConfirming(null);
+    }
+  };
 
   const submit = async (e) => {
     e.preventDefault();
@@ -116,12 +151,39 @@ export const GuestbookBody = ({ active = true }) => {
           <p className="gb-empty">no notes yet. be the first.</p>
         )}
         {entries.map((entry) => (
-          <article key={entry.id} className="gb-entry">
+          <article key={entry.id} className={clsx("gb-entry", entry.isHidden && "hidden-entry")}>
             <header>
               <strong>{entry.name}</strong>
+              {entry.isHidden && <span className="gb-tag">hidden</span>}
               <time dateTime={entry.createdAt}>
                 {dayjs(entry.createdAt).format("MMM D, YYYY")}
               </time>
+              {authed && (
+                <span className="gb-actions">
+                  <button
+                    type="button"
+                    onClick={() => moderate(entry, "hide")}
+                    title={entry.isHidden ? "Show" : "Hide"}
+                    aria-label={entry.isHidden ? "Show" : "Hide"}
+                  >
+                    {entry.isHidden ? <Eye /> : <EyeOff />}
+                  </button>
+                  <button
+                    type="button"
+                    className={clsx("gb-delete", confirming === entry.id && "armed")}
+                    onClick={() =>
+                      confirming === entry.id
+                        ? moderate(entry, "remove")
+                        : setConfirming(entry.id)
+                    }
+                    onBlur={() => setConfirming((id) => (id === entry.id ? null : id))}
+                    title="Delete"
+                    aria-label={confirming === entry.id ? "Delete for good" : "Delete"}
+                  >
+                    {confirming === entry.id ? "sure?" : <Trash2 />}
+                  </button>
+                </span>
+              )}
             </header>
             <p>{entry.message}</p>
           </article>

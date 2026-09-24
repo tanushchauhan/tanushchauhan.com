@@ -46,7 +46,8 @@ would be a poor terminal without them.
 **Things that talk to a server**
 
 - A guestbook anyone can write in. Rate limited by a salted hash of the
-  address, with a honeypot field for bots and moderation from the terminal.
+  address, with a honeypot field for bots. Signed in, entries can be hidden or
+  deleted from the window itself or from the terminal.
 - A visitor counter keyed by that same hash, which stores nothing else about
   anyone
 - Live widgets: the time in Austin, GitHub contributions and the latest

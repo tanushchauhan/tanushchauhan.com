@@ -1018,7 +1018,11 @@ body.resizing * {
 }
 
 .gb-entry header {
-  @apply flex items-baseline justify-between gap-3;
+  @apply flex items-baseline gap-2;
+}
+
+.gb-entry header time {
+  @apply ml-auto;
 }
 
 .gb-entry strong {
@@ -1031,6 +1035,37 @@ body.resizing * {
 
 .gb-entry p {
   @apply mt-1 text-sm break-words whitespace-pre-wrap text-neutral-700 dark:text-neutral-300;
+}
+
+.gb-entry.hidden-entry {
+  @apply opacity-55;
+}
+
+.gb-tag {
+  @apply rounded-full bg-ink/10 px-1.5 py-px text-[10px] tracking-wide uppercase text-ink/60;
+}
+
+/* the moderation buttons sit at the end of the header row and only appear
+   under the pointer, so a signed-in read is not a wall of controls */
+.gb-actions {
+  @apply ml-auto flex shrink-0 items-center gap-1 opacity-0 transition-opacity;
+}
+
+.gb-entry:hover .gb-actions,
+.gb-actions:focus-within {
+  @apply opacity-100;
+}
+
+.gb-actions button {
+  @apply rounded-md p-1 text-ink/55 hover:bg-ink/10 hover:text-ink/85;
+}
+
+.gb-actions svg {
+  @apply size-3.5;
+}
+
+.gb-actions .gb-delete.armed {
+  @apply bg-rose-500/15 px-1.5 text-[11px] font-medium text-rose-600 dark:text-rose-400;
 }
 
 #contact {
