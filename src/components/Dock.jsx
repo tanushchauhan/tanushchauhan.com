@@ -1,7 +1,6 @@
 import { useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { Tooltip } from "react-tooltip";
 import clsx from "clsx";
 import { dockApps } from "#constants";
 import useWindowStore, { FINDER_KEYS } from "#store/window.js";
@@ -103,15 +102,17 @@ const Dock = () => {
       <div ref={dockRef} className="dock-container">
         {dockApps.map((app, i) => (
           // the slot takes the click, so it still works under a raised icon
-          <div key={app.id} className="dock-slot" onClick={() => activateApp(app)}>
+          <div
+            key={app.id}
+            className="dock-slot"
+            data-label={app.name}
+            onClick={() => activateApp(app)}
+          >
             {i === dockApps.length - 1 && <span className="dock-divider" />}
             <button
               type="button"
               className="dock-icon"
               aria-label={app.name}
-              data-tooltip-id="dock-tooltip"
-              data-tooltip-content={app.name}
-              data-tooltip-delay-show={150}
               disabled={!app.canOpen}
             >
               <AppIcon
@@ -129,15 +130,12 @@ const Dock = () => {
           const meta = MIN_WINDOW_META[key] ?? { icon: "txt", name: key };
           const name = win.data?.name ?? meta.name;
           return (
-            <div key={key} className="dock-slot" onClick={() => restoreWindow(key)}>
+            <div key={key} className="dock-slot" data-label={name} onClick={() => restoreWindow(key)}>
               <button
                 type="button"
                 className="dock-icon min-tile"
                 data-min-tile={key}
                 aria-label={`Restore ${name}`}
-                data-tooltip-id="dock-tooltip"
-                data-tooltip-content={name}
-                data-tooltip-delay-show={150}
               >
                 <span className="mini-bar">
                   <i />
@@ -149,8 +147,6 @@ const Dock = () => {
             </div>
           );
         })}
-
-        <Tooltip id="dock-tooltip" place="top" className="tooltip" />
       </div>
     </section>
   );
