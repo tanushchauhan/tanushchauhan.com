@@ -9,7 +9,7 @@ export const navIcons = [
   { id: 2, img: "/icons/search.svg" },
 ];
 
-/** Each wallpaper is a light and dark pair. The first is the default. */
+/** Each wallpaper is a light and dark pair. */
 export const wallpapers = [
   {
     id: "austin",
@@ -36,7 +36,7 @@ export const wallpapers = [
   },
 ];
 
-export const DEFAULT_WALLPAPER = wallpapers[0].id;
+export const DEFAULT_WALLPAPER = "graphite";
 
 const wallpaperById = (id) => wallpapers.find((w) => w.id === id) ?? wallpapers[0];
 

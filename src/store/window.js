@@ -43,7 +43,7 @@ const useWindowStore = create(
       spotlightOpen: false,
       controlCenterOpen: false,
       theme: "auto", // "auto" | "light" | "dark"
-      glass: "regular", // "clear" | "regular" | "tinted"
+      glass: "tinted", // "clear" | "regular" | "tinted"
       wallpaper: DEFAULT_WALLPAPER,
       folderPos: {}, // desktop folder drag offsets, keyed by project id
       // widget drag offsets, keyed by layout and then by widget id, since an

@@ -1498,6 +1498,14 @@ body.resizing * {
   }
 }
 
+/* on a wallpaper that is pale where the icons sit, the ink flips with the
+   menu bar's */
+:root[data-bar="dark"] #home li.folder p {
+  @apply text-neutral-900;
+  -webkit-text-stroke-color: rgb(255 255 255 / 0.75);
+  text-shadow: 0 1px 2px rgb(255 255 255 / 0.55);
+}
+
 /* ---------------- boot screen ---------------- */
 #boot {
   @apply fixed inset-0 z-[10000] flex flex-col items-center justify-center gap-10 bg-black;
@@ -1664,6 +1672,12 @@ body.resizing * {
     -webkit-text-stroke: 3px rgb(0 0 0 / 0.6);
     text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
   }
+}
+
+:root[data-bar="dark"] .m-app p {
+  @apply text-neutral-900;
+  -webkit-text-stroke-color: rgb(255 255 255 / 0.7);
+  text-shadow: 0 1px 2px rgb(255 255 255 / 0.5);
 }
 
 .m-dock {

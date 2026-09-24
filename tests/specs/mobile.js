@@ -85,7 +85,7 @@ export const run = async ({ browser, t }) => {
   t.check("all three wallpapers are listed", (await page.$$(".m-swatch")).length === 3);
 
   const paper = () => page.$eval("#mobile", (el) => getComputedStyle(el).backgroundImage);
-  t.check("it starts on austin", (await paper()).includes("austin"));
+  t.check("it starts on the default wallpaper", (await paper()).includes("graphite"));
 
   await page.click(".m-settings:nth-of-type(3) li:nth-child(2)");
   await page.waitForTimeout(700);

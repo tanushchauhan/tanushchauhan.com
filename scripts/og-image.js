@@ -42,7 +42,7 @@ const state = JSON.stringify({
     },
     nextZIndex: 1010,
     theme: "light",
-    wallpaper: "austin",
+    wallpaper: "graphite",
     folderPos: {},
     widgetPos: {},
     soundOn: false,
