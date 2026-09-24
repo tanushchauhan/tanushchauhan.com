@@ -2,11 +2,8 @@
 
 [![CI](https://github.com/tanushchauhan/tanushchauhan.com/actions/workflows/ci.yml/badge.svg)](https://github.com/tanushchauhan/tanushchauhan.com/actions/workflows/ci.yml)
 
-A personal site that does not behave like a website. It boots like a Mac, and
-then it is one: windows, a Finder, a terminal that actually runs commands, and
-a row of widgets fed by a small API. Built by
-[Tanush Chauhan](https://github.com/tanushchauhan) (CS Honors + Math @ UT
-Austin), and live at [tanushchauhan.com](https://tanushchauhan.com).
+An interactive personal site featuring a Mac-inspired desktop, Finder, functional
+terminal, and API-powered widgets. Live at [tanushchauhan.com](https://tanushchauhan.com).
 
 ## What is inside
 
