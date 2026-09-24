@@ -57,11 +57,21 @@ export const flush = () => Promise.all([...pending]);
 /** A page with the API stubbed. The seed is only written into empty storage, so reloads keep state. */
 export const openPage = async (
   browser,
-  { viewport = DESKTOP, phone = false, authed = true, state, colorScheme = "light", building } = {}
+  {
+    viewport = DESKTOP,
+    phone = false,
+    authed = true,
+    state,
+    colorScheme = "light",
+    reducedMotion,
+    settle = true,
+    building,
+  } = {}
 ) => {
   const page = await browser.newPage({
     viewport,
     colorScheme,
+    ...(reducedMotion ? { reducedMotion } : {}),
     ...(phone
       ? { isMobile: true, hasTouch: true, deviceScaleFactor: 3, userAgent: IPHONE_UA }
       : {}),
@@ -88,7 +98,7 @@ export const openPage = async (
   }
 
   await page.goto(globalThis.__TEST_URL__, { waitUntil: "domcontentloaded" });
-  await settled(page);
+  if (settle) await settled(page);
   return page;
 };
 
