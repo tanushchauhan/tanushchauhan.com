@@ -55,6 +55,10 @@
   /* the menu bar has no background, so its ink follows the wallpaper (data-bar) */
   --bar-fg: rgb(255 255 255 / 0.92);
   --bar-invert: 1;
+
+  /* scrollbars and native controls are drawn by the browser, so tell it which
+     way round the page is */
+  color-scheme: light;
 }
 
 :root[data-glass="clear"] {
@@ -68,6 +72,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --glass-tint: 30 30 34;
   --glass-ink: 255 255 255;
   --glass-alpha: 0.56;
@@ -793,9 +798,11 @@ body.resizing * {
   @apply relative flex min-h-0 flex-1 flex-col;
 }
 
+/* the terminal is dark under either appearance, and so is its scrollbar */
 .term-body {
   @apply min-h-0 flex-1 cursor-text overflow-y-auto bg-neutral-900 p-4 text-[13px] leading-relaxed text-neutral-100;
   font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  color-scheme: dark;
 }
 
 .term-body .prompt {
