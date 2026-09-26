@@ -1,0 +1,217 @@
+@import "tailwindcss" source(none);
+@source "../research";
+
+@font-face {
+  font-family: "Newsreader";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/newsreader.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Newsreader";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/newsreader-italic.woff2") format("woff2");
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-serif: "Newsreader", Georgia, serif;
+  --font-label: ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+:root {
+  --paper: #faf7f2;
+  --ink: #1b1a17;
+  --muted: #6b655d;
+  --rule: #e3dbcf;
+  --accent: #b1480f;
+}
+
+:root.dark {
+  --paper: #14120f;
+  --ink: #ece6dc;
+  --muted: #968f86;
+  --rule: #2b2721;
+  --accent: #e0803c;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+}
+
+html {
+  @apply scroll-smooth;
+}
+
+body {
+  @apply bg-paper font-serif text-ink antialiased;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+#paper {
+  @apply mx-auto grid max-w-5xl gap-12 px-6 py-12 lg:grid-cols-[15rem_minmax(0,1fr)] lg:gap-16 lg:py-20;
+}
+
+/* ---------------- the rail ---------------- */
+
+.rail {
+  @apply lg:sticky lg:top-20 lg:self-start;
+}
+
+.rail .portrait {
+  @apply mb-5 w-28 rounded-sm lg:w-36;
+}
+
+.rail h1 {
+  @apply text-[1.65rem] leading-tight font-semibold tracking-tight;
+}
+
+.rail .role {
+  @apply mt-1 font-label text-[0.8rem] leading-snug text-muted;
+}
+
+.rail nav {
+  @apply mt-6 flex flex-wrap gap-x-4 gap-y-1 font-label text-[0.82rem] lg:flex-col lg:gap-1;
+}
+
+.rail nav a {
+  @apply text-muted transition-colors hover:text-accent;
+}
+
+.rail .links {
+  @apply mt-6 flex flex-wrap items-center gap-3 font-label text-[0.82rem];
+}
+
+.rail .links a {
+  @apply text-muted underline decoration-rule underline-offset-4 transition-colors;
+  @apply hover:text-accent hover:decoration-accent;
+}
+
+/* ---------------- the column ---------------- */
+
+.column {
+  @apply max-w-[38rem];
+}
+
+.lede p + p {
+  @apply mt-4;
+}
+
+.lede a,
+.entry a,
+.about a {
+  @apply underline decoration-rule underline-offset-[3px] transition-colors;
+  @apply hover:text-accent hover:decoration-accent;
+}
+
+.actions {
+  @apply mt-6 flex flex-wrap items-center gap-5 font-label text-[0.85rem];
+}
+
+.actions a:first-child {
+  @apply font-semibold text-accent;
+}
+
+.actions a {
+  @apply text-muted hover:text-accent;
+}
+
+section {
+  @apply mt-14 scroll-mt-8;
+}
+
+section > h2 {
+  @apply mb-6 font-label text-[0.72rem] font-semibold tracking-[0.14em] text-muted uppercase;
+}
+
+/* ---------------- entries ---------------- */
+
+.entry {
+  @apply grid gap-4 border-t border-rule py-6 sm:grid-cols-[7rem_minmax(0,1fr)];
+}
+
+.entry:last-child {
+  @apply border-b;
+}
+
+.entry .figure {
+  @apply hidden aspect-4/3 w-full overflow-hidden rounded-sm bg-rule/40 sm:block;
+}
+
+.entry .figure img {
+  @apply size-full object-cover;
+}
+
+.entry h3 {
+  @apply text-[1.05rem] leading-snug font-semibold;
+}
+
+.entry .authors {
+  @apply mt-1 text-[0.95rem] text-muted;
+}
+
+.entry .authors strong {
+  @apply font-semibold text-ink;
+}
+
+.entry .venue {
+  @apply mt-1 font-label text-[0.8rem] text-muted;
+}
+
+.entry .venue .tag {
+  @apply ml-2 rounded-full bg-accent/10 px-2 py-px text-[0.7rem] text-accent;
+}
+
+.entry .summary {
+  @apply mt-3 text-[0.97rem];
+}
+
+.entry .note {
+  @apply mt-2 text-[0.9rem] text-muted italic;
+}
+
+.entry .links {
+  @apply mt-3 flex flex-wrap gap-4 font-label text-[0.8rem];
+}
+
+.entry .links a {
+  @apply text-muted underline decoration-rule underline-offset-4 hover:text-accent hover:decoration-accent;
+}
+
+/* ---------------- news ---------------- */
+
+.news {
+  @apply space-y-2;
+}
+
+.news li {
+  @apply grid gap-x-4 border-b border-rule pb-2 text-[0.97rem] sm:grid-cols-[5rem_minmax(0,1fr)];
+}
+
+.news time {
+  @apply font-label text-[0.78rem] leading-[1.75] tabular-nums text-muted;
+}
+
+/* ---------------- footer ---------------- */
+
+footer {
+  @apply mt-16 border-t border-rule pt-5 font-label text-[0.8rem] text-muted;
+}
+
+footer a {
+  @apply underline decoration-rule underline-offset-4 hover:text-accent hover:decoration-accent;
+}
+
+.draft {
+  @apply rounded-sm bg-accent/5 px-2 py-px text-accent;
+}
