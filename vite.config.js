@@ -22,15 +22,6 @@ const commit = () => {
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  // two pages: the desktop, and the research page that shares its data
-  build: {
-    rollupOptions: {
-      input: {
-        main: fileURLToPath(new URL("./index.html", import.meta.url)),
-        research: fileURLToPath(new URL("./research.html", import.meta.url)),
-      },
-    },
-  },
   define: {
     __BUILD__: JSON.stringify({
       commit: commit(),

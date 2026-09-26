@@ -1,5 +1,3 @@
-import { papers } from "./research.js";
-
 export const navLinks = [
   { id: 1, name: "Projects", type: "finder" },
   { id: 2, name: "Papers", type: "publications" },
@@ -247,43 +245,6 @@ export const gallery = [
     focus: "top",
   },
 ];
-
-/** One paper as a Finder folder: the write-up, then wherever it lives online. */
-const paperFolder = (paper, index) => ({
-  id: paper.id,
-  type: paper.id,
-  name: `${paper.short} · ${paper.venueShort} ${paper.year}`,
-  icon: "folder",
-  kind: "folder",
-  position: index === 0 ? "top-4 left-4" : "top-4 left-32",
-  children: [
-    {
-      id: `${paper.id}-paper`,
-      name: "paper.txt",
-      icon: "txt",
-      kind: "file",
-      fileType: "txt",
-      position: "top-4 left-4",
-      data: {
-        name: `${paper.short} · paper.txt`,
-        subtitle: paper.subtitle,
-        image: paper.image,
-        description: [`${paper.title}.`, paper.authors, paper.venueLine, paper.summary, paper.note].filter(
-          Boolean
-        ),
-      },
-    },
-    ...paper.links.map((link, j) => ({
-      id: `${paper.id}-link-${j}`,
-      name: link.label,
-      icon: link.label.includes("github") ? "/icons/github.svg" : "/icons/file.svg",
-      kind: "link",
-      fileType: "url",
-      href: link.href,
-      position: j === 0 ? "top-4 left-32" : "top-4 left-60",
-    })),
-  ],
-});
 
 const project = (id, name, windowPosition, position, about, links = []) => ({
   id,
@@ -564,9 +525,86 @@ export const locations = {
     name: "Publications",
     icon: "/icons/file.svg",
     kind: "folder",
-    children: papers.map((paper, i) => paperFolder(paper, i)),
+    children: [
+      {
+        id: "stars",
+        type: "stars",
+        name: "STARS · CoRL 2026",
+        icon: "folder",
+        kind: "folder",
+        position: "top-4 left-4",
+        children: [
+          {
+            id: "stars-corl-2026",
+            name: "paper.txt",
+            icon: "txt",
+            kind: "file",
+            fileType: "txt",
+            position: "top-4 left-4",
+            data: {
+              name: "STARS · paper.txt",
+              subtitle: "Accepted at CoRL 2026",
+              image: "/images/posters/poster-corl.svg",
+              description: [
+                "STARS: From Spatiotemporal Dynamics to Social Representations in Human-Robot Interaction.",
+                "Tsoi, N., Munje, M. J., Oberoi, T., Maheshwari, R., Zheng, P., Chauhan, T., Stone, P., Biswas, J.",
+                "Conference on Robot Learning (CoRL), 2026.",
+                "How a robot can read social context from the way people move. I built the control baselines the learned representations were measured against: a raw-feature probe and a frozen MLP-autoencoder encoder, over 260 Optuna trials and 10-seed sweeps.",
+                "The paper is not online yet. The proceedings are published with the conference, November 9 to 12 in Austin.",
+              ],
+            },
+          },
+        ],
+      },
+      {
+        id: "memeqa",
+        type: "memeqa",
+        name: "MemeQA · ACL 2025",
+        icon: "folder",
+        kind: "folder",
+        position: "top-4 left-32",
+        children: [
+          {
+            id: "memeqa-acl-2025",
+            name: "paper.txt",
+            icon: "txt",
+            kind: "file",
+            fileType: "txt",
+            position: "top-4 left-4",
+            data: {
+              name: "MemeQA · paper.txt",
+              subtitle: "Published at ACL 2025",
+              image: "/images/posters/poster-acl.svg",
+              description: [
+                "MemeQA: Holistic Evaluation for Meme Understanding.",
+                "Nguyen, K. P. N., Li, T., Zhou, D. L., ..., Chauhan, T., et al.",
+                "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (ACL), 2025.",
+                "A 9,000+ question multiple-choice benchmark for meme comprehension, built with Prof. Vincent Ng's group at UT Dallas. We benchmarked multimodal models against human baselines to measure the gap the dataset exists to close.",
+              ],
+            },
+          },
+          {
+            id: "memeqa-link",
+            name: "aclanthology.org",
+            icon: "/icons/file.svg",
+            kind: "link",
+            fileType: "url",
+            href: "https://aclanthology.org/2025.acl-long.927/",
+            position: "top-4 left-32",
+          },
+          {
+            id: "memeqa-dataset",
+            name: "github.com",
+            icon: "/icons/github.svg",
+            kind: "link",
+            fileType: "url",
+            href: "https://github.com/npnkhoi/memeqa",
+            position: "top-4 left-60",
+          },
+        ],
+      },
+    ],
   },
-
   about: {
     id: "about",
     type: "about",

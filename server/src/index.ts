@@ -92,11 +92,6 @@ app.get("*", async (c, next) => {
   return next();
 });
 
-// the research page is its own document rather than part of the desktop
-for (const path of ["/research", "/research/"]) {
-  app.get(path, serveStatic({ path: `${DIST}/research.html` }));
-}
-
 app.get("*", serveStatic({ path: `${DIST}/index.html` }));
 
 await runMigrations();
