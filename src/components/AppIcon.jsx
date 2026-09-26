@@ -18,73 +18,42 @@ const tooth = (inner, outer, width) => (
   <rect x={32 - width / 2} y={32 - outer} width={width} height={outer - inner} rx={width / 2} />
 );
 
-const PETALS = ["#f0922e", "#f6cd45", "#9fd342", "#5dcf7b", "#4aa7ef", "#9f8fdf", "#ec76b1", "#ea6461"];
-
 const GLYPHS = {
-  finder: (id) => (
+  // a stack of sheets: the projects folder, not any one document
+  finder: () => (
     <>
-      <defs>
-        <linearGradient id={`${id}-card`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#fdfeff" />
-          <stop offset="1" stopColor="#e2effb" />
-        </linearGradient>
-      </defs>
+      <g fill="var(--ic-glyph, #ffffff)">
+        <rect x="12" y="14" width="34" height="26" rx="4" opacity=".45" />
+        <rect x="17" y="21" width="34" height="26" rx="4" opacity=".7" />
+        <rect x="22" y="28" width="30" height="24" rx="4" />
+      </g>
+      <g {...round} style={{ stroke: "var(--ic-line, #3b2f8f)" }} strokeWidth="2.2">
+        <path d="M28 36h18M28 43h12" />
+      </g>
+    </>
+  ),
+
+  // a bookmark, for the reading list
+  safari: () => (
+    <>
       <path
-        d="M34.6 5H50a9.3 9.3 0 0 1 9.3 9.3v35.3a9.3 9.3 0 0 1-9.3 9.3h-9.8c-3 0-4.6-2.3-5-5.9l-2.7-16.4h-4.9c-1.3 0-1.7-.9-1.6-2.3.9-10.1 3.6-20.7 8.6-29.3z"
-        style={{ fill: `var(--ic-card, url(#${id}-card))`, stroke: "var(--ic-edge, #2358c8)" }}
-        strokeWidth=".5"
+        d="M20 10h24a3 3 0 0 1 3 3v40a1.6 1.6 0 0 1-2.5 1.3L32 45.4 19.5 54.3A1.6 1.6 0 0 1 17 53V13a3 3 0 0 1 3-3z"
+        fill="var(--ic-glyph, #ffffff)"
       />
-      <g {...round} style={{ stroke: "var(--ic-line, #0c0c0e)" }} strokeWidth="2.4">
-        <path d="M17.8 20v5.6M43.9 20v5.6" />
-        <path d="M13.7 42.9Q31 56.1 48 42.9" />
-      </g>
+      <path d="M26 22h12" {...round} style={{ stroke: "var(--ic-line, #0d5b6b)" }} strokeWidth="2.6" />
     </>
   ),
 
-  safari: (id) => (
-    <>
-      <defs>
-        <linearGradient id={`${id}-dial`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#58b6f0" />
-          <stop offset="1" stopColor="#2f6df2" />
-        </linearGradient>
-      </defs>
-      <circle
-        cx="32"
-        cy="32"
-        r="25.8"
-        style={{ fill: `var(--ic-dial, url(#${id}-dial))`, stroke: "var(--ic-edge, #7fd6ff)" }}
-        strokeWidth=".5"
-      />
-      <g {...round} style={{ stroke: "var(--ic-tick, rgb(255 255 255 / 0.6))" }}>
-        {around(36, (i) =>
-          i % 2 ? (
-            <path d="M32 8.4v2.4" strokeWidth=".9" />
-          ) : (
-            <path d="M32 8.4v4.6" strokeWidth="1.2" />
-          )
-        )}
-      </g>
-      <path d="M48.8 15.6 29.6 29.5l5.1 5.2z" style={{ fill: "var(--ic-needle, #e8352d)" }} />
-      <path d="M15.4 48.7 29.6 29.5l5.1 5.2z" style={{ fill: "var(--ic-needle-2, #f5f7fb)" }} />
-    </>
-  ),
-
+  // an aperture, for the gallery
   photos: () => (
     <>
-      {PETALS.map((c, i) => (
-        <rect
-          key={c}
-          className="petal"
-          x="24.8"
-          y="6.5"
-          width="14.4"
-          height="21.5"
-          rx="7.2"
-          style={{ fill: `var(--ic-mono, ${c})` }}
-          transform={`rotate(${i * 45} 32 32)`}
-        />
-      ))}
+      <circle cx="32" cy="32" r="21" fill="none" stroke="var(--ic-glyph, #ffffff)" strokeWidth="3.4" />
+      <g style={{ stroke: "var(--ic-glyph, #ffffff)" }} strokeWidth="3" strokeLinecap="round">
+        {around(6, () => (
+          <path d="M32 13.2 43 32" />
+        ))}
+      </g>
+      <circle cx="32" cy="32" r="4.6" fill="var(--ic-glyph, #ffffff)" />
     </>
   ),
 
@@ -97,25 +66,33 @@ const GLYPHS = {
 
   contact: () => (
     <>
-      <g style={{ opacity: "var(--ic-tab-opacity, 1)" }}>
-        <rect x="56.3" y="0" width="7.7" height="21.4" style={{ fill: "var(--ic-mono, #52bdf5)" }} />
-        <rect x="56.3" y="21.4" width="7.7" height="21.2" style={{ fill: "var(--ic-mono, #ef8b33)" }} />
-        <rect x="56.3" y="42.6" width="7.7" height="21.4" style={{ fill: "var(--ic-mono, #5fd955)" }} />
-        <path d="M56.2 0v64" style={{ stroke: "var(--ic-edge, #2b3b48)" }} strokeWidth=".45" />
+      <rect
+        x="8"
+        y="14"
+        width="48"
+        height="36"
+        rx="5"
+        fill="var(--ic-glyph, #ffffff)"
+      />
+      <g style={{ fill: "var(--ic-line, #39414b)" }}>
+        <circle cx="24" cy="28.5" r="6.2" />
+        <path d="M14.5 43.4c1.4-5.2 17.6-5.2 19 0 .3 1.7-3.9 2.9-9.5 2.9s-9.8-1.2-9.5-2.9z" />
       </g>
-      <circle cx="28.1" cy="32" r="20.4" style={{ fill: "var(--ic-soft, #aaa899)" }} />
-      <circle cx="28.1" cy="27.2" r="8.2" fill="currentColor" />
-      <path d="M15.4 45.5c2.6-5.5 23-5.5 25.6 0 .5 3-5 5.8-12.8 5.8s-13.3-2.8-12.8-5.8z" fill="currentColor" />
+      <g {...round} style={{ stroke: "var(--ic-line, #39414b)" }} strokeWidth="2.4" opacity=".55">
+        <path d="M39 27h11M39 34h11M39 41h7" />
+      </g>
     </>
   ),
 
   guestbook: () => (
     <>
-      <ellipse cx="32" cy="30.8" rx="23.8" ry="19.4" fill="currentColor" />
       <path
-        d="M14.2 38.4c1.8 4.6.4 8.8-2.4 11.2-.6.5-.3 1.2.5 1.1 3.1-.3 5.7-1.4 7.9-3.3z"
-        fill="currentColor"
+        d="M14 12h36a8 8 0 0 1 8 8v20a8 8 0 0 1-8 8H31.5L18 58.2A1.4 1.4 0 0 1 15.8 57l.2-9H14a8 8 0 0 1-8-8V20a8 8 0 0 1 8-8z"
+        fill="var(--ic-glyph, #ffffff)"
       />
+      <g {...round} style={{ stroke: "var(--ic-line, #8e2f53)" }} strokeWidth="3">
+        <path d="M17 24h30M17 33h22" />
+      </g>
     </>
   ),
 
@@ -168,30 +145,20 @@ const SHAPES = {
   ),
   trash: (id, full) => (
     <>
-      <defs>
-        <linearGradient id={`${id}-body`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#8b8b90" />
-          <stop offset="1" stopColor="#e9e9ed" />
-        </linearGradient>
-        <linearGradient id={`${id}-well`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#a4a4a9" />
-          <stop offset="1" stopColor="#cfcfd3" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M8.8 11.5h46.4l-3.4 42a4.6 4.6 0 0 1-4.6 4.3H16.8a4.6 4.6 0 0 1-4.6-4.3z"
-        fill={`url(#${id}-body)`}
-      />
-      <rect x="8.6" y="7" width="46.8" height="9" rx="4.5" fill="#f5f5f7" />
-      <rect x="10" y="8.3" width="44" height="6.4" rx="3.2" fill={`url(#${id}-well)`} />
       {full && (
-        <g stroke="#b9b9c0" strokeWidth=".5" strokeLinejoin="round">
-          <path d="M14.5 13.6c-.6-3.4 1.3-6.8 4.9-7.6 2.1-2.6 6.4-2.4 8.2.3 2.8-.4 5 1.7 5 4.4l.4 2.9z" fill="#fbfbfc" />
-          <path d="M31.4 13.6c-.5-4.2 1.6-8.4 5.6-9.4 3-.8 5.6.6 6.7 2.9 3.2-.2 5.7 2.4 5.5 5.3l-.2 1.2z" fill="#f2f2f4" />
-          <path d="M24.8 13.6c.2-3 2.6-5 5.4-4.7 2.2.2 3.9 2 4.1 4.2l.1.5z" fill="#e9e9ee" />
-          <path d="M21 6.8l2.4 2.1M39.2 6.2l-1.1 3.3M44.6 8.8l-2.7 1.8" fill="none" />
+        <g fill="#f4f4f6" stroke="#c6c6cd" strokeWidth=".6" strokeLinejoin="round">
+          <path d="M16.5 12c-.8-3.2 1.2-6.4 4.6-6.9 2.2-2.3 6.1-1.9 7.6.8 2.6-.3 4.6 1.6 4.6 4.1l.3 2z" />
+          <path d="M32 12c-.4-3.8 1.6-7.4 5.2-8.2 2.7-.6 5 .7 5.9 2.8 2.8-.1 5 2.2 4.8 4.8l-.1 .6z" />
         </g>
       )}
+      <rect x="9.5" y="9.5" width="45" height="7.4" rx="3.7" fill="var(--ic-bin-lid, #b9b9c1)" />
+      <path
+        d="M13.5 18.5h37l-2.7 35a4.4 4.4 0 0 1-4.4 4.1H20.6a4.4 4.4 0 0 1-4.4-4.1z"
+        fill="var(--ic-bin, #d2d2d8)"
+      />
+      <g {...round} style={{ stroke: "var(--ic-bin-line, #9a9aa3)" }} strokeWidth="2.2">
+        <path d="M24 26.5 25.2 49M32 26.5V49M40 26.5 38.8 49" />
+      </g>
     </>
   ),
 };

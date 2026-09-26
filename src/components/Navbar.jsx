@@ -30,9 +30,9 @@ const Navbar = () => {
       <div className="nav-left">
         <img
           src="/images/logo.svg"
-          alt="About This Mac"
+          alt="About this desktop"
           className="bar-glyph h-4 cursor-pointer"
-          title="About This Mac"
+          title="About this desktop"
           onClick={() => openWindow("about")}
         />
         <p className="text-sm font-bold">Tanush's Portfolio</p>
@@ -77,7 +77,7 @@ const Navbar = () => {
               type="button"
               id="control-center-button"
               className={clsx("cc-trigger", controlCenterOpen && "on")}
-              aria-label="Control Center"
+              aria-label="Settings"
               aria-expanded={controlCenterOpen}
               onClick={() => setControlCenter(!controlCenterOpen)}
             >

@@ -50,7 +50,7 @@ const Finder = ({ windowKey }) => {
     openFile(item, openWindow);
   };
 
-  // click selects, double-click opens, Space opens Quick Look
+  // click selects, double-click opens, Space peeks
   const items = activeLocation.children ?? [];
   const [selectedId, setSelectedId] = useState(null);
   const selected = items.find((item) => item.id === selectedId) ?? null;
@@ -92,7 +92,7 @@ const Finder = ({ windowKey }) => {
         openItem(selected);
         return;
       }
-      // with Quick Look open, the preview follows the selection
+      // with a peek open, the preview follows the selection
       const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
       if (step && items.length) {
         e.preventDefault();

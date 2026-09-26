@@ -248,7 +248,7 @@ const AboutApp = () => {
   );
 };
 
-/* The phone's Control Center: the same settings as a list. */
+/* The phone's settings: the same controls as a list. */
 const SettingsApp = () => {
   const { theme, setTheme, setGlass, setWallpaper, soundOn, toggleSound } = useWindowStore();
   const { glass, wallpaper } = useAppearance();

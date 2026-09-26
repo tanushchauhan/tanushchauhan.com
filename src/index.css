@@ -463,18 +463,21 @@ nav time {
 }
 
 .app-icon[data-icon="finder"] {
-  --ic-a: #5ec5fa;
-  --ic-b: #4796f1;
+  --ic-a: #8b7cf8;
+  --ic-b: #5b44d6;
+  --ic-glyph: #ffffff;
 }
 
 .app-icon[data-icon="safari"] {
-  --ic-a: #ffffff;
-  --ic-b: #e8e8ed;
+  --ic-a: #4ecac6;
+  --ic-b: #159a9c;
+  --ic-glyph: #ffffff;
 }
 
 .app-icon[data-icon="photos"] {
-  --ic-a: #ffffff;
-  --ic-b: #ececf0;
+  --ic-a: #ffb457;
+  --ic-b: #ef6a3c;
+  --ic-glyph: #ffffff;
 }
 
 .app-icon[data-icon="terminal"] {
@@ -484,14 +487,15 @@ nav time {
 }
 
 .app-icon[data-icon="contact"] {
-  --ic-a: #e0decd;
-  --ic-b: #c9c6b3;
+  --ic-a: #7d8b9c;
+  --ic-b: #4a5665;
+  --ic-glyph: #ffffff;
 }
 
 .app-icon[data-icon="guestbook"] {
-  --ic-a: #8aee80;
-  --ic-b: #5ccd52;
-  --ic-glyph: #f7fcf5;
+  --ic-a: #f4768f;
+  --ic-b: #d84668;
+  --ic-glyph: #ffffff;
 }
 
 .app-icon[data-icon="settings"] {
@@ -1302,7 +1306,7 @@ body.resizing * {
   @apply mt-4 text-[10px] text-ink/35;
 }
 
-/* ---------------- quick look ---------------- */
+/* ---------------- peek ---------------- */
 #quick-look {
   @apply fixed top-1/2 left-1/2 z-[7500] flex max-h-[76vh] w-[560px] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-window;
   @apply glass;

@@ -4,7 +4,7 @@ import useWindowStore from "#store/window.js";
 import AppIcon from "./AppIcon.jsx";
 import { openFile } from "../utils/files.js";
 
-/* Quick Look: a preview of the selected Finder item. */
+/* Peek: a preview of the selected item, without opening a window for it. */
 const Preview = ({ item }) => {
   if (item.kind === "folder") {
     const children = item.children ?? [];
@@ -90,7 +90,7 @@ const QuickLook = () => {
     : undefined;
 
   return (
-    <div id="quick-look" role="dialog" aria-label={`Quick Look: ${item.name}`} style={from}>
+    <div id="quick-look" role="dialog" aria-label={`Peek: ${item.name}`} style={from}>
       <header>
         <button type="button" className="ql-close" aria-label="Close" onClick={() => setQuickLook(null)}>
           <X />

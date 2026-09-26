@@ -5,14 +5,14 @@ import useWindowStore from "#store/window.js";
 import AppIcon from "./AppIcon.jsx";
 
 const APP_ENTRIES = [
-  { title: "Projects", subtitle: "Finder", icon: "finder", app: "finder" },
-  { title: "Highlights", subtitle: "Safari", icon: "safari", app: "safari" },
+  { title: "Projects", subtitle: "files", icon: "finder", app: "finder" },
+  { title: "Highlights", subtitle: "reading list", icon: "safari", app: "safari" },
   { title: "Gallery", subtitle: "Photos", icon: "photos", app: "photos" },
   { title: "Terminal", subtitle: "run some commands", icon: "terminal", app: "terminal" },
   { title: "Contact", subtitle: "get in touch", icon: "contact", app: "contact" },
   { title: "Guestbook", subtitle: "leave a note", icon: "guestbook", app: "guestbook" },
   { title: "Publications", subtitle: "the papers", icon: "/icons/file.svg", location: "publications" },
-  { title: "About This Mac", subtitle: "system info", icon: "/images/avatar-tanush.svg", app: "about" },
+  { title: "About this desktop", subtitle: "system info", icon: "/images/avatar-tanush.svg", app: "about" },
 ];
 
 const Spotlight = () => {
@@ -135,9 +135,9 @@ const Spotlight = () => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Spotlight Search"
+            placeholder="Search"
             spellCheck={false}
-            aria-label="Spotlight search"
+            aria-label="Search"
           />
           <kbd>esc</kbd>
         </div>

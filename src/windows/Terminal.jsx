@@ -325,7 +325,7 @@ export const TerminalBody = () => {
         "  snake            arrows to move, esc to quit",
         "  clear            clear terminal",
         "",
-        "  login            sign in with a passkey (Touch ID / Face ID)",
+        "  login            sign in with a passkey (fingerprint or face)",
         "  logout           end the session",
         "  passkeys         list registered passkeys",
         "  building [text]  read or set the 'now building' widget",

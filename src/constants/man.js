@@ -80,7 +80,7 @@ export const MAN = {
   login: page(
     "login",
     "Sign in with a passkey.",
-    "Touch ID or Face ID. There is one account and it is mine, but the prompt is real.",
+    "A fingerprint or a face. There is one account and it is mine, but the prompt is real.",
     "`sudo` does the same thing."
   ),
 

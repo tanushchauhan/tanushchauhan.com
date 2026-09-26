@@ -25,7 +25,7 @@ const DesktopMenu = () => {
     const onKey = (e) => e.key === "Escape" && setMenu(null);
 
     document.addEventListener("contextmenu", onContextMenu);
-    // pointerdown in the capture phase, as in the Control Center
+    // pointerdown in the capture phase, as in the settings panel
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("keydown", onKey);
     return () => {

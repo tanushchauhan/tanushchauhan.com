@@ -5,6 +5,10 @@
 An interactive personal site featuring a Mac-inspired desktop, Finder, functional
 terminal, and API-powered widgets. Live at [tanushchauhan.com](https://tanushchauhan.com).
 
+> An independent homage to the desktop metaphor. Not affiliated with, endorsed
+> by, or connected to Apple Inc. macOS is a trademark of Apple Inc. Every icon,
+> wallpaper and sound here is drawn or synthesized for this project.
+
 ## What is inside
 
 **The desktop**

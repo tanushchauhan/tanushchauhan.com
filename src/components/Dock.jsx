@@ -18,7 +18,7 @@ const MIN_WINDOW_META = {
   guestbook: { icon: "guestbook", name: "Guestbook" },
   txtFile: { icon: "txt", name: "Text" },
   imgFile: { icon: "image", name: "Image" },
-  about: { icon: "/images/avatar-tanush.svg", name: "About This Mac" },
+  about: { icon: "/images/avatar-tanush.svg", name: "About this desktop" },
 };
 
 const Dock = () => {

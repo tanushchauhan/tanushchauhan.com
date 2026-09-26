@@ -1,6 +1,6 @@
 import { openPage, seed, win } from "../lib/harness.js";
 
-export const name = "finder: selection, quick look, back and forward";
+export const name = "finder: selection, peek, back and forward";
 
 export const run = async ({ browser, t }) => {
   const page = await openPage(browser, {
@@ -21,7 +21,7 @@ export const run = async ({ browser, t }) => {
 
   await page.keyboard.press(" ");
   await page.waitForTimeout(300);
-  t.check("space opens quick look on it", (await preview()) === "about-me.txt");
+  t.check("space peeks at it", (await preview()) === "about-me.txt");
   t.check("with the file's text in it", (await page.$eval("#quick-look", (el) => el.innerText)).includes("CS Honors"));
 
   await page.keyboard.press("ArrowRight");

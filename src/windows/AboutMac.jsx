@@ -114,7 +114,9 @@ const AboutMac = () => {
           More Info…
         </button>
 
-        <p className="fine-print">™ and © 2026 Tanush Chauhan.</p>
+        <p className="fine-print">
+          © 2026 Tanush Chauhan. An independent homage, not affiliated with or endorsed by Apple.
+        </p>
       </div>
     </>
   );

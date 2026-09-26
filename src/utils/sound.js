@@ -36,9 +36,8 @@ const RECIPES = {
   close: (ac) => tone(ac, { freq: 640, to: 380, dur: 0.13 }),
   minimize: (ac) => tone(ac, { freq: 880, to: 220, dur: 0.3, type: "triangle", vol: 0.06 }),
   restore: (ac) => tone(ac, { freq: 220, to: 880, dur: 0.25, type: "triangle", vol: 0.06 }),
-  // F#-major boot chime, a nod to the classic
   boot: (ac) =>
-    [185.0, 233.08, 277.18, 369.99].forEach((freq) =>
+    [196.0, 261.63, 329.63, 392.0].forEach((freq) =>
       tone(ac, { freq, dur: 1.6, vol: 0.05 })
     ),
 };

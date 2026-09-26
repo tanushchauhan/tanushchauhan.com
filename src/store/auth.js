@@ -39,7 +39,7 @@ const useAuthStore = create((set, get) => ({
     }
   },
 
-  /** Touch ID / Face ID login. Resolves to a short message for the terminal. */
+  /** Passkey login. Resolves to a short message for the terminal. */
   login: async () => {
     if (get().busy) return "a passkey prompt is already open.";
     set({ busy: true });
