@@ -423,7 +423,9 @@ nav time {
 .app-icon {
   @apply relative block aspect-square shrink-0 overflow-hidden;
   border-radius: 22.37%;
-  background: linear-gradient(180deg, var(--ic-a, #a0a0a8), var(--ic-b, #64646c));
+  background:
+    radial-gradient(118% 100% at 26% 2%, rgb(255 255 255 / 0.32), transparent 62%),
+    linear-gradient(168deg, var(--ic-a, #a0a0a8), var(--ic-b, #64646c));
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.5),
     inset 0 0 0 1px rgb(255 255 255 / 0.14),
@@ -457,94 +459,97 @@ nav time {
   display: none;
 }
 
-.app-icon .petal {
-  mix-blend-mode: multiply;
-  opacity: 0.92;
-}
-
 .app-icon[data-icon="finder"] {
-  --ic-a: #8b7cf8;
-  --ic-b: #5b44d6;
-  --ic-glyph: #ffffff;
+  --ic-a: #8f86ff;
+  --ic-b: #4f3bd4;
 }
 
 .app-icon[data-icon="safari"] {
-  --ic-a: #4ecac6;
-  --ic-b: #159a9c;
-  --ic-glyph: #ffffff;
+  --ic-a: #57d9cf;
+  --ic-b: #0f8f9b;
 }
 
 .app-icon[data-icon="photos"] {
-  --ic-a: #ffb457;
-  --ic-b: #ef6a3c;
-  --ic-glyph: #ffffff;
+  --ic-a: #ffc165;
+  --ic-b: #ec5f45;
 }
 
 .app-icon[data-icon="terminal"] {
-  --ic-a: #2a2a2d;
-  --ic-b: #0f0f11;
+  --ic-a: #3a3a40;
+  --ic-b: #0d0d10;
   --ic-glyph: #f2f2f4;
 }
 
 .app-icon[data-icon="contact"] {
-  --ic-a: #7d8b9c;
-  --ic-b: #4a5665;
-  --ic-glyph: #ffffff;
+  --ic-a: #8b9cb8;
+  --ic-b: #46587a;
 }
 
 .app-icon[data-icon="guestbook"] {
-  --ic-a: #f4768f;
-  --ic-b: #d84668;
-  --ic-glyph: #ffffff;
+  --ic-a: #ff8398;
+  --ic-b: #d33b60;
 }
 
 .app-icon[data-icon="settings"] {
-  --ic-a: #98989d;
-  --ic-b: #6e6e73;
+  --ic-a: #9a9aa0;
+  --ic-b: #6a6a70;
 }
 
-/* clear: frosted white tiles, white glyphs */
+/* clear: frosted tiles, with the glyph taking the appearance's ink */
 :root[data-glass="clear"] .app-icon:not([data-shape]) {
-  --ic-a: rgb(255 255 255 / 0.62);
-  --ic-b: rgb(255 255 255 / 0.3);
-  --ic-glyph: #fff;
-  --ic-line: #fff;
-  --ic-mono: #fff;
-  --ic-card: rgb(255 255 255 / 0.3);
-  --ic-edge: rgb(255 255 255 / 0.5);
-  --ic-dial: rgb(255 255 255 / 0.22);
-  --ic-tick: rgb(255 255 255 / 0.75);
-  --ic-needle: #fff;
-  --ic-needle-2: rgb(255 255 255 / 0.55);
-  --ic-soft: rgb(255 255 255 / 0.28);
-  --ic-cursor: rgb(255 255 255 / 0.6);
-  --ic-tab-opacity: 0.45;
+  --ic-a: rgb(255 255 255 / 0.66);
+  --ic-b: rgb(255 255 255 / 0.34);
+  --ic-glyph: rgb(18 16 14 / 0.78);
   -webkit-backdrop-filter: blur(10px) saturate(1.4);
   backdrop-filter: blur(10px) saturate(1.4);
 }
 
-/* tinted: dark tiles in the site's orange */
-:root[data-glass="tinted"] .app-icon:not([data-shape]) {
-  --ic-a: #a3541f;
-  --ic-b: #57280a;
-  --ic-glyph: #ffe2c6;
-  --ic-line: #ffe2c6;
-  --ic-mono: #ffe2c6;
-  --ic-card: rgb(255 226 198 / 0.22);
-  --ic-edge: rgb(255 226 198 / 0.45);
-  --ic-dial: rgb(255 226 198 / 0.18);
-  --ic-tick: rgb(255 226 198 / 0.7);
-  --ic-needle: #ffc999;
-  --ic-needle-2: rgb(255 226 198 / 0.6);
-  --ic-soft: rgb(255 226 198 / 0.25);
-  --ic-cursor: rgb(255 226 198 / 0.6);
-  --ic-tab-opacity: 0.4;
+.dark[data-glass="clear"] .app-icon:not([data-shape]) {
+  --ic-a: rgb(255 255 255 / 0.3);
+  --ic-b: rgb(255 255 255 / 0.11);
+  --ic-glyph: #ffffff;
 }
 
-/* multiply hides pale petals, so the monochrome looks stack them plainly */
-:root:is([data-glass="clear"], [data-glass="tinted"]) .app-icon .petal {
-  mix-blend-mode: normal;
-  opacity: 0.5;
+.app-icon[data-icon="trash"] {
+  --ic-bin-lid: #b9b9c1;
+  --ic-bin: #d2d2d8;
+  --ic-bin-line: #9a9aa3;
+}
+
+/* the bin sits in the dock and the sidebar, so it follows the glass too */
+:root[data-glass="clear"] .app-icon[data-icon="trash"] {
+  --ic-bin-lid: rgb(255 255 255 / 0.8);
+  --ic-bin: rgb(255 255 255 / 0.6);
+  --ic-bin-line: rgb(60 55 50 / 0.35);
+}
+
+.dark[data-glass="clear"] .app-icon[data-icon="trash"] {
+  --ic-bin-line: rgb(255 255 255 / 0.4);
+}
+
+/* tinted: one hue across the set, pale on light and deep on dark */
+:root[data-glass="tinted"] .app-icon:not([data-shape]) {
+  --ic-a: #fbe2ca;
+  --ic-b: #edbd92;
+  --ic-glyph: #7a3a10;
+}
+
+:root[data-glass="tinted"] .app-icon[data-icon="trash"] {
+  --ic-bin-lid: #e2bb95;
+  --ic-bin: #f4dcc4;
+  --ic-bin-line: #b98453;
+}
+
+.dark[data-glass="tinted"] .app-icon:not([data-shape]) {
+  --ic-a: #a35a24;
+  --ic-b: #4e2207;
+  --ic-glyph: #ffdcbb;
+}
+
+.dark[data-glass="tinted"] .app-icon[data-icon="trash"] {
+  --ic-bin-lid: #9e6033;
+  --ic-bin: #c88b58;
+  --ic-bin-line: #6d3b16;
 }
 
 /* the dock label, above the icon rather than on it, so magnification does not

@@ -5,8 +5,6 @@
 import { useId } from "react";
 import clsx from "clsx";
 
-const round = { fill: "none", strokeLinecap: "round", strokeLinejoin: "round" };
-
 const around = (n, draw) =>
   Array.from({ length: n }, (_, i) => (
     <g key={i} transform={`rotate(${(i * 360) / n} 32 32)`}>
@@ -14,149 +12,210 @@ const around = (n, draw) =>
     </g>
   ));
 
-const tooth = (inner, outer, width) => (
-  <rect x={32 - width / 2} y={32 - outer} width={width} height={outer - inner} rx={width / 2} />
+/**
+ * One flat colour with the detail cut out of it. Clear and tinted glass drop
+ * every icon to a single tint, so detail drawn as a second colour disappears;
+ * a hole shows the tile through and survives.
+ */
+const cut = (id, shape) => (
+  <>
+    <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="64" height="64">
+      {shape}
+    </mask>
+    <rect width="64" height="64" fill="var(--ic-glyph, #ffffff)" mask={`url(#${id})`} />
+  </>
 );
 
 const GLYPHS = {
-  // a stack of sheets: the projects folder, not any one document
-  finder: () => (
-    <>
-      <g fill="var(--ic-glyph, #ffffff)">
-        <rect x="12" y="14" width="34" height="26" rx="4" opacity=".45" />
-        <rect x="17" y="21" width="34" height="26" rx="4" opacity=".7" />
-        <rect x="22" y="28" width="30" height="24" rx="4" />
-      </g>
-      <g {...round} style={{ stroke: "var(--ic-line, #3b2f8f)" }} strokeWidth="2.2">
-        <path d="M28 36h18M28 43h12" />
-      </g>
-    </>
-  ),
+  // a two pane browser: the sidebar and the files beside it
+  finder: (id) =>
+    cut(
+      id,
+      <>
+        <rect x="8" y="13" width="48" height="38" rx="7" fill="#fff" />
+        <g fill="#000">
+          <rect x="26" y="20" width="23" height="24" rx="3" />
+          <rect x="13" y="21" width="8" height="3.2" rx="1.6" />
+          <rect x="13" y="28.4" width="8" height="3.2" rx="1.6" />
+          <rect x="13" y="35.8" width="8" height="3.2" rx="1.6" />
+        </g>
+      </>
+    ),
 
-  // a bookmark, for the reading list
-  safari: () => (
-    <>
-      <path
-        d="M20 10h24a3 3 0 0 1 3 3v40a1.6 1.6 0 0 1-2.5 1.3L32 45.4 19.5 54.3A1.6 1.6 0 0 1 17 53V13a3 3 0 0 1 3-3z"
-        fill="var(--ic-glyph, #ffffff)"
-      />
-      <path d="M26 22h12" {...round} style={{ stroke: "var(--ic-line, #0d5b6b)" }} strokeWidth="2.6" />
-    </>
-  ),
+  // a bookmark, starred: the reading list
+  safari: (id) =>
+    cut(
+      id,
+      <>
+        <path
+          d="M18 8h28a5 5 0 0 1 5 5v37a2 2 0 0 1-3.05 1.71L32 44.1 16.05 53.71A2 2 0 0 1 13 52V13a5 5 0 0 1 5-5z"
+          fill="#fff"
+        />
+        <path
+          d="M32 16.5 34.47 22.6 41.04 23.06 35.99 27.3 37.58 33.69 32 30.2 26.42 33.69 28.01 27.3 22.96 23.06 29.53 22.6Z"
+          fill="#000"
+        />
+      </>
+    ),
 
-  // an aperture, for the gallery
-  photos: () => (
-    <>
-      <circle cx="32" cy="32" r="21" fill="none" stroke="var(--ic-glyph, #ffffff)" strokeWidth="3.4" />
-      <g style={{ stroke: "var(--ic-glyph, #ffffff)" }} strokeWidth="3" strokeLinecap="round">
-        {around(6, () => (
-          <path d="M32 13.2 43 32" />
-        ))}
-      </g>
-      <circle cx="32" cy="32" r="4.6" fill="var(--ic-glyph, #ffffff)" />
-    </>
-  ),
+  // an iris: six blades closing on an open hexagon
+  photos: (id) =>
+    cut(
+      id,
+      <>
+        <circle cx="32" cy="32" r="21" fill="#fff" />
+        <g fill="#000">
+          <path d="M32 23.5 39.36 27.75 39.36 36.25 32 40.5 24.64 36.25 24.64 27.75Z" />
+          {around(6, () => (
+            <path
+              d="M32 23.5 14.7 13.5"
+              fill="none"
+              stroke="#000"
+              strokeWidth="2.8"
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+      </>
+    ),
 
   terminal: () => (
-    <>
-      <path d="M12.9 13.8l10.3 6.4-10.3 6.6" {...round} stroke="currentColor" strokeWidth="2.7" />
-      <rect x="25.6" y="30.9" width="13.6" height="2.4" rx="1.2" style={{ fill: "var(--ic-cursor, #6d6d72)" }} />
-    </>
-  ),
-
-  contact: () => (
-    <>
-      <rect
-        x="8"
-        y="14"
-        width="48"
-        height="36"
-        rx="5"
-        fill="var(--ic-glyph, #ffffff)"
-      />
-      <g style={{ fill: "var(--ic-line, #39414b)" }}>
-        <circle cx="24" cy="28.5" r="6.2" />
-        <path d="M14.5 43.4c1.4-5.2 17.6-5.2 19 0 .3 1.7-3.9 2.9-9.5 2.9s-9.8-1.2-9.5-2.9z" />
-      </g>
-      <g {...round} style={{ stroke: "var(--ic-line, #39414b)" }} strokeWidth="2.4" opacity=".55">
-        <path d="M39 27h11M39 34h11M39 41h7" />
-      </g>
-    </>
-  ),
-
-  guestbook: () => (
-    <>
+    <g style={{ color: "var(--ic-glyph, #ffffff)" }}>
       <path
-        d="M14 12h36a8 8 0 0 1 8 8v20a8 8 0 0 1-8 8H31.5L18 58.2A1.4 1.4 0 0 1 15.8 57l.2-9H14a8 8 0 0 1-8-8V20a8 8 0 0 1 8-8z"
-        fill="var(--ic-glyph, #ffffff)"
+        d="M18 21 28.5 31.5 18 42"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="5.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <g {...round} style={{ stroke: "var(--ic-line, #8e2f53)" }} strokeWidth="3">
-        <path d="M17 24h30M17 33h22" />
-      </g>
-    </>
+      <rect x="33" y="37" width="14" height="5" rx="2.5" fill="currentColor" opacity=".75" />
+    </g>
   ),
 
-  settings: () => (
-    <>
-      <g fill="currentColor" opacity=".45">
-        <circle cx="32" cy="32" r="13.25" fill="none" stroke="currentColor" strokeWidth="3.1" />
-        {around(24, () => tooth(14.2, 16.9, 1.6))}
-      </g>
-      <g fill="currentColor">
-        <circle cx="32" cy="32" r="20.85" fill="none" stroke="currentColor" strokeWidth="3.5" />
-        {around(36, () => tooth(21.8, 25.8, 1.9))}
-        <path d="M32 32h20M32 32l-10 17.3M32 32l-10-17.3" {...round} stroke="currentColor" strokeWidth="2.6" />
-        <circle cx="32" cy="32" r="2.8" />
-      </g>
-      <circle cx="32" cy="32" r="1.1" style={{ fill: "var(--ic-b, #6e6e73)" }} />
-    </>
-  ),
+  // an address card
+  contact: (id) =>
+    cut(
+      id,
+      <>
+        <rect x="7" y="15" width="50" height="34" rx="6" fill="#fff" />
+        <g fill="#000">
+          <circle cx="21" cy="27.5" r="5.4" />
+          <path d="M13.5 41.8c0-4.3 3.4-6.8 7.5-6.8s7.5 2.5 7.5 6.8a1.2 1.2 0 0 1-1.2 1.2H14.7a1.2 1.2 0 0 1-1.2-1.2z" />
+          <rect x="34" y="24" width="15" height="3.2" rx="1.6" />
+          <rect x="34" y="30.4" width="15" height="3.2" rx="1.6" />
+          <rect x="34" y="36.8" width="10" height="3.2" rx="1.6" />
+        </g>
+      </>
+    ),
+
+  guestbook: (id) =>
+    cut(
+      id,
+      <>
+        <g fill="#fff">
+          <rect x="6" y="11" width="52" height="34" rx="9" />
+          <path d="M16 36h15L18.4 54.6a1.5 1.5 0 0 1-2.4-.9z" />
+        </g>
+        <g fill="#000">
+          <rect x="16" y="20.5" width="32" height="3.8" rx="1.9" />
+          <rect x="16" y="29" width="22" height="3.8" rx="1.9" />
+        </g>
+      </>
+    ),
+
+  settings: (id) =>
+    cut(
+      id,
+      <>
+        <g fill="#fff">
+          <circle cx="32" cy="32" r="17.5" />
+          {around(8, () => (
+            <rect x="28" y="10" width="8" height="12" rx="3" />
+          ))}
+        </g>
+        <circle cx="32" cy="32" r="6.4" fill="#000" />
+      </>
+    ),
 };
 
 /* shapes: no tile behind them */
 const SHAPES = {
-  folder: () => (
+  folder: (id) => (
     <>
+      <defs>
+        <linearGradient id={`${id}a`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#4aa6ea" />
+          <stop offset="1" stopColor="#2b85d8" />
+        </linearGradient>
+        <linearGradient id={`${id}b`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#8fd3ff" />
+          <stop offset="1" stopColor="#57b2f2" />
+        </linearGradient>
+      </defs>
       <path
-        d="M5 16a4 4 0 0 1 4-4h15l6 6h25a4 4 0 0 1 4 4v28a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z"
-        fill="var(--folder-back, #2f8fe0)"
+        d="M5 17.5a5 5 0 0 1 5-5h12.9a5 5 0 0 1 3.4 1.33l3.6 3.34a5 5 0 0 0 3.4 1.33H54a5 5 0 0 1 5 5V48a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5z"
+        fill={`url(#${id}a)`}
       />
-      <path d="M5 25h54v23a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z" fill="var(--folder-front, #6cc1ff)" />
-      <path d="M5 25h54v3H5z" fill="#fff" opacity=".35" />
+      <path d="M5 26h54v22a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5z" fill={`url(#${id}b)`} />
+      <path d="M5 26h54v1.6H5z" fill="#fff" opacity=".55" />
     </>
   ),
   txt: () => (
     <>
       <path d="M15 5h23l12 12v41a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4z" fill="#fff" />
-      <path d="M15 5h23l12 12v41a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4z" {...round} stroke="#c4c4cc" strokeWidth="1.5" />
+      <path
+        d="M15 5h23l12 12v41a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4z"
+        fill="none"
+        stroke="#c4c4cc"
+        strokeWidth="1.5"
+      />
       <path d="M38 5v12h12z" fill="#dcdce3" />
-      <path d="M19 30h26M19 38h26M19 46h17" {...round} stroke="#a0a0aa" strokeWidth="3" />
+      <g fill="#a0a0aa">
+        <rect x="18" y="28" width="28" height="3" rx="1.5" />
+        <rect x="18" y="36" width="28" height="3" rx="1.5" />
+        <rect x="18" y="44" width="18" height="3" rx="1.5" />
+      </g>
     </>
   ),
   image: () => (
     <>
       <path d="M15 5h23l12 12v41a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4z" fill="#fff" />
-      <path d="M15 5h23l12 12v41a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4z" {...round} stroke="#c4c4cc" strokeWidth="1.5" />
+      <path
+        d="M15 5h23l12 12v41a4 4 0 0 1-4 4H15a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4z"
+        fill="none"
+        stroke="#c4c4cc"
+        strokeWidth="1.5"
+      />
       <path d="M38 5v12h12z" fill="#dcdce3" />
-      <rect x="18" y="26" width="28" height="22" rx="3" fill="#8fd0ff" />
-      <path d="M18 48l9-11 6 6 5-5 8 10z" fill="#3ea15c" />
-      <circle cx="39" cy="32" r="3" fill="#ffd23f" />
+      <path d="M18 28a2 2 0 0 1 2-2h24a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H20a2 2 0 0 1-2-2z" fill="#9cd8ff" />
+      <circle cx="39" cy="34" r="3.4" fill="#ffd45e" />
+      <path d="M18 50V44l8-9 7.5 9.5L38 40l8 8.6V50z" fill="#3ea15c" />
     </>
   ),
   trash: (id, full) => (
     <>
       {full && (
-        <g fill="#f4f4f6" stroke="#c6c6cd" strokeWidth=".6" strokeLinejoin="round">
-          <path d="M16.5 12c-.8-3.2 1.2-6.4 4.6-6.9 2.2-2.3 6.1-1.9 7.6.8 2.6-.3 4.6 1.6 4.6 4.1l.3 2z" />
-          <path d="M32 12c-.4-3.8 1.6-7.4 5.2-8.2 2.7-.6 5 .7 5.9 2.8 2.8-.1 5 2.2 4.8 4.8l-.1 .6z" />
-        </g>
+        <path
+          d="M14 14 15.8 7.2 22 9.2 25 2.6 31.5 7 35.5 1.8 39.5 7.6 45.8 5.4 46 11 48 14Z"
+          fill="#f2f2f5"
+          stroke="#c4c4cc"
+          strokeWidth="1.1"
+          strokeLinejoin="round"
+        />
       )}
       <rect x="9.5" y="9.5" width="45" height="7.4" rx="3.7" fill="var(--ic-bin-lid, #b9b9c1)" />
       <path
         d="M13.5 18.5h37l-2.7 35a4.4 4.4 0 0 1-4.4 4.1H20.6a4.4 4.4 0 0 1-4.4-4.1z"
         fill="var(--ic-bin, #d2d2d8)"
       />
-      <g {...round} style={{ stroke: "var(--ic-bin-line, #9a9aa3)" }} strokeWidth="2.2">
+      <g
+        fill="none"
+        stroke="var(--ic-bin-line, #9a9aa3)"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <path d="M24 26.5 25.2 49M32 26.5V49M40 26.5 38.8 49" />
       </g>
     </>
@@ -164,7 +223,7 @@ const SHAPES = {
 };
 
 const AppIcon = ({ icon, alt = "", className }) => {
-  // gradient ids must be unique, and one icon can be on screen several times
+  // mask ids must be unique, and one icon can be on screen several times
   const id = `ic${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   if (!icon) return null;
