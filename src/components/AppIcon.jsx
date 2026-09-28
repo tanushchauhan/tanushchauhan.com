@@ -124,6 +124,15 @@ const GLYPHS = {
       </>
     ),
 
+  // three bars rising: the visit reports
+  analytics: () => (
+    <g fill="var(--ic-glyph, #ffffff)">
+      <rect x="12" y="34" width="9" height="18" rx="3" />
+      <rect x="27.5" y="24" width="9" height="28" rx="3" />
+      <rect x="43" y="14" width="9" height="38" rx="3" />
+    </g>
+  ),
+
   settings: (id) =>
     cut(
       id,

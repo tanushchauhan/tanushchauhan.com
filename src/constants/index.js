@@ -726,6 +726,88 @@ export const locations = {
  * The store persists a node's id rather than a copy, so a reload always shows
  * the current text.
  */
+/**
+ * The Applications folder. It is kept out of `locations` so it stays out of the
+ * Finder sidebar and Spotlight; the desktop puts it out only once signed in.
+ * An `app` opens a window instead of a document, and `owner` means that window
+ * is mine to read.
+ */
+export const applications = {
+  id: "applications",
+  type: "applications",
+  name: "Applications",
+  icon: "folder",
+  kind: "folder",
+  windowPosition: "top-[24vh] right-[18vw]",
+  children: [
+    {
+      id: "app-analytics",
+      name: "Analytics",
+      icon: "analytics",
+      kind: "app",
+      app: "analytics",
+      owner: true,
+      position: "top-4 left-4",
+    },
+    {
+      id: "app-terminal",
+      name: "Terminal",
+      icon: "terminal",
+      kind: "app",
+      app: "terminal",
+      position: "top-4 left-32",
+    },
+    {
+      id: "app-finder",
+      name: "Projects",
+      icon: "finder",
+      kind: "app",
+      location: "work",
+      position: "top-4 left-60",
+    },
+    {
+      id: "app-safari",
+      name: "Highlights",
+      icon: "safari",
+      kind: "app",
+      app: "safari",
+      position: "top-32 left-4",
+    },
+    {
+      id: "app-photos",
+      name: "Gallery",
+      icon: "photos",
+      kind: "app",
+      app: "photos",
+      position: "top-32 left-32",
+    },
+    {
+      id: "app-contact",
+      name: "Contact",
+      icon: "contact",
+      kind: "app",
+      app: "contact",
+      position: "top-32 left-60",
+    },
+    {
+      id: "app-guestbook",
+      name: "Guestbook",
+      icon: "guestbook",
+      kind: "app",
+      app: "guestbook",
+      position: "top-60 left-4",
+    },
+    {
+      id: "app-about",
+      name: "About This Desktop",
+      icon: "settings",
+      kind: "app",
+      app: "about",
+      position: "top-60 left-32",
+    },
+  ],
+};
+
 const nodes = new Map(); // id -> node
 const owners = new Map(); // a file's payload -> the id of the node holding it
 
@@ -741,6 +823,7 @@ const index = (node) => {
 };
 
 Object.values(locations).forEach(index);
+index(applications);
 
 export const parentOf = (id) => parents.get(id);
 

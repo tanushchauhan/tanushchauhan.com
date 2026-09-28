@@ -380,3 +380,70 @@ telRoutes.get("/heatmap", requireAuth, async (c) => {
 
   return c.json({ days, surface, points });
 });
+
+/* The spelling postgres hands back is not one every browser will parse. The
+   column is always written here, never taken from a request. */
+const utc = (column: string) =>
+  sql.raw(`to_char(${column} at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`);
+
+/** Everyone who has been here, newest first, with the shape of their visits. */
+telRoutes.get("/people", requireAuth, async (c) => {
+  const limit = Math.min(200, Math.max(1, Math.trunc(Number(c.req.query("limit"))) || 40));
+
+  const people = await rows<Record<string, unknown>>(sql`
+    select v.id, v.visits,
+           ${utc("v.first_seen_at")} as first_seen,
+           ${utc("v.last_seen_at")} as last_seen,
+           count(s.id)::int as sessions,
+           coalesce(sum(s.events), 0)::int as events,
+           coalesce(sum(s.duration_ms), 0)::int as total_ms,
+           (array_agg(s.country order by s.started_at desc) filter (where s.country is not null))[1] as country,
+           (array_agg(s.org order by s.started_at desc) filter (where s.org is not null))[1] as org,
+           (array_agg(s.browser order by s.started_at desc) filter (where s.browser is not null))[1] as browser,
+           (array_agg(s.os order by s.started_at desc) filter (where s.os is not null))[1] as os,
+           (array_agg(coalesce(s.utm_source, s.referrer_host) order by s.started_at)
+              filter (where coalesce(s.utm_source, s.referrer_host) is not null))[1] as found_by
+    from visitors v
+    left join visit_sessions s on s.visitor_id = v.id and s.is_bot = false
+    group by v.id
+    order by v.last_seen_at desc
+    limit ${limit}
+  `);
+
+  return c.json({ people });
+});
+
+/** One visit in full: its context, and every event in order. */
+telRoutes.get("/visit/:id", requireAuth, async (c) => {
+  const id = c.req.param("id");
+  if (!UUID.test(id)) return c.json({ error: "not found" }, 404);
+
+  const [visit] = await rows<Record<string, unknown>>(sql`
+    select s.*, ${utc("s.started_at")} as started_at, ${utc("s.last_seen_at")} as last_seen_at
+    from visit_sessions s where s.id = ${id}
+  `);
+  if (!visit) return c.json({ error: "not found" }, 404);
+
+  const events = await rows<Record<string, unknown>>(sql`
+    select seq, name, target, props, x, y, ${utc("visit_events.at")} as at
+    from visit_events where session_id = ${id} order by seq
+  `);
+
+  return c.json({ visit, events });
+});
+
+/** Who is on the site now, for the value of "now" that a page load can prove. */
+telRoutes.get("/live", requireAuth, async (c) => {
+  const here = await rows<Record<string, unknown>>(sql`
+    select s.id, s.visitor_id, s.country, s.org, s.browser, s.os, s.surface, s.events,
+           s.utm_source, s.referrer_host, ${utc("s.last_seen_at")} as last_seen_at,
+           (select coalesce(e.target, e.name) from visit_events e
+             where e.session_id = s.id order by e.seq desc limit 1) as doing
+    from visit_sessions s
+    where s.is_bot = false and s.last_seen_at >= now() - interval '5 minutes'
+    order by s.last_seen_at desc
+    limit 20
+  `);
+
+  return c.json({ here });
+});

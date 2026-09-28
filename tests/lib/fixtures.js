@@ -68,6 +68,58 @@ export const tel = {
     first: top([["finder", 96], ["terminal", 44]]),
     moves: top([["finder > photos", 21], ["terminal > finder", 14]]),
   },
+  events: {
+    days: 30,
+    events: [
+      { name: "click", target: "Projects", count: 210, sessions: 140 },
+      { name: "window_open", target: "finder", count: 188, sessions: 132 },
+      { name: "project_open", target: "crave", count: 96, sessions: 71 },
+      { name: "terminal_command", target: "neofetch", count: 44, sessions: 38 },
+      { name: "link_click", target: "github.com", count: 33, sessions: 29 },
+      { name: "appearance", target: "theme", count: 18, sessions: 16 },
+      { name: "guestbook_post", target: "", count: 6, sessions: 6 },
+    ],
+  },
+  people: {
+    people: [
+      {
+        id: 1204, visits: 3, sessions: 3, events: 42, total_ms: 380000,
+        first_seen: new Date(Date.now() - 9 * 86400000).toISOString(),
+        last_seen: new Date(Date.now() - 20 * 60000).toISOString(),
+        country: "US", org: "utexas.edu", browser: "Chrome", os: "macOS", found_by: "linkedin",
+      },
+      {
+        id: 1203, visits: 1, sessions: 1, events: 4, total_ms: 22000,
+        first_seen: new Date(Date.now() - 3 * 86400000).toISOString(),
+        last_seen: new Date(Date.now() - 3 * 86400000).toISOString(),
+        country: "DE", org: null, browser: "Firefox", os: "Linux", found_by: "github.com",
+      },
+    ],
+  },
+  live: {
+    here: [{ id: "0f5f2f4e-0000-4000-8000-000000000001", doing: "crave" }],
+  },
+  visit: {
+    visit: {
+      id: "0f5f2f4e-0000-4000-8000-000000000001", visitor_id: 1204,
+      started_at: new Date(Date.now() - 20 * 60000).toISOString(),
+      duration_ms: 142000, events: 6, country: "US", org: "utexas.edu", rdns: null,
+      browser: "Chrome", browser_version: "141.0", os: "macOS", device: "desktop",
+      surface: "desktop", referrer_host: "linkedin.com", referrer_path: "/feed",
+      utm_source: "linkedin", utm_medium: "social", utm_campaign: "resume-2026",
+      ref: "resume", landing_path: "/", viewport_w: 1512, viewport_h: 950,
+      screen_w: 1728, screen_h: 1117, dpr: 2, timezone: "America/Chicago",
+      language: "en-US", prefers_dark: false, reduced_motion: false, authed: false,
+    },
+    events: [
+      { seq: 0, name: "session_start", target: "desktop", at: new Date(Date.now() - 20 * 60000).toISOString() },
+      { seq: 1, name: "click", target: "Projects", at: new Date(Date.now() - 19.9 * 60000).toISOString() },
+      { seq: 2, name: "window_open", target: "finder", at: new Date(Date.now() - 19.8 * 60000).toISOString() },
+      { seq: 3, name: "project_open", target: "crave", at: new Date(Date.now() - 19.4 * 60000).toISOString() },
+      { seq: 4, name: "terminal_command", target: "neofetch", at: new Date(Date.now() - 18.6 * 60000).toISOString() },
+      { seq: 5, name: "link_click", target: "github.com", at: new Date(Date.now() - 17.7 * 60000).toISOString() },
+    ],
+  },
   heatmap: {
     days: 30,
     surface: "desktop",
@@ -233,4 +285,8 @@ export const installFixtures = async (page, { authed = true, building } = {}) =>
   await page.route("**/api/tel/funnel*", (r) => r.fulfill({ json: tel.funnel }));
   await page.route("**/api/tel/paths*", (r) => r.fulfill({ json: tel.paths }));
   await page.route("**/api/tel/heatmap*", (r) => r.fulfill({ json: tel.heatmap }));
+  await page.route("**/api/tel/people*", (r) => r.fulfill({ json: tel.people }));
+  await page.route("**/api/tel/events*", (r) => r.fulfill({ json: tel.events }));
+  await page.route("**/api/tel/live", (r) => r.fulfill({ json: tel.live }));
+  await page.route("**/api/tel/visit/*", (r) => r.fulfill({ json: tel.visit }));
 };

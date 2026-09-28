@@ -495,6 +495,11 @@ nav time {
   --ic-b: #d33b60;
 }
 
+.app-icon[data-icon="analytics"] {
+  --ic-a: #5fd48a;
+  --ic-b: #18985c;
+}
+
 .app-icon[data-icon="settings"] {
   --ic-a: #9a9aa0;
   --ic-b: #6a6a70;
@@ -1006,10 +1011,23 @@ body.resizing * {
 /* ---------------- contact ---------------- */
 /* ---------------- analytics ---------------- */
 #analytics {
-  @apply w-[620px];
-  top: 10vh;
-  left: 22vw;
-  height: 560px;
+  @apply w-[700px];
+  top: 8vh;
+  left: 16vw;
+  height: 600px;
+}
+
+#analytics #window-header h2 {
+  @apply flex-1;
+}
+
+.an-live {
+  @apply flex items-center gap-1.5 pr-3 text-[11px];
+  color: var(--glass-fg-2);
+}
+
+.an-live i {
+  @apply size-1.5 rounded-full bg-emerald-500;
 }
 
 .an-toolbar {
@@ -1074,13 +1092,13 @@ body.resizing * {
   @apply mt-2 space-y-1;
 }
 
-.an-ranked li {
+.an-ranked > ul > li {
   @apply relative flex items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-xs;
   color: var(--glass-fg);
 }
 
 /* the bar is the row's own background, so the label stays readable over it */
-.an-bar {
+.an-fill {
   @apply absolute inset-y-0 left-0 rounded-lg;
   width: var(--fill);
   background: rgb(191 87 0 / 0.16);
@@ -1118,6 +1136,18 @@ body.resizing * {
   background: var(--surface-2);
 }
 
+.an-visits li:has(button) {
+  @apply p-0;
+}
+
+.an-visits li button {
+  @apply w-full cursor-pointer rounded-xl p-3 text-left transition-colors;
+}
+
+.an-visits li button:hover {
+  background: rgb(191 87 0 / 0.1);
+}
+
 .an-visit-top {
   @apply flex items-baseline justify-between gap-2 text-sm font-medium;
   color: var(--glass-fg);
@@ -1135,6 +1165,69 @@ body.resizing * {
 .an-trail {
   @apply mt-1.5 truncate text-[11px];
   color: var(--color-burnt-light);
+}
+
+/* ---- one visit in full ---- */
+.an-back {
+  @apply flex cursor-pointer items-center gap-1 text-xs;
+  color: var(--glass-fg-2);
+}
+
+.an-back:hover {
+  color: var(--glass-fg);
+}
+
+.an-title {
+  @apply flex items-baseline justify-between gap-3 text-base font-semibold;
+  color: var(--glass-fg);
+}
+
+.an-facts {
+  @apply grid gap-x-4 gap-y-1.5 text-xs sm:grid-cols-2;
+}
+
+.an-facts div {
+  @apply flex gap-2;
+}
+
+.an-facts dt {
+  @apply w-20 shrink-0 text-right;
+  color: var(--glass-fg-2);
+}
+
+.an-facts dd {
+  @apply min-w-0 flex-1 break-words;
+  color: var(--glass-fg);
+}
+
+.an-timeline {
+  @apply mt-2 space-y-0.5;
+}
+
+.an-timeline li,
+.an-events li {
+  @apply flex items-baseline gap-3 rounded-lg px-2 py-1 text-xs;
+  color: var(--glass-fg);
+}
+
+.an-timeline li:nth-child(odd),
+.an-events li:nth-child(odd) {
+  background: var(--surface-2);
+}
+
+.an-at {
+  @apply w-10 shrink-0 text-right;
+  color: var(--glass-fg-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-name {
+  @apply w-36 shrink-0 truncate font-medium;
+  color: var(--color-burnt-light);
+}
+
+.an-events li .an-note {
+  @apply mt-0 w-16 shrink-0 text-right;
 }
 
 /* the clicks sit over the desktop they were aimed at, and under the windows

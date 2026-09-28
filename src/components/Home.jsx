@@ -3,8 +3,9 @@ import gsap from "gsap";
 import { Draggable } from "gsap/Draggable";
 import { useGSAP } from "@gsap/react";
 import clsx from "clsx";
-import { locations } from "#constants";
+import { applications, locations } from "#constants";
 import useWindowStore from "#store/window.js";
+import useAuthStore from "#store/auth.js";
 import AppIcon from "./AppIcon.jsx";
 
 gsap.registerPlugin(Draggable);
@@ -19,6 +20,7 @@ const Home = () => {
     cleanUps,
     placeDesktopFolders,
   } = useWindowStore();
+  const signedIn = useAuthStore((state) => state.status === "authed");
   const homeRef = useRef(null);
 
   const openUserFolder = (folder) =>
@@ -44,7 +46,7 @@ const Home = () => {
       },
     });
     return () => instances.forEach((instance) => instance.kill());
-  }, [desktopFolders.length]);
+  }, [desktopFolders.length, signedIn]);
 
   // Clean Up: snap every icon home
   useEffect(() => {
@@ -87,6 +89,18 @@ const Home = () => {
   return (
     <section id="home" ref={homeRef}>
       <ul>
+        {signedIn && (
+          <li
+            data-id={applications.id}
+            data-project
+            className={clsx("group folder", applications.windowPosition)}
+            onClick={() => openFinderWindow(applications)}
+          >
+            <AppIcon icon="folder" />
+            <p>{applications.name}</p>
+          </li>
+        )}
+
         {projects.map((project) => (
           <li
             key={project.id}

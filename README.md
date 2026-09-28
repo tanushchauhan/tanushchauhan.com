@@ -58,8 +58,11 @@ would be a poor terminal without them.
   and every window, project, command and outbound click in order. The browser
   batches events and sends them with `sendBeacon`; there is no cookie, no
   third-party script and nothing leaves the server. Crawlers are recognised
-  and dropped. Signed in, `open analytics` and the `traffic`, `sessions`,
-  `funnel` and `paths` commands read it back.
+  and dropped. Signed in, an Applications folder appears on the desktop with
+  an Analytics app in it: totals and a funnel, where the traffic came from,
+  every visit with the full trail of what it did, the people behind those
+  visits, every event, and a click heatmap drawn over the desktop itself. The
+  `traffic`, `sessions`, `funnel` and `paths` commands read the same numbers.
 - Live widgets: the time in Austin, GitHub contributions and the latest
   commit (proxied and cached so the token never leaves the server), and a
   "now building" line I can change with one terminal command

@@ -6,10 +6,12 @@ import { WindowControls } from "#components";
 import AppIcon from "#components/AppIcon.jsx";
 import { locations, parentOf } from "#constants";
 import useWindowStore, { FINDER_KEYS } from "#store/window.js";
+import useAuthStore from "#store/auth.js";
 import { openFile } from "../utils/files.js";
 
 const Finder = ({ windowKey }) => {
-  const { windows, openWindow, quickLook, setQuickLook } = useWindowStore();
+  const { windows, openWindow, openFinderWindow, quickLook, setQuickLook } = useWindowStore();
+  const signedIn = useAuthStore((state) => state.status === "authed");
   const activeLocation = windows[windowKey].data ?? locations.work;
 
   // with no history, Back goes to the enclosing folder
@@ -47,6 +49,11 @@ const Finder = ({ windowKey }) => {
 
   const openItem = (item) => {
     if (item.kind === "folder") return navigateTo(item);
+    if (item.kind === "app") {
+      if (item.owner && !signedIn) return;
+      if (item.location) return openFinderWindow(locations[item.location]);
+      return openWindow(item.app);
+    }
     openFile(item, openWindow);
   };
 

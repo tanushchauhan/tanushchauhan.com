@@ -63,6 +63,37 @@ export const run = async ({ browser, t }) => {
   await page.waitForTimeout(400);
   t.check("leaving the tab takes it away", (await page.$(".an-heatmap")) === null);
 
+  // ---------- one visit in full ----------
+  await page.click('.an-tabs button:text-is("Visits")');
+  await page.waitForTimeout(400);
+  await page.click(".an-visits li button");
+  await page.waitForTimeout(500);
+  const detail = await text(page, ".an-body");
+  t.check("a visit opens in full", detail.includes("WHAT HAPPENED"));
+  t.check("with the tags the link carried", detail.includes("linkedin · social · resume-2026"));
+  t.check("the screen it was read on", detail.includes("1512x950"));
+  t.check("and the timezone it was read in", detail.includes("America/Chicago"));
+  t.check("the timeline counts from the start", detail.includes("0:00"));
+  t.check("and lists what was opened", detail.includes("project_open"));
+
+  await page.click(".an-back");
+  await page.waitForTimeout(400);
+  t.check("back returns to the list", (await text(page, ".an-body")).includes("visit 3"));
+
+  // ---------- the people behind the visits ----------
+  await page.click('.an-tabs button:text-is("People")');
+  await page.waitForTimeout(400);
+  const people = await text(page, ".an-body");
+  t.check("people are listed by visitor number", people.includes("#1204"));
+  t.check("with how often they came", people.includes("3 visits"));
+  t.check("and what first brought them", people.includes("via linkedin"));
+
+  await page.click('.an-tabs button:text-is("Events")');
+  await page.waitForTimeout(400);
+  const events = await text(page, ".an-body");
+  t.check("every event is counted", events.includes("terminal_command"));
+  t.check("with the visits behind it", events.includes("38 visits"));
+
   // ---------- the range ----------
   await page.click('.an-range button:text-is("7d")');
   await page.waitForTimeout(500);
@@ -79,5 +110,31 @@ export const run = async ({ browser, t }) => {
   const refused = await runCommand(guest, "open analytics", 800);
   t.check("a guest is turned away", refused.includes("needs a sign in"));
   t.check("and no window opens", await guest.isHidden("#analytics"));
+  t.check(
+    "and the desktop has no Applications folder",
+    await guest.isHidden('#home li[data-id="applications"]')
+  );
   await guest.close();
+
+  // ---------- the Applications folder ----------
+  const desktop = await openPage(browser);
+  t.check(
+    "signed in, the folder is on the desktop",
+    await desktop.isVisible('#home li[data-id="applications"]')
+  );
+
+  await desktop.click('#home li[data-id="applications"]');
+  await desktop.waitForTimeout(900);
+
+  const folder = await desktop.$eval('[id^="finder"] ul.content', (el) => el.innerText);
+  t.check("it holds the apps", folder.includes("Analytics") && folder.includes("Guestbook"));
+
+  const sidebar = await desktop.$eval('[id^="finder"] .sidebar', (el) => el.innerText);
+  t.check("but it stays out of the sidebar", !sidebar.includes("Applications"));
+
+  await desktop.dblclick('[id^="finder"] ul.content li:has-text("Analytics")');
+  await desktop.waitForTimeout(900);
+  t.check("and Analytics opens from it", await desktop.isVisible("#analytics"));
+  t.check("no page errors opening it", desktop.pageErrors.length === 0, desktop.pageErrors.join("\n"));
+  await desktop.close();
 };
