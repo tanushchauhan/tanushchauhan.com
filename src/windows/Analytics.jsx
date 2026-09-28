@@ -335,33 +335,90 @@ const Events = ({ days }) => {
   );
 };
 
-/** Clicks painted over the real desktop, since that is what they were aimed at. */
-const Heatmap = ({ days }) => {
-  const { data, error } = useReport(`/api/tel/heatmap?days=${days}`);
+/**
+ * A click as a blob of heat. Drawing in `lighter` means two clicks in the same
+ * place add up, which is the whole point of a heatmap.
+ */
+const paintHeat = (ctx, points, width, height) => {
+  const radius = Math.max(12, Math.round(Math.min(width, height) / 22));
+  ctx.globalCompositeOperation = "lighter";
+
+  for (const point of points) {
+    const x = point.x * width;
+    const y = point.y * height;
+    const glow = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    glow.addColorStop(0, "rgba(255, 150, 70, 0.9)");
+    glow.addColorStop(0.4, "rgba(255, 110, 35, 0.4)");
+    glow.addColorStop(1, "rgba(255, 90, 20, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalCompositeOperation = "source-over";
+};
+
+/** The menu bar and the dock, so a dot on the small map has something to sit against. */
+const paintChrome = (ctx, width, height) => {
+  ctx.fillStyle = "rgb(255 255 255 / 0.07)";
+  ctx.fillRect(0, 0, width, height * 0.035);
+
+  const dockWidth = width * 0.29;
+  const dockHeight = height * 0.062;
+  ctx.beginPath();
+  ctx.roundRect((width - dockWidth) / 2, height - dockHeight * 1.5, dockWidth, dockHeight, dockHeight / 2);
+  ctx.fill();
+};
+
+/** The desktop at a small size, so nothing is hidden behind this window. */
+const Minimap = ({ points }) => {
   const ref = useRef(null);
-  const points = data?.points;
 
   useEffect(() => {
     const canvas = ref.current;
-    if (!canvas || !points) return;
+    if (!canvas) return;
+
+    const paint = () => {
+      const box = canvas.getBoundingClientRect();
+      if (!box.width) return;
+      const width = (canvas.width = Math.round(box.width));
+      const height = (canvas.height = Math.round(box.height));
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, width, height);
+      paintChrome(ctx, width, height);
+      paintHeat(ctx, points, width, height);
+    };
+
+    paint();
+    const observer = new ResizeObserver(paint);
+    observer.observe(canvas);
+    return () => observer.disconnect();
+  }, [points]);
+
+  return (
+    <canvas
+      ref={ref}
+      className="an-map"
+      style={{ aspectRatio: `${window.innerWidth} / ${window.innerHeight}` }}
+    />
+  );
+};
+
+/** The same clicks at full size, over the desktop they were aimed at. */
+const Overlay = ({ points }) => {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
 
     const paint = () => {
       const width = (canvas.width = window.innerWidth);
       const height = (canvas.height = window.innerHeight);
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, width, height);
-
-      for (const point of points) {
-        const x = point.x * width;
-        const y = point.y * height;
-        const glow = ctx.createRadialGradient(x, y, 0, x, y, 30);
-        glow.addColorStop(0, "rgba(255, 122, 45, 0.30)");
-        glow.addColorStop(1, "rgba(255, 122, 45, 0)");
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(x, y, 30, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      paintHeat(ctx, points, width, height);
     };
 
     paint();
@@ -369,15 +426,37 @@ const Heatmap = ({ days }) => {
     return () => window.removeEventListener("resize", paint);
   }, [points]);
 
+  return createPortal(<canvas ref={ref} className="an-heatmap" aria-hidden="true" />, document.body);
+};
+
+const Heatmap = ({ days }) => {
+  const { data, error } = useReport(`/api/tel/heatmap?days=${days}`);
+  const [over, setOver] = useState(false);
   if (!data) return <Waiting error={error} />;
+
+  const counts = new Map();
+  for (const point of data.points) {
+    const key = point.target || "somewhere else";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const targets = [...counts]
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
 
   return (
     <>
-      <p className="an-note">
-        {data.points.length} clicks over the desktop, drawn where they landed. Move this window
-        aside to see underneath it.
-      </p>
-      {createPortal(<canvas ref={ref} className="an-heatmap" aria-hidden="true" />, document.body)}
+      <div className="an-visit-top">
+        <span className="an-who">{data.points.length} clicks</span>
+        <button type="button" className={clsx("an-toggle", over && "on")} onClick={() => setOver(!over)}>
+          {over ? "hide from the desktop" : "show over the desktop"}
+        </button>
+      </div>
+
+      <Minimap points={data.points} />
+      <Ranked title="most clicked" rows={targets} />
+
+      {over && <Overlay points={data.points} />}
     </>
   );
 };

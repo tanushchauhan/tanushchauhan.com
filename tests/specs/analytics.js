@@ -37,14 +37,37 @@ export const run = async ({ browser, t }) => {
   t.check("and what they opened, in order", visits.includes("finder > crave > terminal"));
 
   // ---------- the click heatmap ----------
-  t.check("no heatmap until it is asked for", (await page.$(".an-heatmap")) === null);
-
   await page.click('.an-tabs button:text-is("Heatmap")');
+  await page.waitForTimeout(600);
+
+  t.check("the small map is drawn", await page.isVisible(".an-map"));
+  t.check("with the clicks counted", (await text(page, ".an-body")).includes("120 clicks"));
+  t.check("and what was clicked", (await text(page, ".an-body")).includes("MOST CLICKED"));
+
+  const map = await rect(page, ".an-map");
+  const viewport = page.viewportSize();
+  const ratio = map.w / map.h;
+  t.check(
+    "shaped like the desktop, so a dot means something",
+    Math.abs(ratio - viewport.width / viewport.height) < 0.05,
+    ratio.toFixed(2)
+  );
+
+  const painted = await page.$eval(".an-map", (el) => {
+    const ctx = el.getContext("2d");
+    const { data } = ctx.getImageData(0, 0, el.width, el.height);
+    let lit = 0;
+    for (let i = 0; i < data.length; i += 4) if (data[i] > 90 && data[i + 3] > 40) lit += 1;
+    return lit;
+  });
+  t.check("and the heat is actually painted", painted > 200, `${painted} warm pixels`);
+
+  t.check("nothing over the desktop until asked", (await page.$(".an-heatmap")) === null);
+  await page.click(".an-toggle");
   await page.waitForTimeout(500);
   t.check("the overlay appears", await page.isVisible(".an-heatmap"));
 
   const canvas = await rect(page, ".an-heatmap");
-  const viewport = page.viewportSize();
   t.check(
     "covering the whole desktop",
     canvas.w === viewport.width && canvas.h === viewport.height,
@@ -53,10 +76,10 @@ export const run = async ({ browser, t }) => {
 
   const layering = await page.evaluate(() => ({
     heat: Number(getComputedStyle(document.querySelector(".an-heatmap")).zIndex),
-    window: Number(getComputedStyle(document.querySelector("#analytics")).zIndex),
+    dock: Number(getComputedStyle(document.querySelector("#dock")).zIndex),
     clicks: getComputedStyle(document.querySelector(".an-heatmap")).pointerEvents,
   }));
-  t.check("under the windows, so the report stays readable", layering.heat < layering.window);
+  t.check("above the dock, where most clicks land", layering.heat > layering.dock);
   t.check("and it does not swallow clicks", layering.clicks === "none");
 
   await page.click('.an-tabs button:text-is("Overview")');
