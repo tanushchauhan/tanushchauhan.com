@@ -21,11 +21,13 @@ import {
   ImageViewer,
   AboutMac,
   Guestbook,
+  Analytics,
 } from "#windows";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { setSoundEnabled } from "./utils/sound.js";
 import { registerVisit } from "./utils/visit.js";
+import { startTelemetry } from "./utils/telemetry.js";
 import { paleSky, wallpaperFor } from "#constants";
 import { useAppearance } from "./utils/appearance.js";
 
@@ -42,6 +44,7 @@ const App = () => {
   useEffect(() => {
     useAuthStore.getState().refresh();
     registerVisit();
+    startTelemetry(window.matchMedia(MOBILE_QUERY).matches ? "phone" : "desktop");
   }, []);
   const [isMobile, setIsMobile] = useState(
     () => window.matchMedia(MOBILE_QUERY).matches
@@ -89,6 +92,7 @@ const App = () => {
         <Terminal />
         <Contact />
         <Guestbook />
+        <Analytics />
         <Text />
         <ImageViewer />
         <AboutMac />

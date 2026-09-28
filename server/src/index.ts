@@ -7,8 +7,10 @@ import { guestbookRoutes } from "./routes/guestbook.ts";
 import { widgetRoutes } from "./routes/widgets.ts";
 import { moontowerRoutes } from "./routes/moontower.ts";
 import { visitRoutes } from "./routes/visit.ts";
+import { telRoutes } from "./routes/tel.ts";
 import { startMetricsSampler } from "./lib/metrics.ts";
 import { startServiceProbes } from "./lib/probes.ts";
+import { startTelemetryUpkeep } from "./lib/telemetry.ts";
 
 const PORT = Number(Bun.env.PORT ?? 3001);
 
@@ -36,6 +38,7 @@ api.route("/guestbook", guestbookRoutes);
 api.route("/widgets", widgetRoutes);
 api.route("/moontower", moontowerRoutes);
 api.route("/visit", visitRoutes);
+api.route("/tel", telRoutes);
 
 app.route("/api", api);
 
@@ -98,6 +101,7 @@ await runMigrations();
 
 startMetricsSampler();
 startServiceProbes();
+startTelemetryUpkeep();
 
 // warn rather than exit: the public site works without it, login does not
 if (!Bun.env.SESSION_SECRET) {

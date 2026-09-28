@@ -7,6 +7,7 @@ import Text from "./Text.jsx";
 import ImageViewer from "./ImageViewer.jsx";
 import AboutMac from "./AboutMac.jsx";
 import Guestbook from "./Guestbook.jsx";
+import Analytics from "./Analytics.jsx";
 
 export {
   Terminal,
@@ -18,4 +19,5 @@ export {
   ImageViewer,
   AboutMac,
   Guestbook,
+  Analytics,
 };

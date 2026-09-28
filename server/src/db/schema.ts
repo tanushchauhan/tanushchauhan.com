@@ -1,9 +1,12 @@
 import {
+  bigserial,
   boolean,
+  date,
   index,
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   real,
   serial,
   text,
@@ -180,3 +183,103 @@ export const agentEnrollments = pgTable("agent_enrollments", {
 });
 
 export type AgentEnrollment = typeof agentEnrollments.$inferSelect;
+
+/**
+ * One row per visit. Wide on purpose: the context of a visit is what makes the
+ * events worth reading, and it is written once.
+ */
+export const visitSessions = pgTable(
+  "visit_sessions",
+  {
+    id: text("id").primaryKey(), // uuid minted by the browser, one per tab
+    visitorId: integer("visitor_id").references(() => visitors.id, { onDelete: "set null" }),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    events: integer("events").notNull().default(0),
+    durationMs: integer("duration_ms"),
+
+    // where they came from
+    referrerHost: text("referrer_host"),
+    referrerPath: text("referrer_path"),
+    utmSource: text("utm_source"),
+    utmMedium: text("utm_medium"),
+    utmCampaign: text("utm_campaign"),
+    utmTerm: text("utm_term"),
+    utmContent: text("utm_content"),
+    ref: text("ref"), // the short ?ref= code, for links printed on paper
+    clickId: text("click_id"), // gclid or fbclid, whichever arrived
+    landingPath: text("landing_path"),
+
+    // who and where, derived from the address and then the address discarded
+    country: text("country"),
+    rdns: text("rdns"),
+    org: text("org"),
+
+    // what they are using
+    ua: text("ua"),
+    browser: text("browser"),
+    browserVersion: text("browser_version"),
+    os: text("os"),
+    device: text("device"), // desktop | phone | tablet
+    isBot: boolean("is_bot").notNull().default(false),
+    surface: text("surface"), // which experience rendered: desktop | phone
+
+    viewportW: integer("viewport_w"),
+    viewportH: integer("viewport_h"),
+    screenW: integer("screen_w"),
+    screenH: integer("screen_h"),
+    dpr: real("dpr"),
+    timezone: text("timezone"),
+    language: text("language"),
+    prefersDark: boolean("prefers_dark"),
+    reducedMotion: boolean("reduced_motion"),
+    authed: boolean("authed").notNull().default(false),
+  },
+  (t) => [
+    index("visit_sessions_started_at_idx").on(t.startedAt),
+    index("visit_sessions_visitor_idx").on(t.visitorId),
+  ]
+);
+
+export type VisitSession = typeof visitSessions.$inferSelect;
+
+/** Everything that happened in a visit, in order. Kept for 90 days, then rolled up. */
+export const visitEvents = pgTable(
+  "visit_events",
+  {
+    id: bigserial("id", { mode: "number" }).primaryKey(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => visitSessions.id, { onDelete: "cascade" }),
+    visitorId: integer("visitor_id"),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+    seq: integer("seq").notNull(),
+    name: text("name").notNull(),
+    target: text("target"),
+    props: jsonb("props").$type<Record<string, unknown>>(),
+    // click position as a fraction of the viewport, so a heatmap reads at any size
+    x: real("x"),
+    y: real("y"),
+  },
+  (t) => [
+    index("visit_events_session_idx").on(t.sessionId, t.seq),
+    index("visit_events_name_at_idx").on(t.name, t.at),
+    index("visit_events_at_idx").on(t.at),
+  ]
+);
+
+export type VisitEvent = typeof visitEvents.$inferSelect;
+
+/** Daily counts that outlive the raw events. `kind` is the dimension, `key` its value. */
+export const visitRollup = pgTable(
+  "visit_rollup",
+  {
+    day: date("day").notNull(),
+    kind: text("kind").notNull(), // event | referrer | country | org | utm_source | browser | os | device
+    key: text("key").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.day, t.kind, t.key] })]
+);
+
+export type VisitRollupRow = typeof visitRollup.$inferSelect;

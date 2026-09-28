@@ -1004,6 +1004,145 @@ body.resizing * {
 }
 
 /* ---------------- contact ---------------- */
+/* ---------------- analytics ---------------- */
+#analytics {
+  @apply w-[620px];
+  top: 10vh;
+  left: 22vw;
+  height: 560px;
+}
+
+.an-toolbar {
+  @apply flex items-center justify-between gap-3 border-b px-3 py-2;
+  border-color: var(--glass-line);
+  background: var(--surface);
+}
+
+.an-tabs,
+.an-range {
+  @apply flex gap-1;
+}
+
+.an-tabs button,
+.an-range button {
+  @apply cursor-pointer rounded-lg px-2.5 py-1 text-xs font-medium transition-colors;
+  color: var(--glass-fg-2);
+}
+
+.an-tabs button:hover,
+.an-range button:hover {
+  background: var(--surface-2);
+}
+
+.an-tabs button.on,
+.an-range button.on {
+  background: var(--surface-2);
+  color: var(--glass-fg);
+}
+
+.an-body {
+  @apply min-h-0 flex-1 space-y-5 overflow-y-auto p-4;
+  background: var(--surface);
+}
+
+.an-figures {
+  @apply grid grid-cols-2 gap-3 sm:grid-cols-4;
+}
+
+.an-figure {
+  @apply rounded-xl p-3;
+  background: var(--surface-2);
+}
+
+.an-label {
+  @apply text-[11px] font-semibold tracking-wide uppercase;
+  color: var(--glass-fg-2);
+}
+
+.an-value {
+  @apply mt-1 text-2xl leading-none font-semibold;
+  color: var(--glass-fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.an-note {
+  @apply mt-1 text-[11px];
+  color: var(--glass-fg-2);
+}
+
+.an-ranked ul {
+  @apply mt-2 space-y-1;
+}
+
+.an-ranked li {
+  @apply relative flex items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-xs;
+  color: var(--glass-fg);
+}
+
+/* the bar is the row's own background, so the label stays readable over it */
+.an-bar {
+  @apply absolute inset-y-0 left-0 rounded-lg;
+  width: var(--fill);
+  background: rgb(191 87 0 / 0.16);
+}
+
+.an-key {
+  @apply relative flex-1 truncate;
+}
+
+.an-count {
+  @apply relative shrink-0 font-medium;
+  font-variant-numeric: tabular-nums;
+}
+
+.an-days {
+  @apply mt-2 flex h-16 items-end gap-[3px];
+}
+
+.an-days span {
+  @apply flex-1 rounded-t-sm bg-burnt/70;
+  height: max(2px, var(--h));
+}
+
+.an-empty {
+  @apply py-6 text-center text-xs;
+  color: var(--glass-fg-2);
+}
+
+.an-visits {
+  @apply space-y-2;
+}
+
+.an-visits li {
+  @apply rounded-xl p-3;
+  background: var(--surface-2);
+}
+
+.an-visit-top {
+  @apply flex items-baseline justify-between gap-2 text-sm font-medium;
+  color: var(--glass-fg);
+}
+
+.an-when {
+  @apply shrink-0 text-[11px] font-normal;
+  color: var(--glass-fg-2);
+}
+
+.an-who {
+  @apply truncate;
+}
+
+.an-trail {
+  @apply mt-1.5 truncate text-[11px];
+  color: var(--color-burnt-light);
+}
+
+/* the clicks sit over the desktop they were aimed at, and under the windows
+   so the report stays readable */
+.an-heatmap {
+  @apply pointer-events-none fixed inset-0 z-[900];
+}
+
 /* ---------------- guestbook ---------------- */
 #guestbook {
   @apply w-[440px];

@@ -51,6 +51,15 @@ would be a poor terminal without them.
   deleted from the window itself or from the terminal.
 - A visitor counter keyed by that same hash, which stores nothing else about
   anyone
+- First-party visit analytics, since the interesting question here is not how
+  many pages were viewed but which windows were opened. Each visit records
+  where it came from (referrer and the tags on a link), a country from the
+  edge, the organisation that owns the address by reverse DNS, the browser,
+  and every window, project, command and outbound click in order. The browser
+  batches events and sends them with `sendBeacon`; there is no cookie, no
+  third-party script and nothing leaves the server. Crawlers are recognised
+  and dropped. Signed in, `open analytics` and the `traffic`, `sessions`,
+  `funnel` and `paths` commands read it back.
 - Live widgets: the time in Austin, GitHub contributions and the latest
   commit (proxied and cached so the token never leaves the server), and a
   "now building" line I can change with one terminal command

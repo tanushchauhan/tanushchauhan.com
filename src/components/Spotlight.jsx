@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { locations } from "#constants";
 import useWindowStore from "#store/window.js";
+import { track } from "../utils/telemetry.js";
 import AppIcon from "./AppIcon.jsx";
 
 const APP_ENTRIES = [
@@ -88,6 +89,7 @@ const Spotlight = () => {
   };
 
   const run = (entry) => {
+    track("spotlight_open", entry.title, { query: query.trim().slice(0, 60) });
     close();
     entry.run();
   };

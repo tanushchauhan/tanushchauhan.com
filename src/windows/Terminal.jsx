@@ -8,6 +8,7 @@ import useAuthStore from "#store/auth.js";
 import { MatrixOverlay, SnakeOverlay } from "./TermOverlay.jsx";
 import { refreshWidgets } from "../utils/widgets.js";
 import { registerVisit } from "../utils/visit.js";
+import { track } from "../utils/telemetry.js";
 import { MAN } from "#constants/man.js";
 
 const USER = "tanush@tanushchauhan.com";
@@ -176,6 +177,7 @@ const COMMAND_NAMES = [
   "contact", "visitor", "uptime", "neofetch", "echo", "date", "history", "clear",
   "grep", "theme", "cowsay", "fortune", "matrix", "snake",
   "login", "logout", "enroll", "passkeys", "building", "stats", "tokens",
+  "traffic", "sessions", "funnel", "paths",
   "moontower", "services", "tailnet", "guestbook",
 ];
 
@@ -203,6 +205,37 @@ const deviceName = () => {
           ? "Safari"
           : "browser";
   return `${platform} (${browser})`;
+};
+
+const fetchJson = async (path) => {
+  const res = await fetch(path, { credentials: "same-origin" });
+  if (!res.ok) throw new Error(String(res.status));
+  return res.json();
+};
+
+/** A name, a count and a bar, for the report commands. */
+const topList = (rows, width = 16) => {
+  if (!rows?.length) return ["  nothing yet"];
+  const most = Math.max(...rows.map((r) => r.count));
+  const pad = Math.min(26, Math.max(...rows.map((r) => String(r.key).length)));
+  return rows.map((r) => {
+    const bar = "#".repeat(Math.max(1, Math.round((r.count / most) * width)));
+    return `  ${String(r.key).slice(0, 26).padEnd(pad)}  ${String(r.count).padStart(5)}  ${bar}`;
+  });
+};
+
+const share = (part, whole) => (whole ? `${Math.round((part / whole) * 100)}%` : "0%");
+
+const duration = (ms) => {
+  const seconds = Math.round((ms ?? 0) / 1000);
+  return seconds >= 60 ? `${Math.floor(seconds / 60)}m ${seconds % 60}s` : `${seconds}s`;
+};
+
+const ago = (iso) => {
+  const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
+  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60 * 24) return `${Math.round(minutes / 60)}h ago`;
+  return `${Math.round(minutes / (60 * 24))}d ago`;
 };
 
 const WELCOME_LINES = [
@@ -294,6 +327,7 @@ export const TerminalBody = () => {
     safari: "safari",
     contact: "contact",
     about: "about",
+    analytics: "analytics",
   };
 
   /* ---------- commands ---------- */
@@ -329,7 +363,11 @@ export const TerminalBody = () => {
         "  logout           end the session",
         "  passkeys         list registered passkeys",
         "  building [text]  read or set the 'now building' widget",
-        "  stats            visitor numbers",
+        "  stats [days]     visitor numbers, and what they did",
+        "  traffic [days]   where visits came from: source, campaign, network",
+        "  sessions [n]     recent visits, one block each",
+        "  funnel [days]    how far a visit gets",
+        "  paths [days]     what gets opened first, and what follows",
         "  tokens           one-time tokens that have not been used yet",
         "  moontower        the machines, and how to add one",
         "  services         the applications, probed over http",
@@ -381,6 +419,8 @@ export const TerminalBody = () => {
     open: (args) => {
       if (!args[0]) return print(["usage: open <file | folder | app>"]);
       const key = args[0].toLowerCase();
+      if (key === "analytics" && auth.status !== "authed")
+        return print(["open: analytics needs a sign in."]);
       if (APPS[key] && !resolve(cwd, args[0])) {
         if (key === "projects" || key === "finder") {
           openFinderWindow(locations.work);
@@ -581,21 +621,131 @@ export const TerminalBody = () => {
       }
     },
 
-    stats: async () => {
+    stats: async (args) => {
       if (auth.status !== "authed") return print(["stats: not signed in."]);
+      const days = Number(args[0]) || 30;
       try {
-        const res = await fetch("/api/visit/stats", { credentials: "same-origin" });
-        if (!res.ok) throw new Error();
-        const s = await res.json();
-        const share = s.total ? Math.round((s.returning / s.total) * 100) : 0;
+        const [visits, recent] = await Promise.all([
+          fetchJson("/api/visit/stats"),
+          fetchJson(`/api/tel/overview?days=${days}`),
+        ]);
         return print([
-          `  visitors      ${s.total.toLocaleString()} · ${s.visits.toLocaleString()} visits`,
-          `  today         ${s.seenToday} here, ${s.newToday} for the first time`,
-          `  this week     ${s.seenWeek} here, ${s.newWeek} for the first time`,
-          `  came back     ${s.returning.toLocaleString()} (${share}%)`,
+          `  visitors      ${visits.total.toLocaleString()} · ${visits.visits.toLocaleString()} visits`,
+          `  today         ${visits.seenToday} here, ${visits.newToday} for the first time`,
+          `  this week     ${visits.seenWeek} here, ${visits.newWeek} for the first time`,
+          `  came back     ${visits.returning.toLocaleString()} (${share(visits.returning, visits.total)})`,
+          "",
+          `  last ${days}d      ${recent.sessions} visits by ${recent.visitors} people`,
+          `  did things    ${recent.events.toLocaleString()} events · ${duration(recent.avg_duration_ms)} each`,
+          `  left at once  ${recent.bounced} (${share(recent.bounced, recent.sessions)})`,
+          `  on a phone    ${recent.on_phone} (${share(recent.on_phone, recent.sessions)})`,
+          `  signed in     ${recent.signed_in} · crawlers turned away ${recent.bots}`,
         ]);
       } catch {
         return print(["stats: could not reach the server."]);
+      }
+    },
+
+    traffic: async (args) => {
+      if (auth.status !== "authed") return print(["traffic: not signed in."]);
+      const days = Number(args[0]) || 30;
+      try {
+        const t = await fetchJson(`/api/tel/traffic?days=${days}`);
+        return print([
+          `  where the last ${days} days came from`,
+          "",
+          "  SOURCE",
+          ...topList(t.sources),
+          "",
+          "  CAMPAIGN",
+          ...topList(t.campaigns),
+          ...(t.refs.length ? ["", "  PRINTED LINKS", ...topList(t.refs)] : []),
+          "",
+          "  NETWORK",
+          ...topList(t.orgs),
+          "",
+          "  COUNTRY",
+          ...topList(t.countries),
+          "",
+          "  DEVICE",
+          ...topList([...t.devices, ...t.browsers]),
+        ]);
+      } catch {
+        return print(["traffic: could not reach the server."]);
+      }
+    },
+
+    sessions: async (args) => {
+      if (auth.status !== "authed") return print(["sessions: not signed in."]);
+      const limit = Number(args[0]) || 12;
+      try {
+        const { sessions } = await fetchJson(`/api/tel/sessions?limit=${limit}`);
+        if (!sessions.length) return print(["  no visits recorded yet."]);
+
+        return print(
+          sessions.flatMap((s) => {
+            const who = [s.country, s.org, [s.browser, s.os].filter(Boolean).join("/")]
+              .filter(Boolean)
+              .join(" · ");
+            const came = [s.utm_source ?? s.referrer_host, s.utm_campaign, s.ref]
+              .filter(Boolean)
+              .join(" · ");
+            return [
+              `  #${s.visitor_id ?? "?"}  ${ago(s.started_at).padEnd(8)} ${who || "unknown"}`,
+              `      ${duration(s.duration_ms)} · ${s.events} events` +
+                (s.visitor_visits > 1 ? ` · visit ${s.visitor_visits}` : "") +
+                (s.authed ? " · signed in" : ""),
+              ...(came ? [`      via ${came}`] : []),
+              ...(s.trail ? [`      ${s.trail}`] : []),
+              "",
+            ];
+          })
+        );
+      } catch {
+        return print(["sessions: could not reach the server."]);
+      }
+    },
+
+    funnel: async (args) => {
+      if (auth.status !== "authed") return print(["funnel: not signed in."]);
+      const days = Number(args[0]) || 30;
+      try {
+        const f = await fetchJson(`/api/tel/funnel?days=${days}`);
+        const steps = [
+          ["landed", f.landed],
+          ["opened something", f.opened],
+          ["opened a project", f.project],
+          ["ran a command", f.terminal],
+          ["clicked out", f.clicked],
+          ["wrote in the guestbook", f.wrote],
+        ];
+        return print([
+          `  last ${days} days`,
+          "",
+          ...steps.map(([label, value]) => {
+            const bar = "#".repeat(f.landed ? Math.round((value / f.landed) * 24) : 0);
+            return `  ${label.padEnd(24)}${String(value).padStart(4)}  ${share(value, f.landed).padStart(4)}  ${bar}`;
+          }),
+        ]);
+      } catch {
+        return print(["funnel: could not reach the server."]);
+      }
+    },
+
+    paths: async (args) => {
+      if (auth.status !== "authed") return print(["paths: not signed in."]);
+      const days = Number(args[0]) || 30;
+      try {
+        const p = await fetchJson(`/api/tel/paths?days=${days}`);
+        return print([
+          "  OPENED FIRST",
+          ...topList(p.first),
+          "",
+          "  AND THEN",
+          ...topList(p.moves),
+        ]);
+      } catch {
+        return print(["paths: could not reach the server."]);
       }
     },
 
@@ -1012,6 +1162,9 @@ export const TerminalBody = () => {
     const nextCmdHistory = [...cmdHistory, cmd];
     setCmdHistory(nextCmdHistory);
     setHistIdx(-1);
+
+    // the name only: an argument here can be an enrollment token
+    track("terminal_command", cmd.split(/\s+/)[0].toLowerCase().slice(0, 40));
 
     const result = dispatch(cmd, nextCmdHistory);
     if (!(result instanceof Promise)) return;

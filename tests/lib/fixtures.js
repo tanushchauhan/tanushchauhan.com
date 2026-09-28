@@ -25,6 +25,60 @@ export const github = {
   },
 };
 
+const top = (pairs) => pairs.map(([key, count]) => ({ key, count }));
+
+export const tel = {
+  overview: {
+    days: 30, sessions: 260, visitors: 190, events: 2140, avg_duration_ms: 96000,
+    bounced: 61, signed_in: 4, on_phone: 88, bots: 47,
+    daily: Array.from({ length: 30 }, (_, i) => ({
+      day: new Date(Date.now() - (29 - i) * 86400000).toISOString().slice(0, 10),
+      sessions: 4 + ((i * 7) % 11),
+      visitors: 3 + ((i * 5) % 8),
+    })),
+  },
+  traffic: {
+    days: 30,
+    sources: top([["linkedin", 88], ["direct", 71], ["github.com", 40]]),
+    referrers: top([["linkedin.com", 88], ["github.com", 40]]),
+    campaigns: top([["resume-2026", 31]]),
+    refs: top([["resume", 22], ["card", 5]]),
+    countries: top([["US", 180], ["IN", 30], ["DE", 12]]),
+    orgs: top([["utexas.edu", 24], ["comcast.net", 19]]),
+    browsers: top([["Chrome", 140], ["Safari", 90]]),
+    systems: top([["macOS", 120], ["iOS", 70]]),
+    devices: top([["desktop", 172], ["phone", 88]]),
+  },
+  sessions: {
+    sessions: [
+      {
+        id: "0f5f2f4e-0000-4000-8000-000000000001", visitor_id: 1204,
+        started_at: new Date(Date.now() - 20 * 60000).toISOString(),
+        duration_ms: 142000, events: 18, country: "US", org: "utexas.edu", rdns: null,
+        browser: "Chrome", os: "macOS", device: "desktop", surface: "desktop",
+        referrer_host: "linkedin.com", utm_source: "linkedin", utm_campaign: "resume-2026",
+        ref: "resume", authed: false, visitor_visits: 3,
+        trail: "finder > crave > terminal > github.com",
+      },
+    ],
+  },
+  funnel: { days: 30, landed: 260, opened: 188, project: 96, terminal: 41, clicked: 33, wrote: 6 },
+  paths: {
+    days: 30,
+    first: top([["finder", 96], ["terminal", 44]]),
+    moves: top([["finder > photos", 21], ["terminal > finder", 14]]),
+  },
+  heatmap: {
+    days: 30,
+    surface: "desktop",
+    points: Array.from({ length: 120 }, (_, i) => ({
+      x: 0.2 + ((i * 37) % 60) / 100,
+      y: 0.25 + ((i * 53) % 55) / 100,
+      target: "dock",
+    })),
+  },
+};
+
 const history = (base) =>
   Array.from({ length: 90 }, (_, i) => ({
     at: new Date(Date.now() - (90 - i) * 30000).toISOString(),
@@ -172,4 +226,11 @@ export const installFixtures = async (page, { authed = true, building } = {}) =>
   await page.route("**/api/visit", (r) =>
     r.fulfill({ json: { number: 1204, visits: 1, since: "2026-09-01T00:00:00Z", total: 1204 } })
   );
+
+  await page.route("**/api/tel/overview*", (r) => r.fulfill({ json: tel.overview }));
+  await page.route("**/api/tel/traffic*", (r) => r.fulfill({ json: tel.traffic }));
+  await page.route("**/api/tel/sessions*", (r) => r.fulfill({ json: tel.sessions }));
+  await page.route("**/api/tel/funnel*", (r) => r.fulfill({ json: tel.funnel }));
+  await page.route("**/api/tel/paths*", (r) => r.fulfill({ json: tel.paths }));
+  await page.route("**/api/tel/heatmap*", (r) => r.fulfill({ json: tel.heatmap }));
 };

@@ -2,9 +2,17 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { play, setSoundEnabled } from "../utils/sound.js";
-import { derefData, refFor } from "../constants/index.js";
+import { track } from "../utils/telemetry.js";
+import { derefData, parentOf, refFor } from "../constants/index.js";
 
 const INITIAL_Z_INDEX = 1000;
+
+/** A folder directly inside Projects is one of the projects, and worth its own event. */
+const trackFolder = (location) => {
+  if (!location?.id) return;
+  const project = parentOf(location.id)?.id === "work";
+  track(project ? "project_open" : "folder_open", location.id);
+};
 
 export const FINDER_KEYS = ["finder", "finder2", "finder3"];
 
@@ -18,6 +26,7 @@ const WINDOW_KEYS = [
   "txtFile",
   "imgFile",
   "about",
+  "analytics",
 ];
 
 const WINDOW_CONFIG = Object.fromEntries(
@@ -52,7 +61,12 @@ const useWindowStore = create(
       widgetPos: {},
 
       openWindow: (windowKey, data = null) => {
-        if (!get().windows[windowKey]?.isOpen) play("open");
+        const wasOpen = get().windows[windowKey]?.isOpen;
+        if (!wasOpen) {
+          play("open");
+          track("window_open", windowKey);
+        }
+        if (data?.kind === "folder") trackFolder(data);
         set((state) => {
           const win = state.windows[windowKey];
           if (!win) return;
@@ -66,7 +80,10 @@ const useWindowStore = create(
       },
 
       closeWindow: (windowKey) => {
-        if (get().windows[windowKey]?.isOpen) play("close");
+        if (get().windows[windowKey]?.isOpen) {
+          play("close");
+          track("window_close", windowKey);
+        }
         set((state) => {
           const win = state.windows[windowKey];
           if (!win) return;
@@ -156,20 +173,26 @@ const useWindowStore = create(
           state.spotlightOpen = open;
         }),
 
-      setTheme: (theme) =>
+      setTheme: (theme) => {
+        track("appearance", "theme", { value: theme });
         set((state) => {
           state.theme = theme;
-        }),
+        });
+      },
 
-      setWallpaper: (wallpaper) =>
+      setWallpaper: (wallpaper) => {
+        track("appearance", "wallpaper", { value: wallpaper });
         set((state) => {
           state.wallpaper = wallpaper;
-        }),
+        });
+      },
 
-      setGlass: (glass) =>
+      setGlass: (glass) => {
+        track("appearance", "glass", { value: glass });
         set((state) => {
           state.glass = glass;
-        }),
+        });
+      },
 
       setControlCenter: (open) =>
         set((state) => {
@@ -221,6 +244,8 @@ const useWindowStore = create(
       // reuse the window showing this folder, else a free one, else the oldest
       openFinderWindow: (location = null) => {
         play("open");
+        // a folder already on screen comes forward rather than opening again
+        let opened = false;
         set((state) => {
           let key =
             location &&
@@ -237,12 +262,16 @@ const useWindowStore = create(
           }
 
           const win = state.windows[key];
+          opened = !win.isOpen;
           win.isOpen = true;
           win.isMinimized = false;
           win.data = location ?? win.data;
           win.zIndex = state.nextZIndex;
           state.nextZIndex += 1;
         });
+
+        if (opened) track("window_open", "finder");
+        trackFolder(location);
       },
     })),
     {

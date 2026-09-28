@@ -6,6 +6,7 @@ import WindowWrapper from "#hoc/WindowWrapper.jsx";
 import { WindowControls } from "#components";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
+import { track } from "../utils/telemetry.js";
 
 const MESSAGE_MAX = 500;
 
@@ -94,6 +95,7 @@ export const GuestbookBody = ({ active = true }) => {
         return;
       }
       if (data.entry) setEntries((prev) => [data.entry, ...prev]);
+      track("guestbook_post", null, { named: Boolean(name.trim()) });
       setMessage("");
       listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     } catch {

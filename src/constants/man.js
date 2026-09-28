@@ -30,7 +30,8 @@ export const MAN = {
   open: page(
     "open <target>",
     "Open a file, folder or app in a real window.",
-    "Apps: projects, gallery, highlights, contact, about."
+    "Apps: projects, gallery, highlights, contact, about.",
+    "Signed in, `open analytics` shows where visits came from and what they did."
   ),
 
   pwd: page("pwd", "Print the working directory."),
@@ -46,7 +47,8 @@ export const MAN = {
   visitor: page(
     "visitor",
     "Which visitor number you are.",
-    "Counted once per browser, by a salted hash of your address. The address itself is never stored."
+    "Counted by a salted hash of your address. The address itself is never stored.",
+    "Visits also record where they came from, a rough location, the browser, and which windows were opened. No cookie, no advertising network, and nothing leaves this server."
   ),
 
   uptime: page(
@@ -101,9 +103,33 @@ export const MAN = {
   ),
 
   stats: page(
-    "stats",
-    "Visitor numbers: totals, today, this week, and how many came back.",
-    "Counts only. Nothing about who anyone is."
+    "stats [days]",
+    "Visitor numbers, and what those visits did.",
+    "The first block counts people, the second counts the last 30 days of visits.",
+    "Crawlers are recognised by their user agent and left out of everything."
+  ),
+
+  traffic: page(
+    "traffic [days]",
+    "Where the visits came from.",
+    "Source and campaign come from the tags on a link, so they are only as good as the links handed out.",
+    "Network is the reverse DNS of the address, which names a university or a company but not a person."
+  ),
+
+  sessions: page(
+    "sessions [n]",
+    "The most recent visits, one block each.",
+    "The last line is the trail: the windows, projects and commands in the order they happened."
+  ),
+
+  funnel: page(
+    "funnel [days]",
+    "How far a visit gets, from landing to writing in the guestbook."
+  ),
+
+  paths: page(
+    "paths [days]",
+    "Which window gets opened first, and which one tends to follow it."
   ),
 
   tokens: page(

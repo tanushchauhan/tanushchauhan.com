@@ -23,6 +23,7 @@ import AppIcon from "./AppIcon.jsx";
 import useWindowStore from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { useAppearance } from "../utils/appearance.js";
+import { track } from "../utils/telemetry.js";
 
 /* ---------------- app registry ---------------- */
 const APPS = [
@@ -401,6 +402,11 @@ const MobileExperience = () => {
 
   const Screen = activeApp ? APP_SCREENS[activeApp] : null;
 
+  const openApp = (id) => {
+    track("app_open", id);
+    setActiveApp(id);
+  };
+
   return (
     <div id="mobile" ref={shellRef}>
       <StatusBar />
@@ -422,7 +428,7 @@ const MobileExperience = () => {
           <section className="m-page">
             <div className="m-grid">
               {APPS.filter((a) => !DOCK_APPS.includes(a.id)).map((a) => (
-                <SpringboardIcon key={a.id} app={a} onOpen={setActiveApp} />
+                <SpringboardIcon key={a.id} app={a} onOpen={openApp} />
               ))}
             </div>
           </section>
@@ -448,7 +454,7 @@ const MobileExperience = () => {
 
         <div className="m-dock">
           {APPS.filter((a) => DOCK_APPS.includes(a.id)).map((a) => (
-            <SpringboardIcon key={a.id} app={a} onOpen={setActiveApp} />
+            <SpringboardIcon key={a.id} app={a} onOpen={openApp} />
           ))}
         </div>
       </div>
