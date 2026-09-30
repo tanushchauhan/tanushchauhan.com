@@ -1,13 +1,44 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+  DoorOpen,
+  Footprints,
+  Globe,
+  LayoutGrid,
+  MousePointerClick,
+  Smartphone,
+  Timer,
+  Users,
+  Zap,
+} from "lucide-react";
 import clsx from "clsx";
+import dayjs from "dayjs";
 import WindowWrapper from "#hoc/WindowWrapper.jsx";
 import { WindowControls } from "#components";
 import useAuthStore from "#store/auth.js";
 import useWindowStore from "#store/window.js";
 
-const TABS = ["Overview", "Traffic", "Visits", "People", "Events", "Heatmap"];
+const SECTIONS = [
+  {
+    name: "Reports",
+    tabs: [
+      { name: "Overview", icon: LayoutGrid },
+      { name: "Traffic", icon: Compass },
+      { name: "Events", icon: Zap },
+      { name: "Heatmap", icon: MousePointerClick },
+    ],
+  },
+  {
+    name: "Visitors",
+    tabs: [
+      { name: "Visits", icon: Footprints },
+      { name: "People", icon: Users },
+    ],
+  },
+];
 const RANGES = [7, 30, 90];
 const LIVE_MS = 20000;
 
@@ -61,26 +92,38 @@ const offset = (at, from) => {
 
 const Waiting = ({ error }) => <p className="an-empty">{error || "reading…"}</p>;
 
-const Figure = ({ label, value, note }) => (
-  <div className="an-figure">
-    <p className="an-label">{label}</p>
+/** A country code in a circle, or a globe when the address had none. */
+const Badge = ({ country }) => (
+  <span className="an-badge">{country ?? <Globe className="size-3.5" />}</span>
+);
+
+const Figure = ({ icon: Icon, accent, label, value, note }) => (
+  <div className="an-figure" style={{ "--accent": accent }}>
+    <p className="an-label">
+      <span className="an-ico">
+        <Icon />
+      </span>
+      {label}
+    </p>
     <p className="an-value">{value}</p>
     {note && <p className="an-note">{note}</p>}
   </div>
 );
 
-const Ranked = ({ title, rows }) => {
+/** Bars scaled to the top row. With `of`, each row also shows its share of that total. */
+const Ranked = ({ title, rows, of }) => {
   const most = Math.max(1, ...(rows ?? []).map((r) => r.count));
   return (
-    <section className="an-ranked">
+    <section className="an-card">
       <p className="an-label">{title}</p>
       {rows?.length ? (
-        <ul>
+        <ul className="an-rows">
           {rows.map((row) => (
             <li key={row.key}>
-              <span className="an-fill" style={{ "--fill": `${(row.count / most) * 100}%` }} />
+              <span className="an-fill" style={{ "--fill": `${(row.count / (of || most)) * 100}%` }} />
               <span className="an-key">{row.key}</span>
-              <span className="an-count">{row.count}</span>
+              {of != null && <span className="an-share">{percent(row.count, of)}%</span>}
+              <span className="an-count">{row.count.toLocaleString()}</span>
             </li>
           ))}
         </ul>
@@ -91,52 +134,99 @@ const Ranked = ({ title, rows }) => {
   );
 };
 
+const Trail = ({ trail }) => (
+  <p className="an-trail">
+    {trail.split(" > ").map((step, i) => (
+      <span key={i}>
+        {i > 0 && <i>{" › "}</i>}
+        {step}
+      </span>
+    ))}
+  </p>
+);
+
 /* ---------------- tabs ---------------- */
+
+const Daily = ({ daily }) => {
+  const [hover, setHover] = useState(null);
+  const most = Math.max(1, ...daily.map((d) => d.sessions));
+  const total = daily.reduce((sum, d) => sum + d.sessions, 0);
+  const day = hover == null ? null : daily[hover];
+
+  return (
+    <section className="an-card">
+      <div className="an-card-head">
+        <p className="an-label">by day</p>
+        <p className="an-readout">
+          {day
+            ? `${dayjs(day.day).format("ddd, MMM D")} · ${day.sessions} visits, ${day.visitors} people`
+            : `${(total / Math.max(1, daily.length)).toFixed(1)} a day · best ${most}`}
+        </p>
+      </div>
+      <div className="an-days" onMouseLeave={() => setHover(null)}>
+        {daily.map((d, i) => (
+          <span
+            key={d.day}
+            className={clsx(i === hover && "on")}
+            style={{ "--h": `${(d.sessions / most) * 100}%` }}
+            onMouseEnter={() => setHover(i)}
+          />
+        ))}
+      </div>
+      {daily.length > 0 && (
+        <div className="an-axis">
+          <span>{dayjs(daily[0].day).format("MMM D")}</span>
+          <span>{dayjs(daily.at(-1).day).format("MMM D")}</span>
+        </div>
+      )}
+    </section>
+  );
+};
 
 const Overview = ({ days }) => {
   const { data, error } = useReport(`/api/tel/overview?days=${days}`);
   const funnel = useReport(`/api/tel/funnel?days=${days}`);
   if (!data) return <Waiting error={error} />;
 
-  const most = Math.max(1, ...data.daily.map((d) => d.sessions));
-
   return (
     <>
       <div className="an-figures">
-        <Figure label="visits" value={data.sessions} note={`${data.visitors} people`} />
         <Figure
+          icon={Footprints}
+          accent="#f08a2d"
+          label="visits"
+          value={data.sessions.toLocaleString()}
+          note={`${data.visitors} people`}
+        />
+        <Figure
+          icon={Timer}
+          accent="#5eb0ef"
           label="time each"
           value={spell(data.avg_duration_ms)}
           note={`${data.events.toLocaleString()} events`}
         />
         <Figure
+          icon={DoorOpen}
+          accent="#a78bfa"
           label="left at once"
           value={`${percent(data.bounced, data.sessions)}%`}
           note={`${data.bounced} visits`}
         />
         <Figure
+          icon={Smartphone}
+          accent="#5fd39b"
           label="on a phone"
           value={`${percent(data.on_phone, data.sessions)}%`}
           note={`crawlers ${data.bots}`}
         />
       </div>
 
-      <section className="an-ranked">
-        <p className="an-label">by day</p>
-        <div className="an-days">
-          {data.daily.map((day) => (
-            <span
-              key={day.day}
-              title={`${day.day}: ${day.sessions} visits, ${day.visitors} people`}
-              style={{ "--h": `${(day.sessions / most) * 100}%` }}
-            />
-          ))}
-        </div>
-      </section>
+      <Daily daily={data.daily} />
 
       {funnel.data && (
         <Ranked
           title="how far a visit gets"
+          of={funnel.data.landed}
           rows={[
             { key: "landed", count: funnel.data.landed },
             { key: "opened something", count: funnel.data.opened },
@@ -157,26 +247,27 @@ const Traffic = ({ days }) => {
   if (!data) return <Waiting error={error} />;
 
   return (
-    <>
+    <div className="an-grid">
       <Ranked title="source" rows={data.sources} />
       <Ranked title="campaign" rows={data.campaigns} />
       <Ranked title="printed links" rows={data.refs} />
       <Ranked title="network" rows={data.orgs} />
       <Ranked title="country" rows={data.countries} />
-      <Ranked title="browser" rows={data.browsers} />
       <Ranked title="device" rows={data.devices} />
+      <Ranked title="browser" rows={data.browsers} />
+      <Ranked title="system" rows={data.systems} />
       {paths.data && (
         <>
           <Ranked title="opened first" rows={paths.data.first} />
           <Ranked title="and then" rows={paths.data.moves} />
         </>
       )}
-    </>
+    </div>
   );
 };
 
 /** Everything recorded about one visit, including every event in order. */
-const Visit = ({ id, onBack }) => {
+const Visit = ({ id }) => {
   const { data, error } = useReport(`/api/tel/visit/${id}`);
   if (!data) return <Waiting error={error} />;
 
@@ -207,21 +298,23 @@ const Visit = ({ id, onBack }) => {
         .filter(Boolean)
         .join(" · "),
     ],
-    ["stayed", `${spell(visit.duration_ms)} · ${visit.events} events`],
   ].filter(([, value]) => value);
 
   return (
     <>
-      <button type="button" className="an-back" onClick={onBack}>
-        <ChevronLeft className="size-4" /> visits
-      </button>
+      <header className="an-hero">
+        <Badge country={visit.country} />
+        <div className="min-w-0">
+          <h3 className="an-title">{visit.org ?? visit.country ?? "unknown"}</h3>
+          <p className="an-note">
+            {visit.visitor_id != null && `visitor #${visit.visitor_id} · `}
+            {when(visit.started_at)} · stayed {spell(visit.duration_ms)} · {visit.events} events
+            {visit.authed && " · signed in"}
+          </p>
+        </div>
+      </header>
 
-      <h3 className="an-title">
-        {visit.org ?? visit.country ?? "unknown"}
-        <span className="an-when">{when(visit.started_at)}</span>
-      </h3>
-
-      <dl className="an-facts">
+      <dl className="an-card an-facts">
         {facts.map(([label, value]) => (
           <div key={label}>
             <dt>{label}</dt>
@@ -230,7 +323,7 @@ const Visit = ({ id, onBack }) => {
         ))}
       </dl>
 
-      <section className="an-ranked">
+      <section className="an-card">
         <p className="an-label">what happened</p>
         <ol className="an-timeline">
           {events.map((event) => (
@@ -252,31 +345,33 @@ const Visits = ({ onOpen }) => {
   if (!data.sessions.length) return <p className="an-empty">no visits yet</p>;
 
   return (
-    <ul className="an-visits">
+    <ul className="an-list an-visits">
       {data.sessions.map((visit) => (
         <li key={visit.id}>
           <button type="button" onClick={() => onOpen(visit.id)}>
-            <div className="an-visit-top">
-              <span className="an-who">
-                {visit.org ?? visit.country ?? "unknown"}
-                {visit.visitor_visits > 1 && ` · visit ${visit.visitor_visits}`}
-              </span>
-              <span className="an-when">{when(visit.started_at)}</span>
-            </div>
-            <p className="an-note">
-              {[visit.browser, visit.os, visit.surface].filter(Boolean).join(" · ")} ·{" "}
-              {spell(visit.duration_ms)} · {visit.events} events
-              {visit.authed && " · signed in"}
-            </p>
-            {(visit.utm_source || visit.referrer_host || visit.ref) && (
+            <Badge country={visit.country} />
+            <div className="an-row">
+              <div className="an-visit-top">
+                <span className="an-who">{visit.org ?? visit.country ?? "unknown"}</span>
+                {visit.visitor_visits > 1 && <span className="an-tag">visit {visit.visitor_visits}</span>}
+                {visit.authed && <span className="an-tag">signed in</span>}
+                <span className="an-when">{when(visit.started_at)}</span>
+              </div>
               <p className="an-note">
-                via{" "}
-                {[visit.utm_source ?? visit.referrer_host, visit.utm_campaign, visit.ref]
-                  .filter(Boolean)
-                  .join(" · ")}
+                {[visit.browser, visit.os, visit.surface].filter(Boolean).join(" · ")} ·{" "}
+                {spell(visit.duration_ms)} · {visit.events} events
               </p>
-            )}
-            {visit.trail && <p className="an-trail">{visit.trail}</p>}
+              {(visit.utm_source || visit.referrer_host || visit.ref) && (
+                <p className="an-note">
+                  via{" "}
+                  {[visit.utm_source ?? visit.referrer_host, visit.utm_campaign, visit.ref]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
+              {visit.trail && <Trail trail={visit.trail} />}
+            </div>
+            <ChevronRight className="an-chevron" />
           </button>
         </li>
       ))}
@@ -290,24 +385,26 @@ const People = () => {
   if (!data.people.length) return <p className="an-empty">nobody yet</p>;
 
   return (
-    <ul className="an-visits">
+    <ul className="an-list">
       {data.people.map((person) => (
         <li key={person.id}>
-          <div className="an-visit-top">
-            <span className="an-who">
-              #{person.id} · {person.org ?? person.country ?? "unknown"}
-            </span>
-            <span className="an-when">{when(person.last_seen)}</span>
+          <Badge country={person.country} />
+          <div className="an-row">
+            <div className="an-visit-top">
+              <span className="an-who">{person.org ?? person.country ?? "unknown"}</span>
+              <span className="an-tag">#{person.id}</span>
+              <span className="an-when">{when(person.last_seen)}</span>
+            </div>
+            <p className="an-note">
+              {person.visits} {person.visits === 1 ? "visit" : "visits"} · {person.events} events ·{" "}
+              {spell(person.total_ms)} in total
+            </p>
+            <p className="an-note">
+              {[person.browser, person.os].filter(Boolean).join(" · ")} · first seen{" "}
+              {when(person.first_seen)}
+              {person.found_by && ` via ${person.found_by}`}
+            </p>
           </div>
-          <p className="an-note">
-            {person.visits} {person.visits === 1 ? "visit" : "visits"} · {person.events} events ·{" "}
-            {spell(person.total_ms)} in total
-          </p>
-          <p className="an-note">
-            {[person.browser, person.os].filter(Boolean).join(" · ")} · first seen{" "}
-            {when(person.first_seen)}
-            {person.found_by && ` via ${person.found_by}`}
-          </p>
         </li>
       ))}
     </ul>
@@ -317,17 +414,21 @@ const People = () => {
 const Events = ({ days }) => {
   const { data, error } = useReport(`/api/tel/events?days=${days}`);
   if (!data) return <Waiting error={error} />;
+  if (!data.events.length) return <p className="an-empty">nothing recorded yet</p>;
+
+  const most = Math.max(1, ...data.events.map((e) => e.count));
 
   return (
-    <section className="an-ranked">
+    <section className="an-card">
       <p className="an-label">every event, most common first</p>
-      <ul className="an-events">
+      <ul className="an-rows an-events">
         {data.events.map((event) => (
           <li key={`${event.name}:${event.target}`}>
+            <span className="an-fill" style={{ "--fill": `${(event.count / most) * 100}%` }} />
             <span className="an-name">{event.name}</span>
             <span className="an-key">{event.target}</span>
-            <span className="an-count">{event.count}</span>
-            <span className="an-note">{event.sessions} visits</span>
+            <span className="an-count">{event.count.toLocaleString()}</span>
+            <span className="an-share">{event.sessions} visits</span>
           </li>
         ))}
       </ul>
@@ -361,7 +462,7 @@ const paintHeat = (ctx, points, width, height) => {
 
 /** The menu bar and the dock, so a dot on the small map has something to sit against. */
 const paintChrome = (ctx, width, height) => {
-  ctx.fillStyle = "rgb(255 255 255 / 0.07)";
+  ctx.fillStyle = "rgb(255 255 255 / 0.12)";
   ctx.fillRect(0, 0, width, height * 0.035);
 
   const dockWidth = width * 0.29;
@@ -371,7 +472,7 @@ const paintChrome = (ctx, width, height) => {
   ctx.fill();
 };
 
-/** The desktop at a small size, so nothing is hidden behind this window. */
+/** The desktop at a small size, over the current wallpaper, so nothing is hidden behind this window. */
 const Minimap = ({ points }) => {
   const ref = useRef(null);
 
@@ -446,15 +547,26 @@ const Heatmap = ({ days }) => {
 
   return (
     <>
-      <div className="an-visit-top">
-        <span className="an-who">{data.points.length} clicks</span>
-        <button type="button" className={clsx("an-toggle", over && "on")} onClick={() => setOver(!over)}>
-          {over ? "hide from the desktop" : "show over the desktop"}
-        </button>
-      </div>
+      <section className="an-card">
+        <div className="an-card-head">
+          <p className="an-who">{data.points.length.toLocaleString()} clicks</p>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={over}
+            className="an-toggle"
+            onClick={() => setOver(!over)}
+          >
+            show over the desktop
+            <span className={clsx("cc-switch", over && "on")}>
+              <span />
+            </span>
+          </button>
+        </div>
+        <Minimap points={data.points} />
+      </section>
 
-      <Minimap points={data.points} />
-      <Ranked title="most clicked" rows={targets} />
+      <Ranked title="most clicked" rows={targets} of={data.points.length} />
 
       {over && <Overlay points={data.points} />}
     </>
@@ -464,13 +576,13 @@ const Heatmap = ({ days }) => {
 /* ---------------- the window ---------------- */
 
 const Live = () => {
-  const [here, setHere] = useState(0);
+  const [here, setHere] = useState([]);
 
   useEffect(() => {
     let alive = true;
     const tick = () =>
       get("/api/tel/live")
-        .then((data) => alive && setHere(data.here.length))
+        .then((data) => alive && setHere(data.here))
         .catch(() => null);
 
     tick();
@@ -481,11 +593,15 @@ const Live = () => {
     };
   }, []);
 
-  if (!here) return null;
+  const doing = [...new Set(here.map((visit) => visit.doing).filter(Boolean))].slice(0, 3);
+
   return (
-    <span className="an-live">
-      <i /> {here} here now
-    </span>
+    <div className={clsx("an-live", here.length && "on")}>
+      <p>
+        <i /> {here.length ? `${here.length} here now` : "nobody here now"}
+      </p>
+      {doing.length > 0 && <p className="an-doing">{doing.join(", ")}</p>}
+    </div>
   );
 };
 
@@ -495,6 +611,12 @@ const Analytics = () => {
   const [tab, setTab] = useState("Overview");
   const [days, setDays] = useState(30);
   const [visitId, setVisitId] = useState(null);
+  const bodyRef = useRef(null);
+
+  // each report starts at the top, not wherever the last one was scrolled to
+  useEffect(() => {
+    bodyRef.current?.scrollTo(0, 0);
+  }, [tab, visitId]);
 
   const show = (name) => {
     setVisitId(null);
@@ -515,28 +637,26 @@ const Analytics = () => {
     );
   }
 
+  // the range only changes reports that cover a stretch of days
+  const ranged = !visitId && !["Visits", "People"].includes(tab);
+
   return (
     <>
       <div id="window-header">
         <WindowControls target="analytics" />
-        <h2>Analytics</h2>
-        <Live />
-      </div>
-
-      <div className="an-toolbar">
-        <div className="an-tabs">
-          {TABS.map((name) => (
-            <button
-              key={name}
-              type="button"
-              className={clsx(name === tab && "on")}
-              onClick={() => show(name)}
-            >
-              {name}
-            </button>
-          ))}
+        <div className="finder-nav">
+          <button
+            type="button"
+            className="an-back"
+            aria-label="Back to visits"
+            disabled={!visitId}
+            onClick={() => setVisitId(null)}
+          >
+            <ChevronLeft />
+          </button>
         </div>
-        <div className="an-range">
+        <h2>{visitId ? "Visit" : tab}</h2>
+        <div className={clsx("an-range", !ranged && "idle")}>
           {RANGES.map((range) => (
             <button
               key={range}
@@ -550,22 +670,44 @@ const Analytics = () => {
         </div>
       </div>
 
-      <div className="an-body">
-        {visitId ? (
-          <Visit id={visitId} onBack={() => setVisitId(null)} />
-        ) : (
-          <>
-            {tab === "Overview" && <Overview days={days} />}
-            {tab === "Traffic" && <Traffic days={days} />}
-            {tab === "Visits" && <Visits onOpen={setVisitId} />}
-            {tab === "People" && <People />}
-            {tab === "Events" && <Events days={days} />}
-            {tab === "Heatmap" && <Heatmap days={days} />}
-          </>
-        )}
+      <div className="an-frame">
+        <nav className="sidebar an-tabs">
+          {SECTIONS.map((section) => (
+            <div key={section.name}>
+              <h3>{section.name}</h3>
+              {section.tabs.map(({ name, icon: Icon }) => (
+                <button
+                  key={name}
+                  type="button"
+                  className={clsx(name === tab && "on")}
+                  onClick={() => show(name)}
+                >
+                  <Icon />
+                  {name}
+                </button>
+              ))}
+            </div>
+          ))}
+          <Live />
+        </nav>
+
+        <div className="an-body" ref={bodyRef}>
+          {visitId ? (
+            <Visit id={visitId} />
+          ) : (
+            <>
+              {tab === "Overview" && <Overview days={days} />}
+              {tab === "Traffic" && <Traffic days={days} />}
+              {tab === "Visits" && <Visits onOpen={setVisitId} />}
+              {tab === "People" && <People />}
+              {tab === "Events" && <Events days={days} />}
+              {tab === "Heatmap" && <Heatmap days={days} />}
+            </>
+          )}
+        </div>
       </div>
     </>
   );
 };
 
-export default WindowWrapper(Analytics, "analytics", { min: { w: 460, h: 360 } });
+export default WindowWrapper(Analytics, "analytics", { min: { w: 580, h: 380 } });

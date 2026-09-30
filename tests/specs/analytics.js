@@ -34,7 +34,7 @@ export const run = async ({ browser, t }) => {
   await page.waitForTimeout(400);
   const visits = await text(page, ".an-body");
   t.check("a visit says how many times that person came", visits.includes("visit 3"));
-  t.check("and what they opened, in order", visits.includes("finder > crave > terminal"));
+  t.check("and what they opened, in order", visits.includes("finder › crave › terminal"));
 
   // ---------- the click heatmap ----------
   await page.click('.an-tabs button:text-is("Heatmap")');
