@@ -5,8 +5,11 @@ import { db } from "../db/index.ts";
 import { sessions } from "../db/schema.ts";
 
 export const COOKIE_NAME = "tc_session";
+const MINE_COOKIE = "tc_mine";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+// the longest a browser will keep a cookie
+const MINE_MS = 400 * 24 * 60 * 60 * 1000;
 
 // refresh at most daily, so most reads do not write
 const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
@@ -33,6 +36,23 @@ const newToken = () => {
 /** Cookies are only marked Secure in production so http://localhost still works. */
 const isProduction = () => Bun.env.NODE_ENV === "production";
 
+/**
+ * Marks this browser as mine, so the visit reports can leave it out. It lasts
+ * longer than a session, since a visit after the sign-in lapses is still mine.
+ */
+export const markMyBrowser = async (c: Context) => {
+  await setSignedCookie(c, MINE_COOKIE, "1", secret(), {
+    httpOnly: true,
+    secure: isProduction(),
+    sameSite: "Lax",
+    path: "/",
+    expires: new Date(Date.now() + MINE_MS),
+  });
+};
+
+export const isMyBrowser = async (c: Context) =>
+  Boolean(await getSignedCookie(c, secret(), MINE_COOKIE));
+
 export const createSession = async (c: Context, credentialId: string) => {
   const token = newToken();
   const expiresAt = new Date(Date.now() + THIRTY_DAYS_MS);
@@ -51,6 +71,7 @@ export const createSession = async (c: Context, credentialId: string) => {
     path: "/",
     expires: expiresAt,
   });
+  await markMyBrowser(c);
 
   await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
 
@@ -99,6 +120,8 @@ export const destroySession = async (c: Context) => {
     await db.delete(sessions).where(eq(sessions.tokenHash, sha256(token)));
   }
   deleteCookie(c, COOKIE_NAME, { path: "/" });
+  // signing out is how a borrowed computer stops counting as mine
+  deleteCookie(c, MINE_COOKIE, { path: "/" });
 };
 
 export const destroyAllSessions = () => db.delete(sessions);

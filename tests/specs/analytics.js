@@ -117,6 +117,53 @@ export const run = async ({ browser, t }) => {
   t.check("every event is counted", events.includes("terminal_command"));
   t.check("with the visits behind it", events.includes("38 visits"));
 
+  // ---------- the sidebar ----------
+  const layout = await page.evaluate(() => {
+    const bar = document.querySelector(".an-tabs").getBoundingClientRect();
+    const [reports, visitors] = [...document.querySelectorAll(".an-tabs h3")].map(
+      (h) => h.getBoundingClientRect().left
+    );
+    const live = document.querySelector(".an-doing").getBoundingClientRect();
+    return { reports, visitors, bar, live };
+  });
+  t.check(
+    "the sidebar groups line up",
+    layout.reports === layout.visitors,
+    `${layout.reports} vs ${layout.visitors}`
+  );
+  t.check(
+    "and a long live line stays inside it",
+    layout.live.left >= layout.bar.left && layout.live.right <= layout.bar.right,
+    `${Math.round(layout.live.left)}-${Math.round(layout.live.right)} in ${Math.round(layout.bar.left)}-${Math.round(layout.bar.right)}`
+  );
+
+  // ---------- my own visits ----------
+  const asked = [];
+  page.on("request", (req) => req.url().includes("/api/tel/") && asked.push(req.url()));
+
+  await page.click('.an-tabs button:text-is("Overview")');
+  await page.waitForTimeout(400);
+  t.check(
+    "my visits are left out and counted",
+    (await text(page, ".an-body")).includes("12 of yours hidden")
+  );
+  t.check("reports are asked without them", asked.length > 0 && asked.every((url) => !url.includes("me=1")));
+
+  asked.length = 0;
+  await page.click(".an-me");
+  await page.waitForTimeout(500);
+  t.check("the switch turns on", (await page.getAttribute(".an-me", "aria-checked")) === "true");
+  t.check(
+    "and every report is asked again with them",
+    asked.some((url) => url.includes("/overview")) && asked.every((url) => url.includes("me=1")),
+    asked.join("\n")
+  );
+  t.check("the count says they are in", (await text(page, ".an-body")).includes("12 of them yours"));
+
+  await page.click('.an-tabs button:text-is("People")');
+  await page.waitForTimeout(400);
+  t.check("and it holds across tabs", asked.some((url) => url.includes("/people?limit=60&me=1")));
+
   // ---------- the range ----------
   await page.click('.an-range button:text-is("7d")');
   await page.waitForTimeout(500);

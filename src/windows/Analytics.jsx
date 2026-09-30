@@ -66,6 +66,9 @@ const useReport = (path) => {
   return state;
 };
 
+/** Your own visits are left out of every report unless asked for. */
+const scoped = (path, me) => (me ? `${path}${path.includes("?") ? "&" : "?"}me=1` : path);
+
 const percent = (part, whole) => (whole ? Math.round((part / whole) * 100) : 0);
 
 const spell = (ms) => {
@@ -183,9 +186,9 @@ const Daily = ({ daily }) => {
   );
 };
 
-const Overview = ({ days }) => {
-  const { data, error } = useReport(`/api/tel/overview?days=${days}`);
-  const funnel = useReport(`/api/tel/funnel?days=${days}`);
+const Overview = ({ days, me }) => {
+  const { data, error } = useReport(scoped(`/api/tel/overview?days=${days}`, me));
+  const funnel = useReport(scoped(`/api/tel/funnel?days=${days}`, me));
   if (!data) return <Waiting error={error} />;
 
   return (
@@ -196,7 +199,11 @@ const Overview = ({ days }) => {
           accent="#f08a2d"
           label="visits"
           value={data.sessions.toLocaleString()}
-          note={`${data.visitors} people`}
+          note={
+            data.mine
+              ? `${data.visitors} people · ${data.mine} ${me ? "of them yours" : "of yours hidden"}`
+              : `${data.visitors} people`
+          }
         />
         <Figure
           icon={Timer}
@@ -241,9 +248,9 @@ const Overview = ({ days }) => {
   );
 };
 
-const Traffic = ({ days }) => {
-  const { data, error } = useReport(`/api/tel/traffic?days=${days}`);
-  const paths = useReport(`/api/tel/paths?days=${days}`);
+const Traffic = ({ days, me }) => {
+  const { data, error } = useReport(scoped(`/api/tel/traffic?days=${days}`, me));
+  const paths = useReport(scoped(`/api/tel/paths?days=${days}`, me));
   if (!data) return <Waiting error={error} />;
 
   return (
@@ -339,8 +346,8 @@ const Visit = ({ id }) => {
   );
 };
 
-const Visits = ({ onOpen }) => {
-  const { data, error } = useReport("/api/tel/sessions?limit=40");
+const Visits = ({ me, onOpen }) => {
+  const { data, error } = useReport(scoped("/api/tel/sessions?limit=40", me));
   if (!data) return <Waiting error={error} />;
   if (!data.sessions.length) return <p className="an-empty">no visits yet</p>;
 
@@ -348,13 +355,13 @@ const Visits = ({ onOpen }) => {
     <ul className="an-list an-visits">
       {data.sessions.map((visit) => (
         <li key={visit.id}>
-          <button type="button" onClick={() => onOpen(visit.id)}>
+          <button type="button" data-t="visit" onClick={() => onOpen(visit.id)}>
             <Badge country={visit.country} />
             <div className="an-row">
               <div className="an-visit-top">
                 <span className="an-who">{visit.org ?? visit.country ?? "unknown"}</span>
                 {visit.visitor_visits > 1 && <span className="an-tag">visit {visit.visitor_visits}</span>}
-                {visit.authed && <span className="an-tag">signed in</span>}
+                {visit.mine && <span className="an-tag">you</span>}
                 <span className="an-when">{when(visit.started_at)}</span>
               </div>
               <p className="an-note">
@@ -379,20 +386,21 @@ const Visits = ({ onOpen }) => {
   );
 };
 
-const People = () => {
-  const { data, error } = useReport("/api/tel/people?limit=60");
+const People = ({ me }) => {
+  const { data, error } = useReport(scoped("/api/tel/people?limit=60", me));
   if (!data) return <Waiting error={error} />;
   if (!data.people.length) return <p className="an-empty">nobody yet</p>;
 
   return (
     <ul className="an-list">
       {data.people.map((person) => (
-        <li key={person.id}>
+        <li key={person.id} data-t="person">
           <Badge country={person.country} />
           <div className="an-row">
             <div className="an-visit-top">
               <span className="an-who">{person.org ?? person.country ?? "unknown"}</span>
               <span className="an-tag">#{person.id}</span>
+              {person.mine && <span className="an-tag">you</span>}
               <span className="an-when">{when(person.last_seen)}</span>
             </div>
             <p className="an-note">
@@ -400,8 +408,12 @@ const People = () => {
               {spell(person.total_ms)} in total
             </p>
             <p className="an-note">
-              {[person.browser, person.os].filter(Boolean).join(" · ")} · first seen{" "}
-              {when(person.first_seen)}
+              {[
+                [person.browser, person.os].filter(Boolean).join(" · "),
+                `first seen ${when(person.first_seen)}`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
               {person.found_by && ` via ${person.found_by}`}
             </p>
           </div>
@@ -411,8 +423,8 @@ const People = () => {
   );
 };
 
-const Events = ({ days }) => {
-  const { data, error } = useReport(`/api/tel/events?days=${days}`);
+const Events = ({ days, me }) => {
+  const { data, error } = useReport(scoped(`/api/tel/events?days=${days}`, me));
   if (!data) return <Waiting error={error} />;
   if (!data.events.length) return <p className="an-empty">nothing recorded yet</p>;
 
@@ -530,8 +542,8 @@ const Overlay = ({ points }) => {
   return createPortal(<canvas ref={ref} className="an-heatmap" aria-hidden="true" />, document.body);
 };
 
-const Heatmap = ({ days }) => {
-  const { data, error } = useReport(`/api/tel/heatmap?days=${days}`);
+const Heatmap = ({ days, me }) => {
+  const { data, error } = useReport(scoped(`/api/tel/heatmap?days=${days}`, me));
   const [over, setOver] = useState(false);
   if (!data) return <Waiting error={error} />;
 
@@ -575,13 +587,13 @@ const Heatmap = ({ days }) => {
 
 /* ---------------- the window ---------------- */
 
-const Live = () => {
+const Live = ({ me }) => {
   const [here, setHere] = useState([]);
 
   useEffect(() => {
     let alive = true;
     const tick = () =>
-      get("/api/tel/live")
+      get(scoped("/api/tel/live", me))
         .then((data) => alive && setHere(data.here))
         .catch(() => null);
 
@@ -591,7 +603,7 @@ const Live = () => {
       alive = false;
       clearInterval(timer);
     };
-  }, []);
+  }, [me]);
 
   const doing = [...new Set(here.map((visit) => visit.doing).filter(Boolean))].slice(0, 3);
 
@@ -610,6 +622,7 @@ const Analytics = () => {
   const signedIn = useAuthStore((state) => state.status === "authed");
   const [tab, setTab] = useState("Overview");
   const [days, setDays] = useState(30);
+  const [me, setMe] = useState(false);
   const [visitId, setVisitId] = useState(null);
   const bodyRef = useRef(null);
 
@@ -671,7 +684,7 @@ const Analytics = () => {
       </div>
 
       <div className="an-frame">
-        <nav className="sidebar an-tabs">
+        <div className="sidebar an-tabs">
           {SECTIONS.map((section) => (
             <div key={section.name}>
               <h3>{section.name}</h3>
@@ -688,20 +701,32 @@ const Analytics = () => {
               ))}
             </div>
           ))}
-          <Live />
-        </nav>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={me}
+            className="an-me"
+            onClick={() => setMe(!me)}
+          >
+            include my visits
+            <span className={clsx("cc-switch", me && "on")}>
+              <span />
+            </span>
+          </button>
+          <Live me={me} />
+        </div>
 
         <div className="an-body" ref={bodyRef}>
           {visitId ? (
             <Visit id={visitId} />
           ) : (
             <>
-              {tab === "Overview" && <Overview days={days} />}
-              {tab === "Traffic" && <Traffic days={days} />}
-              {tab === "Visits" && <Visits onOpen={setVisitId} />}
-              {tab === "People" && <People />}
-              {tab === "Events" && <Events days={days} />}
-              {tab === "Heatmap" && <Heatmap days={days} />}
+              {tab === "Overview" && <Overview days={days} me={me} />}
+              {tab === "Traffic" && <Traffic days={days} me={me} />}
+              {tab === "Visits" && <Visits me={me} onOpen={setVisitId} />}
+              {tab === "People" && <People me={me} />}
+              {tab === "Events" && <Events days={days} me={me} />}
+              {tab === "Heatmap" && <Heatmap days={days} me={me} />}
             </>
           )}
         </div>

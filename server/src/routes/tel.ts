@@ -3,9 +3,9 @@ import type { Context } from "hono";
 import { eq, sql } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import { visitEvents, visitSessions } from "../db/schema.ts";
-import { readSession, requireAuth } from "../auth/session.ts";
+import { isMyBrowser, readSession, requireAuth } from "../auth/session.ts";
 import { clientIp, hashIp, rateLimit } from "../lib/ratelimit.ts";
-import { visitorFor } from "../lib/visitors.ts";
+import { onlyMine, visitorFor } from "../lib/visitors.ts";
 import { isBotAgent, lookupOrg, parseAgent } from "../lib/telemetry.ts";
 
 /**
@@ -107,6 +107,7 @@ telRoutes.post("/", async (c) => {
   }, 0);
   // a visit that signs in mid-session should still read as signed in
   const signedIn = authed || incoming.some((e: { n?: unknown }) => e?.n === "login");
+  const mine = signedIn || (await isMyBrowser(c));
 
   const [session] = await db
     .insert(visitSessions)
@@ -115,6 +116,7 @@ telRoutes.post("/", async (c) => {
       visitorId: visitor?.id ?? null,
       durationMs: lastMs,
       authed: signedIn,
+      mine,
       ...(context ?? {}),
     })
     .onConflictDoUpdate({
@@ -123,6 +125,7 @@ telRoutes.post("/", async (c) => {
         lastSeenAt: new Date(),
         durationMs: sql`greatest(coalesce(${visitSessions.durationMs}, 0), ${lastMs})`,
         ...(signedIn ? { authed: true } : {}),
+        ...(mine ? { mine: true } : {}),
       },
     })
     .returning();
@@ -181,6 +184,10 @@ const since = (days: number) => sql.raw(`interval '${days} days'`);
 const rows = async <T>(query: ReturnType<typeof sql>) =>
   (await db.execute(query)) as unknown as T[];
 
+/** Visits from my own browsers are left out unless a report is asked for them with ?me=1. */
+const withMine = (c: Context) => c.req.query("me") === "1";
+const others = (c: Context) => (withMine(c) ? sql`` : sql`and not s.mine`);
+
 /**
  * Live sessions only: every report hides crawlers. `known` drops the rows with
  * nothing to show, which is most of them for a campaign tag nobody used.
@@ -188,30 +195,38 @@ const rows = async <T>(query: ReturnType<typeof sql>) =>
 const topOf = (
   column: string,
   days: number,
+  filter: ReturnType<typeof sql>,
   { limit = 8, known = false }: { limit?: number; known?: boolean } = {}
 ) =>
   rows<{ key: string; count: number }>(sql`
-    select coalesce(nullif(${sql.raw(`"${column}"`)}, ''), 'unknown') as key, count(*)::int as count
-    from visit_sessions
-    where is_bot = false and started_at >= now() - ${since(days)}
-      ${known ? sql`and nullif(${sql.raw(`"${column}"`)}, '') is not null` : sql``}
+    select coalesce(nullif(${sql.raw(`s."${column}"`)}, ''), 'unknown') as key, count(*)::int as count
+    from visit_sessions s
+    where s.is_bot = false and s.started_at >= now() - ${since(days)} ${filter}
+      ${known ? sql`and nullif(${sql.raw(`s."${column}"`)}, '') is not null` : sql``}
     group by 1 order by 2 desc, 1 limit ${limit}
   `);
 
 telRoutes.get("/overview", requireAuth, async (c) => {
   const days = daysFrom(c);
+  const filter = others(c);
 
   const [totals] = await rows<Record<string, number>>(sql`
     select
       count(*)::int as sessions,
-      count(distinct visitor_id)::int as visitors,
-      coalesce(sum(events), 0)::int as events,
-      coalesce(round(avg(nullif(duration_ms, 0)))::int, 0) as avg_duration_ms,
-      count(*) filter (where events <= 1)::int as bounced,
-      count(*) filter (where authed)::int as signed_in,
-      count(*) filter (where surface = 'phone')::int as on_phone
-    from visit_sessions
-    where is_bot = false and started_at >= now() - ${since(days)}
+      count(distinct s.visitor_id)::int as visitors,
+      coalesce(sum(s.events), 0)::int as events,
+      coalesce(round(avg(nullif(s.duration_ms, 0)))::int, 0) as avg_duration_ms,
+      count(*) filter (where s.events <= 1)::int as bounced,
+      count(*) filter (where s.authed)::int as signed_in,
+      count(*) filter (where s.surface = 'phone')::int as on_phone
+    from visit_sessions s
+    where s.is_bot = false and s.started_at >= now() - ${since(days)} ${filter}
+  `);
+
+  // counted either way, so the window can say how many were left out
+  const [{ mine }] = await rows<{ mine: number }>(sql`
+    select count(*)::int as mine from visit_sessions s
+    where s.is_bot = false and s.started_at >= now() - ${since(days)} and s.mine
   `);
 
   const [{ bots }] = await rows<{ bots: number }>(sql`
@@ -220,34 +235,35 @@ telRoutes.get("/overview", requireAuth, async (c) => {
   `);
 
   const daily = await rows<{ day: string; sessions: number; visitors: number }>(sql`
-    select started_at::date as day, count(*)::int as sessions,
-           count(distinct visitor_id)::int as visitors
-    from visit_sessions
-    where is_bot = false and started_at >= now() - ${since(days)}
+    select s.started_at::date as day, count(*)::int as sessions,
+           count(distinct s.visitor_id)::int as visitors
+    from visit_sessions s
+    where s.is_bot = false and s.started_at >= now() - ${since(days)} ${filter}
     group by 1 order by 1
   `);
 
-  return c.json({ days, ...totals, bots, daily });
+  return c.json({ days, ...totals, mine, bots, daily });
 });
 
 telRoutes.get("/traffic", requireAuth, async (c) => {
   const days = daysFrom(c);
+  const filter = others(c);
   const [referrers, campaigns, refs, countries, orgs, browsers, systems, devices] =
     await Promise.all([
-      topOf("referrer_host", days, { known: true }),
-      topOf("utm_campaign", days, { known: true }),
-      topOf("ref", days, { known: true }),
-      topOf("country", days),
-      topOf("org", days, { limit: 12, known: true }),
-      topOf("browser", days),
-      topOf("os", days),
-      topOf("device", days),
+      topOf("referrer_host", days, filter, { known: true }),
+      topOf("utm_campaign", days, filter, { known: true }),
+      topOf("ref", days, filter, { known: true }),
+      topOf("country", days, filter),
+      topOf("org", days, filter, { limit: 12, known: true }),
+      topOf("browser", days, filter),
+      topOf("os", days, filter),
+      topOf("device", days, filter),
     ]);
 
   const sources = await rows<{ key: string; count: number }>(sql`
-    select coalesce(utm_source, referrer_host, 'direct') as key, count(*)::int as count
-    from visit_sessions
-    where is_bot = false and started_at >= now() - ${since(days)}
+    select coalesce(s.utm_source, s.referrer_host, 'direct') as key, count(*)::int as count
+    from visit_sessions s
+    where s.is_bot = false and s.started_at >= now() - ${since(days)} ${filter}
     group by 1 order by 2 desc, 1 limit 10
   `);
 
@@ -272,7 +288,7 @@ telRoutes.get("/sessions", requireAuth, async (c) => {
   const list = await rows<Record<string, unknown>>(sql`
     select s.id, s.visitor_id, s.duration_ms, s.events, s.country, s.org, s.rdns,
            s.browser, s.os, s.device, s.surface, s.referrer_host, s.utm_source, s.utm_campaign,
-           s.ref, s.authed, v.visits as visitor_visits,
+           s.ref, s.authed, s.mine, v.visits as visitor_visits,
            to_char(s.started_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as started_at,
            (select string_agg(t.label, ' > ' order by t.seq)
               from (select coalesce(e.target, e.name) as label, e.seq
@@ -283,7 +299,7 @@ telRoutes.get("/sessions", requireAuth, async (c) => {
                      order by e.seq limit 10) t) as trail
     from visit_sessions s
     left join visitors v on v.id = s.visitor_id
-    where s.is_bot = false
+    where s.is_bot = false ${others(c)}
     order by s.started_at desc
     limit ${limit}
   `);
@@ -307,7 +323,7 @@ telRoutes.get("/funnel", requireAuth, async (c) => {
         exists(select 1 from visit_events e where e.session_id = s.id
                  and e.name = 'guestbook_post') as wrote
       from visit_sessions s
-      where s.is_bot = false and s.started_at >= now() - ${since(days)}
+      where s.is_bot = false and s.started_at >= now() - ${since(days)} ${others(c)}
     )
     select count(*)::int as landed,
            count(*) filter (where opened)::int as opened,
@@ -323,12 +339,13 @@ telRoutes.get("/funnel", requireAuth, async (c) => {
 
 telRoutes.get("/paths", requireAuth, async (c) => {
   const days = daysFrom(c);
+  const filter = others(c);
 
   const first = await rows<{ key: string; count: number }>(sql`
     select coalesce(target, 'unknown') as key, count(*)::int as count
     from (select distinct on (e.session_id) e.session_id, e.target
             from visit_events e join visit_sessions s on s.id = e.session_id
-           where s.is_bot = false and e.at >= now() - ${since(days)}
+           where s.is_bot = false and e.at >= now() - ${since(days)} ${filter}
              and e.name in ('window_open', 'app_open')
            order by e.session_id, e.seq) opening
     group by 1 order by 2 desc, 1 limit 10
@@ -339,7 +356,7 @@ telRoutes.get("/paths", requireAuth, async (c) => {
     from (select e.target as from_target,
                  lead(e.target) over (partition by e.session_id order by e.seq) as to_target
             from visit_events e join visit_sessions s on s.id = e.session_id
-           where s.is_bot = false and e.at >= now() - ${since(days)}
+           where s.is_bot = false and e.at >= now() - ${since(days)} ${filter}
              and e.name in ('window_open', 'app_open')) step
     where step.to_target is not null and step.from_target is not null
       and step.to_target <> step.from_target
@@ -357,7 +374,7 @@ telRoutes.get("/events", requireAuth, async (c) => {
     select e.name, coalesce(e.target, '') as target, count(*)::int as count,
            count(distinct e.session_id)::int as sessions
     from visit_events e join visit_sessions s on s.id = e.session_id
-    where s.is_bot = false and e.at >= now() - ${since(days)}
+    where s.is_bot = false and e.at >= now() - ${since(days)} ${others(c)}
       ${name ? sql`and e.name = ${name}` : sql``}
     group by 1, 2 order by 3 desc, 1 limit 30
   `);
@@ -374,7 +391,7 @@ telRoutes.get("/heatmap", requireAuth, async (c) => {
     select e.x, e.y, coalesce(e.target, '') as target
     from visit_events e join visit_sessions s on s.id = e.session_id
     where s.is_bot = false and e.x is not null and e.y is not null
-      and s.surface = ${surface} and e.at >= now() - ${since(days)}
+      and s.surface = ${surface} and e.at >= now() - ${since(days)} ${others(c)}
     order by e.at desc limit 3000
   `);
 
@@ -391,7 +408,7 @@ telRoutes.get("/people", requireAuth, async (c) => {
   const limit = Math.min(200, Math.max(1, Math.trunc(Number(c.req.query("limit"))) || 40));
 
   const people = await rows<Record<string, unknown>>(sql`
-    select v.id, v.visits,
+    select v.id, v.visits, coalesce(bool_and(s.mine), false) as mine,
            ${utc("v.first_seen_at")} as first_seen,
            ${utc("v.last_seen_at")} as last_seen,
            count(s.id)::int as sessions,
@@ -404,7 +421,8 @@ telRoutes.get("/people", requireAuth, async (c) => {
            (array_agg(coalesce(s.utm_source, s.referrer_host) order by s.started_at)
               filter (where coalesce(s.utm_source, s.referrer_host) is not null))[1] as found_by
     from visitors v
-    left join visit_sessions s on s.visitor_id = v.id and s.is_bot = false
+    left join visit_sessions s on s.visitor_id = v.id and s.is_bot = false ${others(c)}
+    ${withMine(c) ? sql`` : sql`where not ${onlyMine(sql`v.id`)}`}
     group by v.id
     order by v.last_seen_at desc
     limit ${limit}
@@ -440,7 +458,7 @@ telRoutes.get("/live", requireAuth, async (c) => {
            (select coalesce(e.target, e.name) from visit_events e
              where e.session_id = s.id order by e.seq desc limit 1) as doing
     from visit_sessions s
-    where s.is_bot = false and s.last_seen_at >= now() - interval '5 minutes'
+    where s.is_bot = false and s.last_seen_at >= now() - interval '5 minutes' ${others(c)}
     order by s.last_seen_at desc
     limit 20
   `);

@@ -1,4 +1,5 @@
 import { eq, sql } from "drizzle-orm";
+import type { SQL, SQLWrapper } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import { visitors } from "../db/schema.ts";
 
@@ -26,3 +27,13 @@ export const visitorFor = async (ipHash: string, { bump = false } = {}) => {
   const [inserted] = await db.insert(visitors).values({ ipHash }).onConflictDoNothing().returning();
   return inserted ?? (await read());
 };
+
+/**
+ * An address every visit from which was mine, such as home. A shared one, such
+ * as a campus network, has other visits too and stays in.
+ */
+export const onlyMine = (visitorId: SQLWrapper): SQL => sql`(
+  exists (select 1 from visit_sessions m where m.visitor_id = ${visitorId} and m.mine)
+  and not exists (select 1 from visit_sessions o
+                   where o.visitor_id = ${visitorId} and not o.mine and not o.is_bot)
+)`;

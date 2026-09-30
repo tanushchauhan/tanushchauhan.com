@@ -1062,24 +1062,28 @@ body.resizing * {
   @apply space-y-0.5;
 }
 
-.an-tabs button {
+.an-tabs > div > button {
   @apply flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-sm font-medium text-ink/80 transition-colors hover:bg-ink/5;
 }
 
-.an-tabs button svg {
+.an-tabs > div > button svg {
   @apply size-4 text-ink/45;
 }
 
-.an-tabs button.on {
+.an-tabs > div > button.on {
   @apply bg-ink/10 text-ink;
 }
 
-.an-tabs button.on svg {
+.an-tabs > div > button.on svg {
   color: var(--an-accent);
 }
 
+.an-me {
+  @apply mt-auto flex w-full cursor-pointer items-center justify-between gap-2 px-2 mb-2.5 text-[11px] font-medium text-ink/60 hover:text-ink/85;
+}
+
 .an-live {
-  @apply mt-auto px-2 text-[11px] text-ink/45;
+  @apply px-2 text-[11px] text-ink/45;
 }
 
 .an-live p {

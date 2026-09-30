@@ -170,10 +170,13 @@ export const run = async ({ browser, t }) => {
     els.map((el) => Math.round(el.getBoundingClientRect().left))
   );
   const tidied = await folderAt("#home .folder:not([data-project])");
+  const lefts = [...new Set(columns)].sort((a, b) => b - a);
+  // a full grid grows a column to the left, at the same spacing
+  const grid = [...lefts, lefts.at(-1) - (lefts[0] - lefts[1])];
   t.check(
     "clean up puts it on the grid with the project folders",
-    columns.includes(tidied.left),
-    `at ${tidied.left}, columns ${[...new Set(columns)].join(", ")}`
+    grid.some((left) => Math.abs(left - tidied.left) <= 1),
+    `at ${tidied.left}, columns ${grid.join(", ")}`
   );
 
   // ---------- persistence ----------

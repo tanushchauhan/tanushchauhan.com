@@ -5,7 +5,7 @@ import { db } from "../db/index.ts";
 import { visitors } from "../db/schema.ts";
 import { requireAuth } from "../auth/session.ts";
 import { clientIp, hashIp, rateLimit } from "../lib/ratelimit.ts";
-import { visitorFor } from "../lib/visitors.ts";
+import { onlyMine, visitorFor } from "../lib/visitors.ts";
 
 /** The visitor counter. The visitor number is the row id. */
 const limiter = rateLimit({ limit: 60, windowMs: 10 * 60 * 1000 });
@@ -47,7 +47,8 @@ visitRoutes.get("/stats", requireAuth, async (c) => {
       seenWeek: seen(visitors.lastSeenAt, "7 days"),
       returning: sql<number>`count(*) filter (where ${visitors.visits} > 1)`.mapWith(Number),
     })
-    .from(visitors);
+    .from(visitors)
+    .where(c.req.query("me") === "1" ? undefined : sql`not ${onlyMine(visitors.id)}`);
 
   return c.json(row);
 });

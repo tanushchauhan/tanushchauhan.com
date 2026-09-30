@@ -30,7 +30,7 @@ const top = (pairs) => pairs.map(([key, count]) => ({ key, count }));
 export const tel = {
   overview: {
     days: 30, sessions: 260, visitors: 190, events: 2140, avg_duration_ms: 96000,
-    bounced: 61, signed_in: 4, on_phone: 88, bots: 47,
+    bounced: 61, signed_in: 0, mine: 12, on_phone: 88, bots: 47,
     daily: Array.from({ length: 30 }, (_, i) => ({
       day: new Date(Date.now() - (29 - i) * 86400000).toISOString().slice(0, 10),
       sessions: 4 + ((i * 7) % 11),
@@ -57,7 +57,7 @@ export const tel = {
         duration_ms: 142000, events: 18, country: "US", org: "utexas.edu", rdns: null,
         browser: "Chrome", os: "macOS", device: "desktop", surface: "desktop",
         referrer_host: "linkedin.com", utm_source: "linkedin", utm_campaign: "resume-2026",
-        ref: "resume", authed: false, visitor_visits: 3,
+        ref: "resume", authed: false, mine: false, visitor_visits: 3,
         trail: "finder > crave > terminal > github.com",
       },
     ],
@@ -83,13 +83,13 @@ export const tel = {
   people: {
     people: [
       {
-        id: 1204, visits: 3, sessions: 3, events: 42, total_ms: 380000,
+        id: 1204, visits: 3, sessions: 3, events: 42, total_ms: 380000, mine: false,
         first_seen: new Date(Date.now() - 9 * 86400000).toISOString(),
         last_seen: new Date(Date.now() - 20 * 60000).toISOString(),
         country: "US", org: "utexas.edu", browser: "Chrome", os: "macOS", found_by: "linkedin",
       },
       {
-        id: 1203, visits: 1, sessions: 1, events: 4, total_ms: 22000,
+        id: 1203, visits: 1, sessions: 1, events: 4, total_ms: 22000, mine: false,
         first_seen: new Date(Date.now() - 3 * 86400000).toISOString(),
         last_seen: new Date(Date.now() - 3 * 86400000).toISOString(),
         country: "DE", org: null, browser: "Firefox", os: "Linux", found_by: "github.com",
@@ -97,7 +97,14 @@ export const tel = {
     ],
   },
   live: {
-    here: [{ id: "0f5f2f4e-0000-4000-8000-000000000001", doing: "crave" }],
+    here: [
+      { id: "0f5f2f4e-0000-4000-8000-000000000001", doing: "crave" },
+      // a click is named by its text, which can run long
+      {
+        id: "0f5f2f4e-0000-4000-8000-000000000002",
+        doing: "USutexas.eduvisit 7you12m agoChrome · macOS · desktop · 2m 22s",
+      },
+    ],
   },
   visit: {
     visit: {

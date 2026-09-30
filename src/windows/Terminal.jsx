@@ -639,7 +639,7 @@ export const TerminalBody = () => {
           `  did things    ${recent.events.toLocaleString()} events · ${duration(recent.avg_duration_ms)} each`,
           `  left at once  ${recent.bounced} (${share(recent.bounced, recent.sessions)})`,
           `  on a phone    ${recent.on_phone} (${share(recent.on_phone, recent.sessions)})`,
-          `  signed in     ${recent.signed_in} · crawlers turned away ${recent.bots}`,
+          `  left out      ${recent.mine} of yours · ${recent.bots} from crawlers`,
         ]);
       } catch {
         return print(["stats: could not reach the server."]);

@@ -106,7 +106,8 @@ export const MAN = {
     "stats [days]",
     "Visitor numbers, and what those visits did.",
     "The first block counts people, the second counts the last 30 days of visits.",
-    "Crawlers are recognised by their user agent and left out of everything."
+    "Crawlers are recognised by their user agent and left out of everything.",
+    "So are your own: any visit from a browser that has signed in here and not signed out."
   ),
 
   traffic: page(

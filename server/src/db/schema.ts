@@ -234,6 +234,7 @@ export const visitSessions = pgTable(
     prefersDark: boolean("prefers_dark"),
     reducedMotion: boolean("reduced_motion"),
     authed: boolean("authed").notNull().default(false),
+    mine: boolean("mine").notNull().default(false), // from a browser that has signed in here
   },
   (t) => [
     index("visit_sessions_started_at_idx").on(t.startedAt),

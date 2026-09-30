@@ -17,6 +17,8 @@ import {
   createSession,
   destroyAllSessions,
   destroySession,
+  isMyBrowser,
+  markMyBrowser,
   readSession,
   requireAuth,
 } from "../auth/session.ts";
@@ -64,6 +66,8 @@ authRoutes.get("/me", async (c) => {
   if (!session) {
     return c.json({ authenticated: false, needsEnrollment: total === 0 });
   }
+  // a browser signed in before the mark existed gets it on its next load
+  if (!(await isMyBrowser(c))) await markMyBrowser(c);
 
   const [credential] = await db
     .select({ nickname: credentials.nickname })

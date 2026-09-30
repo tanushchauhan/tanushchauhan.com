@@ -3,7 +3,7 @@
 [![CI](https://github.com/tanushchauhan/tanushchauhan.com/actions/workflows/ci.yml/badge.svg)](https://github.com/tanushchauhan/tanushchauhan.com/actions/workflows/ci.yml)
 
 An interactive personal site featuring a Mac-inspired desktop, Finder, functional
-terminal, and API-powered widgets. Live at [tanushchauhan.com](https://tanushchauhan.com).
+terminal, and API-powered widgets. Live at [tanushchauhan.com](https://tanushchauhan.com/?utm_source=github&utm_medium=social&utm_campaign=readme).
 
 > An independent homage to the desktop metaphor. Not affiliated with, endorsed
 > by, or connected to Apple Inc. macOS is a trademark of Apple Inc. Every icon,
@@ -58,7 +58,9 @@ would be a poor terminal without them.
   and every window, project, command and outbound click in order. The browser
   batches events and sends them with `sendBeacon`; there is no cookie, no
   third-party script and nothing leaves the server. Crawlers are recognised
-  and dropped. Signed in, an Applications folder appears on the desktop with
+  and dropped. My own visits are left out too: signing in marks that browser
+  with a cookie of its own, and every report skips marked browsers unless asked
+  to include them. Signed in, an Applications folder appears on the desktop with
   an Analytics app in it: totals and a funnel, where the traffic came from,
   every visit with the full trail of what it did, the people behind those
   visits, every event, and a click heatmap drawn over the desktop itself. The
@@ -201,7 +203,8 @@ tests/          the browser suite
 
 Almost everything personal lives in `src/constants/index.js`: projects,
 publications, highlights, socials, tech stack, and the Finder file system. The
-poster SVGs are in `public/images/posters/` and the wallpapers in
+poster SVGs are in `public/images/posters/`, the project and paper pictures in
+`public/images/projects/` and `public/images/papers/`, and the wallpapers in
 `public/images/`. The app icons are not images: each is a tile drawn in CSS
 with a small SVG glyph in `src/components/AppIcon.jsx`, and the glass tokens
 that every surface reads sit at the top of `src/index.css`.
@@ -223,4 +226,7 @@ it. Nearly everything else has been rebuilt since, but that is where this began.
 
 The code is MIT licensed, see `LICENSE`. The photos, the poster art, the
 wallpapers and the words are mine and are not covered by it: build your own
-desktop with this, but put your own things in it.
+desktop with this, but put your own things in it. The two pictures in
+`public/images/papers/` are from the papers themselves and belong to their
+authors: MemeQA from the ACL Anthology (CC BY 4.0), STARS from its project
+page.

@@ -105,7 +105,7 @@ export const highlights = [
       "STARS: From Spatiotemporal Dynamics to Social Representations in Human-Robot Interaction · CoRL 2026",
     description:
       "A study of how robots can read social context from motion. I built the control baselines the learned representations were measured against, across 260 Optuna trials and 10-seed sweeps.",
-    image: "/images/posters/poster-corl.svg",
+    image: "/images/papers/stars-corl2026.webp",
     link: "https://larg.github.io/stars/",
     cta: "See the project page",
   },
@@ -148,6 +148,16 @@ export const highlights = [
     image: "/images/projects/grademate.jpg",
     link: "https://apps.apple.com/us/app/grademate-for-hac/id6705125322",
     cta: "Get it on the App Store",
+  },
+  {
+    id: 6,
+    tag: "Shipped",
+    title: "Notch · a strength log on the App Store",
+    description:
+      "A workout log for iPhone and Apple Watch, built with SwiftUI and SwiftData. It shows last session's numbers beside every set and keeps the rest timer running in the Dynamic Island and on the wrist.",
+    image: "/images/projects/notch.jpg",
+    link: "https://notch.tanushchauhan.com/",
+    cta: "See it at notch.tanushchauhan.com",
   },
 ];
 
@@ -200,6 +210,12 @@ export const gallery = [
     image: "/images/projects/grademate.jpg",
   },
   {
+    id: 13,
+    name: "notch.jpg",
+    group: "Projects",
+    image: "/images/projects/notch.jpg",
+  },
+  {
     id: 6,
     name: "memeqa-acl2025.png",
     group: "Research & Awards",
@@ -221,7 +237,7 @@ export const gallery = [
     id: 11,
     name: "stars-corl2026.png",
     group: "Research & Awards",
-    image: "/images/posters/poster-corl.svg",
+    image: "/images/papers/stars-corl2026.webp",
   },
   {
     id: 12,
@@ -517,6 +533,43 @@ export const locations = {
           },
         ],
       ),
+      project(
+        "notch",
+        "Notch",
+        "top-[24vh] right-[18vw]",
+        "top-76 left-32",
+        {
+          name: "Notch · about.txt",
+          subtitle: "Strength log for iPhone and Apple Watch · live on the App Store",
+          image: "/images/projects/notch.jpg",
+          description: [
+            "Notch is a strength log for iPhone and Apple Watch. You set up a rotation of workouts and log each set with last session's numbers and the machine setup beside it, and the trends build from there: volume, estimated one-rep maxes, personal records.",
+            "The rest timer runs in a Live Activity on the lock screen and in the Dynamic Island, and on the watch, where it keeps counting with your wrist down.",
+            "Everything is stored on the phone. iCloud sync and Apple Health are optional, there is no account, and the App Store listing says no data is collected.",
+            "Stack: Swift · SwiftUI · SwiftData · WidgetKit · ActivityKit · HealthKit · CloudKit · watchOS",
+          ],
+        },
+        [
+          {
+            id: "notch-site",
+            name: "notch.tanushchauhan.com",
+            icon: "/icons/file.svg",
+            kind: "link",
+            fileType: "url",
+            href: "https://notch.tanushchauhan.com/",
+            position: "top-4 left-32",
+          },
+          {
+            id: "notch-app",
+            name: "apps.apple.com",
+            icon: "/icons/file.svg",
+            kind: "link",
+            fileType: "url",
+            href: "https://apps.apple.com/us/app/notch-strength-log/id6802840962",
+            position: "top-4 left-60",
+          },
+        ],
+      ),
     ],
   },
   publications: {
@@ -544,7 +597,7 @@ export const locations = {
             data: {
               name: "STARS · paper.txt",
               subtitle: "Accepted at CoRL 2026",
-              image: "/images/posters/poster-corl.svg",
+              image: "/images/papers/stars-corl2026.webp",
               description: [
                 "STARS: From Spatiotemporal Dynamics to Social Representations in Human-Robot Interaction.",
                 "Tsoi, N., Munje, M. J., Oberoi, T., Maheshwari, R., Zheng, P., Chauhan, T., Stone, P., Biswas, J.",
@@ -747,7 +800,7 @@ export const applications = {
   name: "Applications",
   icon: "folder",
   kind: "folder",
-  windowPosition: "top-[24vh] right-[18vw]",
+  windowPosition: "top-[42vh] right-[18vw]",
   children: [
     {
       id: "app-analytics",

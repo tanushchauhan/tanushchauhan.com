@@ -26,7 +26,7 @@ const OUT = path.join(ROOT, "public/images/og.png");
 const VIEWPORT = { width: 1440, height: 756 };
 
 // drag offsets, not positions
-const TERMINAL = { pos: { x: 470, y: 145 }, size: { w: 600, h: 400 } };
+const TERMINAL = { pos: { x: 470, y: 145 }, size: { w: 480, h: 400 } };
 
 const state = JSON.stringify({
   state: {
