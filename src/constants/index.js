@@ -106,8 +106,8 @@ export const highlights = [
     description:
       "A study of how robots can read social context from motion. I built the control baselines the learned representations were measured against, across 260 Optuna trials and 10-seed sweeps.",
     image: "/images/posters/poster-corl.svg",
-    link: "https://www.corl.org/",
-    cta: "CoRL 2026, in Austin this November",
+    link: "https://larg.github.io/stars/",
+    cta: "See the project page",
   },
   {
     id: 2,
@@ -115,7 +115,7 @@ export const highlights = [
     title: "MemeQA: Holistic Evaluation for Meme Understanding · ACL 2025",
     description:
       "Co-authored a 9,000+ question benchmark for meme comprehension with Prof. Vincent Ng's group at UT Dallas, published at the 63rd Annual Meeting of the ACL.",
-    image: "/images/posters/poster-acl.svg",
+    image: "/images/papers/memeqa-acl2025.webp",
     link: "https://aclanthology.org/2025.acl-long.927/",
     cta: "Read the paper",
   },
@@ -203,7 +203,7 @@ export const gallery = [
     id: 6,
     name: "memeqa-acl2025.png",
     group: "Research & Awards",
-    image: "/images/posters/poster-acl.svg",
+    image: "/images/papers/memeqa-acl2025.webp",
   },
   {
     id: 7,
@@ -550,9 +550,18 @@ export const locations = {
                 "Tsoi, N., Munje, M. J., Oberoi, T., Maheshwari, R., Zheng, P., Chauhan, T., Stone, P., Biswas, J.",
                 "Conference on Robot Learning (CoRL), 2026.",
                 "How a robot can read social context from the way people move. I built the control baselines the learned representations were measured against: a raw-feature probe and a frozen MLP-autoencoder encoder, over 260 Optuna trials and 10-seed sweeps.",
-                "The paper is not online yet. The proceedings are published with the conference, November 9 to 12 in Austin.",
+                "The project page is up, but the paper is not online yet. The proceedings are published with the conference, November 9 to 12 in Austin.",
               ],
             },
+          },
+          {
+            id: "stars-link",
+            name: "larg.github.io",
+            icon: "/icons/file.svg",
+            kind: "link",
+            fileType: "url",
+            href: "https://larg.github.io/stars/",
+            position: "top-4 left-32",
           },
         ],
       },
@@ -574,7 +583,7 @@ export const locations = {
             data: {
               name: "MemeQA · paper.txt",
               subtitle: "Published at ACL 2025",
-              image: "/images/posters/poster-acl.svg",
+              image: "/images/papers/memeqa-acl2025.webp",
               description: [
                 "MemeQA: Holistic Evaluation for Meme Understanding.",
                 "Nguyen, K. P. N., Li, T., Zhou, D. L., ..., Chauhan, T., et al.",
