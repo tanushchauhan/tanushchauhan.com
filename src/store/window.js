@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -223,6 +224,15 @@ const useWindowStore = create(
           });
         }),
 
+      // what each app was showing, keyed by app and then by name
+      apps: {},
+
+      setAppState: (app, key, value) =>
+        set((state) => {
+          state.apps[app] ??= {};
+          state.apps[app][key] = value;
+        }),
+
       // bumped by Clean Up so Home can move new folders onto the grid
       cleanUps: 0,
 
@@ -333,9 +343,27 @@ const useWindowStore = create(
         widgetPos: state.widgetPos,
         soundOn: state.soundOn,
         desktopFolders: state.desktopFolders,
+        apps: state.apps,
       }),
     }
   )
 );
+
+/** Like useState, but kept in the store so it survives a reload. */
+export const useAppState = (app, key, initial) => {
+  const stored = useWindowStore((state) => state.apps[app]?.[key]);
+  const setAppState = useWindowStore((state) => state.setAppState);
+
+  const setValue = useCallback(
+    (next) => {
+      const current = useWindowStore.getState().apps[app]?.[key];
+      setAppState(app, key, typeof next === "function" ? next(current ?? initial) : next);
+    },
+    // `initial` is only a default, so a new object each render changes nothing
+    [app, key, setAppState]
+  );
+
+  return [stored ?? initial, setValue];
+};
 
 export default useWindowStore;

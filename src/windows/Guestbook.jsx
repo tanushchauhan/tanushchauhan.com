@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import { Eye, EyeOff, Send, Trash2 } from "lucide-react";
 import WindowWrapper from "#hoc/WindowWrapper.jsx";
 import { WindowControls } from "#components";
-import useWindowStore from "#store/window.js";
+import useWindowStore, { useAppState } from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { track } from "../utils/telemetry.js";
 
@@ -14,8 +14,8 @@ const MESSAGE_MAX = 500;
 export const GuestbookBody = ({ active = true }) => {
   const [entries, setEntries] = useState([]);
   const [status, setStatus] = useState("idle"); // idle | loading | error
-  const [name, setName] = useState("");
-  const [message, setMessage] = useState("");
+  const [name, setName] = useAppState("guestbook", "name", "");
+  const [message, setMessage] = useAppState("guestbook", "message", "");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(null);

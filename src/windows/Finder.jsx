@@ -4,8 +4,8 @@ import clsx from "clsx";
 import WindowWrapper from "#hoc/WindowWrapper.jsx";
 import { WindowControls } from "#components";
 import AppIcon from "#components/AppIcon.jsx";
-import { locations, parentOf } from "#constants";
-import useWindowStore, { FINDER_KEYS } from "#store/window.js";
+import { derefData, locations, parentOf, refFor } from "#constants";
+import useWindowStore, { FINDER_KEYS, useAppState } from "#store/window.js";
 import useAuthStore from "#store/auth.js";
 import { openFile } from "../utils/files.js";
 
@@ -14,8 +14,17 @@ const Finder = ({ windowKey }) => {
   const signedIn = useAuthStore((state) => state.status === "authed");
   const activeLocation = windows[windowKey].data ?? locations.work;
 
-  // with no history, Back goes to the enclosing folder
-  const [history, setHistory] = useState({ back: [], forward: [] });
+  // with no history, Back goes to the enclosing folder. It is kept as references,
+  // like the window's own folder, so it can be saved.
+  const [saved, setSaved] = useAppState(windowKey, "history", { back: [], forward: [] });
+  const resolve = (list) => list.map(derefData).filter(Boolean);
+  const history = { back: resolve(saved.back), forward: resolve(saved.forward) };
+  const setHistory = (next) =>
+    setSaved((h) => {
+      const current = { back: resolve(h.back), forward: resolve(h.forward) };
+      const { back, forward } = typeof next === "function" ? next(current) : next;
+      return { back: back.map(refFor), forward: forward.map(refFor) };
+    });
   const isOpen = windows[windowKey].isOpen;
   useEffect(() => {
     if (!isOpen) setHistory({ back: [], forward: [] });
