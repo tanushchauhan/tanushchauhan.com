@@ -43,9 +43,11 @@ const SECTIONS = [
 const TABS = SECTIONS.flatMap((section) => section.tabs.map((tab) => tab.name));
 const RANGES = [7, 30, 90];
 // "here now" also changes when someone leaves, which nothing announces
-const LIVE_MS = 30000;
+const LIVE_MS = 15000;
 // the heavier reports are not worth refetching more often than this
 const REFRESH_MS = 500;
+// until the stream has said anything, the reports are refetched this often
+const POLL_MS = 5000;
 const LABEL_MAX = 60;
 
 const get = async (path) => {
@@ -56,6 +58,9 @@ const get = async (path) => {
 
 /** Goes up by one each time the server says something was recorded. */
 const Changes = createContext(0);
+
+/** The visits with the site open right now. */
+const Here = createContext([]);
 
 /**
  * One report, fetched when its tab is on screen and dropped when it leaves. A
@@ -110,7 +115,17 @@ const useChanges = (open, visible, me) => {
       setCount((n) => n + 1);
     };
 
+    const refresh = () => {
+      timer ??= setTimeout(bump, Math.max(0, last + REFRESH_MS - Date.now()));
+    };
+
+    let heard = false;
     const source = new EventSource("/api/tel/stream");
+    source.addEventListener("ready", () => {
+      // a reconnect, so catch up on whatever was recorded while it was down
+      if (heard) refresh();
+      heard = true;
+    });
     source.addEventListener("change", (event) => {
       let mine = false;
       try {
@@ -119,8 +134,11 @@ const useChanges = (open, visible, me) => {
         // a change we cannot read is still a change
       }
       if (mine && !seen.current.me) return;
-      timer ??= setTimeout(bump, Math.max(0, last + REFRESH_MS - Date.now()));
+      refresh();
     });
+
+    // a proxy that holds the stream back would otherwise leave every report frozen
+    const poll = setInterval(() => heard || refresh(), POLL_MS);
 
     const onVisible = () => {
       if (!document.hidden && seen.current.missed) {
@@ -133,6 +151,7 @@ const useChanges = (open, visible, me) => {
     return () => {
       source.close();
       clearTimeout(timer);
+      clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [open]);
@@ -146,6 +165,28 @@ const useChanges = (open, visible, me) => {
   }, [visible]);
 
   return count;
+};
+
+const useHere = (open, me, changes) => {
+  const [here, setHere] = useState([]);
+
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    const tick = () =>
+      get(scoped("/api/tel/live", me))
+        .then((data) => alive && setHere(data.here))
+        .catch(() => null);
+
+    tick();
+    const timer = setInterval(tick, LIVE_MS);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, [open, me, changes]);
+
+  return here;
 };
 
 /** Your own visits are left out of every report unless asked for. */
@@ -181,6 +222,8 @@ const Waiting = ({ error }) => <p className="an-empty">{error || "reading…"}</
 const Badge = ({ country }) => (
   <span className="an-badge">{country ?? <Globe className="size-3.5" />}</span>
 );
+
+const Now = () => <span className="an-tag an-now">here now</span>;
 
 /**
  * What I have called a visitor, with a pencil to change it. The saved name
@@ -426,6 +469,7 @@ const Traffic = ({ days, me }) => {
 /** Everything recorded about one visit, including every event in order. */
 const Visit = ({ id }) => {
   const { data, error } = useReport(`/api/tel/visit/${id}`);
+  const here = useContext(Here).some((live) => live.id === id);
   if (!data) return <Waiting error={error} />;
 
   const { visit, events } = data;
@@ -459,7 +503,7 @@ const Visit = ({ id }) => {
 
   return (
     <>
-      <header className="an-hero">
+      <header className={clsx("an-hero", here && "here")}>
         <Badge country={visit.country} />
         <div className="min-w-0">
           <h3 className="an-title">
@@ -469,6 +513,7 @@ const Visit = ({ id }) => {
               fallback={visit.org ?? visit.country ?? "unknown"}
               className="truncate"
             />
+            {here && <Now />}
           </h3>
           <p className="an-note">
             {visit.visitor_id != null && `visitor #${visit.visitor_id} · `}
@@ -491,7 +536,7 @@ const Visit = ({ id }) => {
         <p className="an-label">what happened</p>
         <ol className="an-timeline">
           {events.map((event) => (
-            <li key={event.seq}>
+            <li key={event.id}>
               <span className="an-at">{offset(event.at, visit.started_at)}</span>
               <span className="an-name">{event.name}</span>
               <span className="an-key">{event.target ?? ""}</span>
@@ -505,28 +550,36 @@ const Visit = ({ id }) => {
 
 const Visits = ({ me, onOpen }) => {
   const { data, error } = useReport(scoped("/api/tel/sessions?limit=40", me));
+  const here = new Set(useContext(Here).map((visit) => visit.id));
   if (!data) return <Waiting error={error} />;
   if (!data.sessions.length) return <p className="an-empty">no visits yet</p>;
 
   return (
     <ul className="an-list an-visits">
       {data.sessions.map((visit) => (
-        <li key={visit.id}>
+        <li key={visit.id} className={clsx(here.has(visit.id) && "here")}>
           <button type="button" data-t="visit" onClick={() => onOpen(visit.id)}>
             <Badge country={visit.country} />
             <div className="an-row">
               <div className="an-visit-top">
                 <span className="an-who">{visit.label ?? visit.org ?? visit.country ?? "unknown"}</span>
+                {here.has(visit.id) && <Now />}
+                {visit.visitor_id != null && <span className="an-tag">#{visit.visitor_id}</span>}
                 {visit.visitor_visits > 1 && <span className="an-tag">visit {visit.visitor_visits}</span>}
                 {visit.mine && <span className="an-tag">you</span>}
                 <span className="an-when">{when(visit.started_at)}</span>
               </div>
               <p className="an-note">
-                {[visit.label && visit.org, visit.browser, visit.os, visit.surface]
+                {[
+                  visit.label && visit.org,
+                  visit.browser,
+                  visit.os,
+                  visit.surface,
+                  spell(visit.duration_ms),
+                  `${visit.events} ${visit.events === 1 ? "event" : "events"}`,
+                ]
                   .filter(Boolean)
-                  .join(" · ")}{" "}
-                ·{" "}
-                {spell(visit.duration_ms)} · {visit.events} events
+                  .join(" · ")}
               </p>
               {(visit.utm_source || visit.referrer_host || visit.ref) && (
                 <p className="an-note">
@@ -548,13 +601,14 @@ const Visits = ({ me, onOpen }) => {
 
 const People = ({ me }) => {
   const { data, error } = useReport(scoped("/api/tel/people?limit=60", me));
+  const here = new Set(useContext(Here).map((visit) => visit.visitor_id));
   if (!data) return <Waiting error={error} />;
   if (!data.people.length) return <p className="an-empty">nobody yet</p>;
 
   return (
     <ul className="an-list">
       {data.people.map((person) => (
-        <li key={person.id} data-t="person">
+        <li key={person.id} data-t="person" className={clsx(here.has(person.id) && "here")}>
           <Badge country={person.country} />
           <div className="an-row">
             <div className="an-visit-top">
@@ -563,6 +617,7 @@ const People = ({ me }) => {
                 label={person.label}
                 fallback={person.org ?? person.country ?? "unknown"}
               />
+              {here.has(person.id) && <Now />}
               <span className="an-tag">#{person.id}</span>
               {person.mine && <span className="an-tag">you</span>}
               <span className="an-when">{when(person.last_seen)}</span>
@@ -752,25 +807,8 @@ const Heatmap = ({ days, me }) => {
 
 /* ---------------- the window ---------------- */
 
-const Live = ({ me }) => {
-  const changes = useContext(Changes);
-  const [here, setHere] = useState([]);
-
-  useEffect(() => {
-    let alive = true;
-    const tick = () =>
-      get(scoped("/api/tel/live", me))
-        .then((data) => alive && setHere(data.here))
-        .catch(() => null);
-
-    tick();
-    const timer = setInterval(tick, LIVE_MS);
-    return () => {
-      alive = false;
-      clearInterval(timer);
-    };
-  }, [me, changes]);
-
+const Live = () => {
+  const here = useContext(Here);
   const doing = [
     ...new Set(
       here
@@ -802,6 +840,7 @@ const Analytics = () => {
   const days = RANGES.includes(savedDays) ? savedDays : 30;
   const ready = isOpen && signedIn;
   const changes = useChanges(ready, !isMinimized, me);
+  const here = useHere(ready, me, changes);
   const bodyRef = useRef(null);
 
   // each report starts at the top, not wherever the last one was scrolled to
@@ -898,54 +937,56 @@ const Analytics = () => {
       </div>
 
       <Changes.Provider value={changes}>
-        <div className="an-frame">
-          <div className="sidebar an-tabs">
-            {SECTIONS.map((section) => (
-              <div key={section.name}>
-                <h3>{section.name}</h3>
-                {section.tabs.map(({ name, icon: Icon }) => (
-                  <button
-                    key={name}
-                    type="button"
-                    className={clsx(name === tab && "on")}
-                    onClick={() => show(name)}
-                  >
-                    <Icon />
-                    {name}
-                  </button>
-                ))}
-              </div>
-            ))}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={me}
-              className="an-me"
-              onClick={() => setMe(!me)}
-            >
-              include my visits
-              <span className={clsx("cc-switch", me && "on")}>
-                <span />
-              </span>
-            </button>
-            <Live me={me} />
-          </div>
+        <Here.Provider value={here}>
+          <div className="an-frame">
+            <div className="sidebar an-tabs">
+              {SECTIONS.map((section) => (
+                <div key={section.name}>
+                  <h3>{section.name}</h3>
+                  {section.tabs.map(({ name, icon: Icon }) => (
+                    <button
+                      key={name}
+                      type="button"
+                      className={clsx(name === tab && "on")}
+                      onClick={() => show(name)}
+                    >
+                      <Icon />
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              ))}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={me}
+                className="an-me"
+                onClick={() => setMe(!me)}
+              >
+                include my visits
+                <span className={clsx("cc-switch", me && "on")}>
+                  <span />
+                </span>
+              </button>
+              <Live />
+            </div>
 
-          <div className="an-body" ref={bodyRef} onScroll={onScroll}>
-            {visitId ? (
-              <Visit id={visitId} />
-            ) : (
-              <>
-                {tab === "Overview" && <Overview days={days} me={me} />}
-                {tab === "Traffic" && <Traffic days={days} me={me} />}
-                {tab === "Visits" && <Visits me={me} onOpen={setVisitId} />}
-                {tab === "People" && <People me={me} />}
-                {tab === "Events" && <Events days={days} me={me} />}
-                {tab === "Heatmap" && <Heatmap days={days} me={me} />}
-              </>
-            )}
+            <div className="an-body" ref={bodyRef} onScroll={onScroll}>
+              {visitId ? (
+                <Visit id={visitId} />
+              ) : (
+                <>
+                  {tab === "Overview" && <Overview days={days} me={me} />}
+                  {tab === "Traffic" && <Traffic days={days} me={me} />}
+                  {tab === "Visits" && <Visits me={me} onOpen={setVisitId} />}
+                  {tab === "People" && <People me={me} />}
+                  {tab === "Events" && <Events days={days} me={me} />}
+                  {tab === "Heatmap" && <Heatmap days={days} me={me} />}
+                </>
+              )}
+            </div>
           </div>
-        </div>
+        </Here.Provider>
       </Changes.Provider>
     </>
   );

@@ -60,6 +60,15 @@ export const tel = {
         ref: "resume", authed: false, mine: false, visitor_visits: 3, label: null,
         trail: "finder > crave > terminal > github.com",
       },
+      {
+        id: "0f5f2f4e-0000-4000-8000-000000000003", visitor_id: 1203,
+        started_at: new Date(Date.now() - 3 * 86400000).toISOString(),
+        duration_ms: 22000, events: 4, country: "DE", org: null, rdns: null,
+        browser: "Firefox", os: "Linux", device: "desktop", surface: "desktop",
+        referrer_host: "github.com", utm_source: null, utm_campaign: null,
+        ref: null, authed: false, mine: false, visitor_visits: 1, label: null,
+        trail: "finder",
+      },
     ],
   },
   funnel: { days: 30, landed: 260, opened: 188, project: 96, terminal: 41, clicked: 33, wrote: 6 },
@@ -98,10 +107,10 @@ export const tel = {
   },
   live: {
     here: [
-      { id: "0f5f2f4e-0000-4000-8000-000000000001", doing: "crave" },
+      { id: "0f5f2f4e-0000-4000-8000-000000000001", visitor_id: 1204, doing: "crave" },
       // a click is named by its text, which can run long
       {
-        id: "0f5f2f4e-0000-4000-8000-000000000002",
+        id: "0f5f2f4e-0000-4000-8000-000000000002", visitor_id: 1188,
         doing: "USutexas.eduvisit 7you12m agoChrome · macOS · desktop · 2m 22s",
       },
     ],
@@ -119,12 +128,12 @@ export const tel = {
       language: "en-US", prefers_dark: false, reduced_motion: false, authed: false, label: null,
     },
     events: [
-      { seq: 0, name: "session_start", target: "desktop", at: new Date(Date.now() - 20 * 60000).toISOString() },
-      { seq: 1, name: "click", target: "Projects", at: new Date(Date.now() - 19.9 * 60000).toISOString() },
-      { seq: 2, name: "window_open", target: "finder", at: new Date(Date.now() - 19.8 * 60000).toISOString() },
-      { seq: 3, name: "project_open", target: "crave", at: new Date(Date.now() - 19.4 * 60000).toISOString() },
-      { seq: 4, name: "terminal_command", target: "neofetch", at: new Date(Date.now() - 18.6 * 60000).toISOString() },
-      { seq: 5, name: "link_click", target: "github.com", at: new Date(Date.now() - 17.7 * 60000).toISOString() },
+      { id: 901, seq: 0, name: "session_start", target: "desktop", at: new Date(Date.now() - 20 * 60000).toISOString() },
+      { id: 902, seq: 1, name: "click", target: "Projects", at: new Date(Date.now() - 19.9 * 60000).toISOString() },
+      { id: 903, seq: 2, name: "window_open", target: "finder", at: new Date(Date.now() - 19.8 * 60000).toISOString() },
+      { id: 904, seq: 3, name: "project_open", target: "crave", at: new Date(Date.now() - 19.4 * 60000).toISOString() },
+      { id: 905, seq: 4, name: "terminal_command", target: "neofetch", at: new Date(Date.now() - 18.6 * 60000).toISOString() },
+      { id: 906, seq: 5, name: "link_click", target: "github.com", at: new Date(Date.now() - 17.7 * 60000).toISOString() },
     ],
   },
   heatmap: {
@@ -299,8 +308,8 @@ export const installFixtures = async (page, { authed = true, building } = {}) =>
   await page.route("**/api/tel/people/*", (r) =>
     r.fulfill({ json: { id: Number(r.request().url().split("/").pop()), ...r.request().postDataJSON() } })
   );
-  // a stream that ends at once and waits ten minutes before trying again
+  // a stream that says it is ready, ends, and waits ten minutes before trying again
   await page.route("**/api/tel/stream", (r) =>
-    r.fulfill({ contentType: "text/event-stream", body: "retry: 600000\n\n" })
+    r.fulfill({ contentType: "text/event-stream", body: "retry: 600000\nevent: ready\ndata: \n\n" })
   );
 };

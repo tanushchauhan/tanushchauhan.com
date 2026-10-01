@@ -8,6 +8,8 @@
 const ENDPOINT = "/api/tel";
 const STORE_KEY = "tanushos-tel";
 const FLUSH_MS = 2000;
+// how often an open tab with nothing to report says it is still here
+const BEAT_MS = 30000;
 const QUEUE_MAX = 40;
 const ERRORS_MAX = 5;
 const CLICKS_MAX = 300;
@@ -27,6 +29,7 @@ let pendingContext = null;
 let seq = 0;
 let errors = 0;
 let timer = null;
+let lastSent = 0;
 
 const now = () => Date.now();
 
@@ -94,8 +97,10 @@ const cleanUrl = () => {
   history.replaceState(null, "", location.pathname + (query ? `?${query}` : "") + location.hash);
 };
 
-const send = () => {
-  if (!session || (!queue.length && !pendingContext)) return;
+/** With `beat`, an empty batch still goes, which only says the tab is open. */
+const send = (beat = false) => {
+  if (!session || (!queue.length && !pendingContext && !beat)) return;
+  lastSent = now();
 
   const body = JSON.stringify({
     sid: session.id,
@@ -282,9 +287,15 @@ export const startTelemetry = (surface) => {
   watchErrors();
   const reportVitals = watchVitals();
 
+  // only while it is on screen: a tab left in the background is not someone here
+  const beat = () => {
+    if (document.visibilityState === "visible" && now() - lastSent > BEAT_MS / 2) send(true);
+  };
+  setInterval(beat, BEAT_MS);
+
   let reported = false;
   const leaving = () => {
-    if (document.visibilityState !== "hidden") return;
+    if (document.visibilityState !== "hidden") return beat();
     if (!reported) {
       reported = true;
       reportVitals();

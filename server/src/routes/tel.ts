@@ -26,6 +26,8 @@ const STREAM_BATCH_MS = 250;
 
 // a busy visitor sends a batch every 2 seconds, and a campus network shares one budget
 const limiter = rateLimit({ limit: 600, windowMs: 10 * 60 * 1000 });
+// an open tab checks in twice a minute, so sixty of them can share an address
+const beats = rateLimit({ limit: 1200, windowMs: 10 * 60 * 1000 });
 
 const str = (value: unknown, max: number) => {
   if (typeof value !== "string") return null;
@@ -95,7 +97,6 @@ export const telRoutes = new Hono();
 telRoutes.post("/", async (c) => {
   const ip = clientIp(c);
   const ipHash = hashIp(ip);
-  if (!limiter(ipHash).ok) return c.body(null, 429);
 
   const body = await c.req.json().catch(() => null);
   const id = typeof body?.sid === "string" && UUID.test(body.sid) ? body.sid : null;
@@ -103,6 +104,15 @@ telRoutes.post("/", async (c) => {
 
   const incoming = Array.isArray(body.events) ? body.events.slice(0, BATCH_MAX) : [];
   const opening = body.ctx && typeof body.ctx === "object";
+
+  // a tab that is open and quiet: it stays in "here now" and nothing is recorded
+  if (!incoming.length && !opening) {
+    if (!beats(ipHash).ok) return c.body(null, 429);
+    await db.update(visitSessions).set({ lastSeenAt: new Date() }).where(eq(visitSessions.id, id));
+    return c.body(null, 204);
+  }
+
+  if (!limiter(ipHash).ok) return c.body(null, 429);
 
   const bot = isBotAgent(c.req.header("user-agent") ?? "");
   const visitor = bot ? null : await visitorFor(ipHash);
@@ -190,7 +200,7 @@ telRoutes.get("/stream", requireAuth, (c) => {
     0
   );
 
-  return streamSSE(c, async (stream) => {
+  const res = streamSSE(c, async (stream) => {
     let pending: boolean | null = null;
     let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -217,6 +227,13 @@ telRoutes.get("/stream", requireAuth, (c) => {
     clearInterval(ping);
     if (timer) clearTimeout(timer);
   });
+
+  /* The proxy in front of the app compresses anything without an encoding, and
+     a compressor holds a message this small until more arrive. Cloudflare
+     leaves a no-transform response as it is. */
+  res.headers.set("content-encoding", "identity");
+  res.headers.set("cache-control", "no-cache, no-transform");
+  return res;
 });
 
 /* ---------- reports ---------- */
@@ -338,13 +355,13 @@ telRoutes.get("/sessions", requireAuth, async (c) => {
            s.browser, s.os, s.device, s.surface, s.referrer_host, s.utm_source, s.utm_campaign,
            s.ref, s.authed, s.mine, v.visits as visitor_visits, v.label,
            to_char(s.started_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as started_at,
-           (select string_agg(t.label, ' > ' order by t.seq)
-              from (select coalesce(e.target, e.name) as label, e.seq
+           (select string_agg(t.label, ' > ' order by t.at, t.id)
+              from (select coalesce(e.target, e.name) as label, e.at, e.id
                       from visit_events e
                      where e.session_id = s.id
                        and e.name in ('window_open', 'app_open', 'project_open',
                                       'terminal_command', 'link_click', 'guestbook_post')
-                     order by e.seq limit 10) t) as trail
+                     order by e.at, e.id limit 10) t) as trail
     from visit_sessions s
     left join visitors v on v.id = s.visitor_id
     where s.is_bot = false ${others(c)}
@@ -395,14 +412,14 @@ telRoutes.get("/paths", requireAuth, async (c) => {
             from visit_events e join visit_sessions s on s.id = e.session_id
            where s.is_bot = false and e.at >= now() - ${since(days)} ${filter}
              and e.name in ('window_open', 'app_open')
-           order by e.session_id, e.seq) opening
+           order by e.session_id, e.at, e.id) opening
     group by 1 order by 2 desc, 1 limit 10
   `);
 
   const moves = await rows<{ key: string; count: number }>(sql`
     select step.from_target || ' > ' || step.to_target as key, count(*)::int as count
     from (select e.target as from_target,
-                 lead(e.target) over (partition by e.session_id order by e.seq) as to_target
+                 lead(e.target) over (partition by e.session_id order by e.at, e.id) as to_target
             from visit_events e join visit_sessions s on s.id = e.session_id
            where s.is_bot = false and e.at >= now() - ${since(days)} ${filter}
              and e.name in ('window_open', 'app_open')) step
@@ -515,24 +532,25 @@ telRoutes.get("/visit/:id", requireAuth, async (c) => {
   `);
   if (!visit) return c.json({ error: "not found" }, 404);
 
+  // by time, not seq: seq starts again at 0 when a tab reloads into the same visit
   const events = await rows<Record<string, unknown>>(sql`
-    select seq, name, target, props, x, y, ${utc("visit_events.at")} as at
-    from visit_events where session_id = ${id} order by seq
+    select id, seq, name, target, props, x, y, ${utc("visit_events.at")} as at
+    from visit_events where session_id = ${id} order by visit_events.at, id
   `);
 
   return c.json({ visit, events });
 });
 
-/** Who is on the site now, for the value of "now" that a page load can prove. */
+/** Who has the site open now: an open tab checks in every 30 seconds while it is on screen. */
 telRoutes.get("/live", requireAuth, async (c) => {
   const here = await rows<Record<string, unknown>>(sql`
     select s.id, s.visitor_id, v.label, s.country, s.org, s.browser, s.os, s.surface, s.events,
            s.utm_source, s.referrer_host, ${utc("s.last_seen_at")} as last_seen_at,
            (select coalesce(e.target, e.name) from visit_events e
-             where e.session_id = s.id order by e.seq desc limit 1) as doing
+             where e.session_id = s.id order by e.at desc, e.id desc limit 1) as doing
     from visit_sessions s
     left join visitors v on v.id = s.visitor_id
-    where s.is_bot = false and s.last_seen_at >= now() - interval '5 minutes' ${others(c)}
+    where s.is_bot = false and s.last_seen_at >= now() - interval '2 minutes' ${others(c)}
     order by s.last_seen_at desc
     limit 20
   `);

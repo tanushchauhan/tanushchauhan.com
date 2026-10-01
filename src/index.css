@@ -570,8 +570,9 @@ nav time {
   @apply bg-black/75 px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 transition-opacity;
 }
 
+/* a click focuses the button too, and that must not hold the label up */
 .dock-slot:hover::after,
-.dock-slot:focus-within::after {
+.dock-slot:has(:focus-visible)::after {
   @apply opacity-100;
   transition-delay: 150ms;
 }
@@ -1113,7 +1114,8 @@ body.resizing * {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .an-live.on i {
+  .an-live.on i,
+  .here .an-badge::after {
     animation: none;
   }
 }
@@ -1312,6 +1314,32 @@ body.resizing * {
 
 .an-when {
   @apply ml-auto shrink-0 text-[11px] font-normal text-ink/45;
+}
+
+/* someone with the site open right now */
+.an-list > li.here {
+  background: rgb(16 185 129 / 0.08);
+}
+
+.here .an-badge {
+  @apply relative;
+}
+
+.here .an-badge::after {
+  content: "";
+  @apply absolute right-0 bottom-0 size-2.5 rounded-full bg-emerald-500;
+  outline: 2px solid var(--surface-2);
+  animation: an-pulse 2s ease-out infinite;
+}
+
+.an-hero.here .an-badge::after {
+  @apply size-3;
+  outline-color: var(--surface);
+}
+
+.an-tag.an-now {
+  @apply text-emerald-700 dark:text-emerald-300;
+  background: rgb(16 185 129 / 0.16);
 }
 
 .an-trail {

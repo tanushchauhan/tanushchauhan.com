@@ -66,8 +66,9 @@ would be a poor terminal without them.
   an Analytics app in it: totals and a funnel, where the traffic came from,
   every visit with the full trail of what it did, the people behind those
   visits, every event, and a click heatmap drawn over the desktop itself. It
-  updates as visits are recorded, over a server-sent event stream, and any
-  visitor can be given a name. The `traffic`, `sessions`, `funnel` and `paths`
+  updates as visits are recorded, over a server-sent event stream, marks
+  whoever has the site open right now (an open tab checks in every 30 seconds),
+  and any visitor can be given a name. The `traffic`, `sessions`, `funnel` and `paths`
   commands read the same numbers.
 - Live widgets: the time in Austin, GitHub contributions and the latest
   commit (proxied and cached so the token never leaves the server), and a

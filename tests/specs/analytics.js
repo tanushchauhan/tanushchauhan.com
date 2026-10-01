@@ -36,6 +36,13 @@ export const run = async ({ browser, t }) => {
   const visits = await text(page, ".an-body");
   t.check("a visit says how many times that person came", visits.includes("visit 3"));
   t.check("and what they opened, in order", visits.includes("finder › crave › terminal"));
+  t.check("and which visitor it was", visits.includes("#1204") && visits.includes("#1203"));
+
+  const marked = await page.$$eval(".an-visits > li", (els) =>
+    els.map((el) => ({ here: el.classList.contains("here"), tag: el.innerText.includes("here now") }))
+  );
+  t.check("a visit still going is marked", marked[0]?.here && marked[0]?.tag, JSON.stringify(marked));
+  t.check("and one that ended is not", marked.length === 2 && !marked[1].here && !marked[1].tag);
 
   // ---------- the click heatmap ----------
   await page.click('.an-tabs button:text-is("Heatmap")');
@@ -99,6 +106,7 @@ export const run = async ({ browser, t }) => {
   t.check("and the timezone it was read in", detail.includes("America/Chicago"));
   t.check("the timeline counts from the start", detail.includes("0:00"));
   t.check("and lists what was opened", detail.includes("project_open"));
+  t.check("and says they are still here", detail.includes("here now"));
 
   await page.click(".an-back");
   await page.waitForTimeout(400);
@@ -111,6 +119,8 @@ export const run = async ({ browser, t }) => {
   t.check("people are listed by visitor number", people.includes("#1204"));
   t.check("with how often they came", people.includes("3 visits"));
   t.check("and what first brought them", people.includes("via linkedin"));
+  const present = await page.$$eval(".an-list > li", (els) => els.map((el) => el.classList.contains("here")));
+  t.check("someone on the site now is marked here too", present.join() === "true,false", present.join());
 
   await page.click('.an-tabs button:text-is("Events")');
   await page.waitForTimeout(400);
@@ -214,7 +224,7 @@ export const run = async ({ browser, t }) => {
     await recorded;
     await route.fulfill({
       contentType: "text/event-stream",
-      body: 'retry: 600000\nevent: change\ndata: {"mine":false}\n\n',
+      body: 'retry: 600000\nevent: ready\ndata: \n\nevent: change\ndata: {"mine":false}\n\n',
     });
   });
   let slow = false;
@@ -235,8 +245,60 @@ export const run = async ({ browser, t }) => {
     "keeping the old numbers up while it does",
     (await text(live, ".an-body")).includes("260") && !(await text(live, ".an-body")).includes("reading")
   );
+
+  const settledCount = overviews;
+  await live.waitForTimeout(5600);
+  t.check("a working stream is not polled as well", overviews === settledCount, `${settledCount} then ${overviews}`);
   t.check("no page errors live", live.pageErrors.length === 0, live.pageErrors.join("\n"));
   await live.close();
+
+  // ---------- a stream held back on the way ----------
+  const held = await openPage(browser, {
+    state: seed({ windows: { terminal: win({ zIndex: 1002 }) } }),
+  });
+  await held.route("**/api/tel/stream", () => {});
+  let polled = 0;
+  await held.route("**/api/tel/overview*", (route) => {
+    polled += 1;
+    return route.fulfill({ json: tel.overview });
+  });
+  await runCommand(held, "open analytics", 1200);
+  const opened = polled;
+  await held.waitForTimeout(5600);
+  t.check("a stream that never speaks does not freeze the reports", polled > opened, `${opened} then ${polled}`);
+  await held.close();
+
+  // ---------- a stream that drops and comes back ----------
+  const back = await openPage(browser, {
+    state: seed({ windows: { terminal: win({ zIndex: 1002 }) } }),
+  });
+  let armed = false;
+  let reconnected = false;
+  await back.route("**/api/tel/stream", (route) => {
+    if (armed) reconnected = true;
+    return route
+      .fulfill({
+        contentType: "text/event-stream",
+        body: `retry: ${armed ? 600000 : 2500}\nevent: ready\ndata: \n\n`,
+      })
+      .catch(() => null);
+  });
+  let fetched = 0;
+  await back.route("**/api/tel/overview*", (route) => {
+    fetched += 1;
+    return route.fulfill({ json: tel.overview });
+  });
+  await runCommand(back, "open analytics", 1200);
+  await back.waitForTimeout(300);
+  const beforeDrop = fetched;
+  armed = true;
+  await back.waitForTimeout(3000);
+  t.check(
+    "a stream that drops catches up once it is back",
+    reconnected && fetched > beforeDrop,
+    `reconnected ${reconnected}, ${beforeDrop} then ${fetched}`
+  );
+  await back.close();
 
   // ---------- signed out ----------
   const guest = await openPage(browser, {
