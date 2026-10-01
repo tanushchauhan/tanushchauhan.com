@@ -7,7 +7,7 @@
  */
 const ENDPOINT = "/api/tel";
 const STORE_KEY = "tanushos-tel";
-const FLUSH_MS = 5000;
+const FLUSH_MS = 2000;
 const QUEUE_MAX = 40;
 const ERRORS_MAX = 5;
 const CLICKS_MAX = 300;

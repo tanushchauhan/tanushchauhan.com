@@ -1341,7 +1341,36 @@ body.resizing * {
 }
 
 .an-title {
-  @apply truncate text-lg font-semibold text-ink/90;
+  @apply flex min-w-0 items-center gap-1.5 text-lg font-semibold text-ink/90;
+}
+
+/* ---- naming a visitor ---- */
+.an-rename {
+  @apply grid size-5 shrink-0 cursor-pointer place-items-center rounded-md text-ink/40 opacity-0 transition hover:bg-ink/10 hover:text-ink/80 focus-visible:opacity-100;
+}
+
+.an-rename svg {
+  @apply size-3;
+}
+
+.an-list > li:hover .an-rename,
+.an-hero:hover .an-rename {
+  @apply opacity-100;
+}
+
+@media (hover: none) {
+  .an-rename {
+    @apply opacity-100;
+  }
+}
+
+.an-label-input {
+  @apply min-w-0 flex-1 rounded-md border border-ink/15 bg-ink/5 px-1.5 py-0.5 text-sm font-medium outline-none focus:border-[#0a84ff];
+  color: var(--glass-fg);
+}
+
+.an-hero .an-label-input {
+  @apply text-lg;
 }
 
 .an-facts {

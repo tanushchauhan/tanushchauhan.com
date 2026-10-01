@@ -684,7 +684,7 @@ export const TerminalBody = () => {
 
         return print(
           sessions.flatMap((s) => {
-            const who = [s.country, s.org, [s.browser, s.os].filter(Boolean).join("/")]
+            const who = [s.label, s.country, s.org, [s.browser, s.os].filter(Boolean).join("/")]
               .filter(Boolean)
               .join(" · ");
             const came = [s.utm_source ?? s.referrer_host, s.utm_campaign, s.ref]

@@ -22,7 +22,9 @@ terminal, and API-powered widgets. Live at [tanushchauhan.com](https://tanushcha
 - Wallpapers that come in light and dark pairs, chosen from a Control Center
   that also holds the theme and the sound switch
 - Windows you can drag by the title bar, resize from any edge or corner,
-  minimize into the dock and maximize. Positions and sizes survive a reload.
+  minimize into the dock and maximize. Positions and sizes survive a reload,
+  and so does what each app was showing: the Finder's back history, a
+  half-written guestbook note, and where the Analytics app was.
 - A Finder with Projects, Publications, About Me and Trash, back and forward
   buttons, and selection the Mac way: click to select, double-click to open,
   and Space for Quick Look, with the arrow keys flicking through a folder.
@@ -63,8 +65,10 @@ would be a poor terminal without them.
   to include them. Signed in, an Applications folder appears on the desktop with
   an Analytics app in it: totals and a funnel, where the traffic came from,
   every visit with the full trail of what it did, the people behind those
-  visits, every event, and a click heatmap drawn over the desktop itself. The
-  `traffic`, `sessions`, `funnel` and `paths` commands read the same numbers.
+  visits, every event, and a click heatmap drawn over the desktop itself. It
+  updates as visits are recorded, over a server-sent event stream, and any
+  visitor can be given a name. The `traffic`, `sessions`, `funnel` and `paths`
+  commands read the same numbers.
 - Live widgets: the time in Austin, GitHub contributions and the latest
   commit (proxied and cached so the token never leaves the server), and a
   "now building" line I can change with one terminal command

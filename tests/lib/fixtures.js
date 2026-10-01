@@ -57,7 +57,7 @@ export const tel = {
         duration_ms: 142000, events: 18, country: "US", org: "utexas.edu", rdns: null,
         browser: "Chrome", os: "macOS", device: "desktop", surface: "desktop",
         referrer_host: "linkedin.com", utm_source: "linkedin", utm_campaign: "resume-2026",
-        ref: "resume", authed: false, mine: false, visitor_visits: 3,
+        ref: "resume", authed: false, mine: false, visitor_visits: 3, label: null,
         trail: "finder > crave > terminal > github.com",
       },
     ],
@@ -83,13 +83,13 @@ export const tel = {
   people: {
     people: [
       {
-        id: 1204, visits: 3, sessions: 3, events: 42, total_ms: 380000, mine: false,
+        id: 1204, visits: 3, sessions: 3, events: 42, total_ms: 380000, mine: false, label: null,
         first_seen: new Date(Date.now() - 9 * 86400000).toISOString(),
         last_seen: new Date(Date.now() - 20 * 60000).toISOString(),
         country: "US", org: "utexas.edu", browser: "Chrome", os: "macOS", found_by: "linkedin",
       },
       {
-        id: 1203, visits: 1, sessions: 1, events: 4, total_ms: 22000, mine: false,
+        id: 1203, visits: 1, sessions: 1, events: 4, total_ms: 22000, mine: false, label: null,
         first_seen: new Date(Date.now() - 3 * 86400000).toISOString(),
         last_seen: new Date(Date.now() - 3 * 86400000).toISOString(),
         country: "DE", org: null, browser: "Firefox", os: "Linux", found_by: "github.com",
@@ -116,7 +116,7 @@ export const tel = {
       utm_source: "linkedin", utm_medium: "social", utm_campaign: "resume-2026",
       ref: "resume", landing_path: "/", viewport_w: 1512, viewport_h: 950,
       screen_w: 1728, screen_h: 1117, dpr: 2, timezone: "America/Chicago",
-      language: "en-US", prefers_dark: false, reduced_motion: false, authed: false,
+      language: "en-US", prefers_dark: false, reduced_motion: false, authed: false, label: null,
     },
     events: [
       { seq: 0, name: "session_start", target: "desktop", at: new Date(Date.now() - 20 * 60000).toISOString() },
@@ -296,4 +296,11 @@ export const installFixtures = async (page, { authed = true, building } = {}) =>
   await page.route("**/api/tel/events*", (r) => r.fulfill({ json: tel.events }));
   await page.route("**/api/tel/live", (r) => r.fulfill({ json: tel.live }));
   await page.route("**/api/tel/visit/*", (r) => r.fulfill({ json: tel.visit }));
+  await page.route("**/api/tel/people/*", (r) =>
+    r.fulfill({ json: { id: Number(r.request().url().split("/").pop()), ...r.request().postDataJSON() } })
+  );
+  // a stream that ends at once and waits ten minutes before trying again
+  await page.route("**/api/tel/stream", (r) =>
+    r.fulfill({ contentType: "text/event-stream", body: "retry: 600000\n\n" })
+  );
 };

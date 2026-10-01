@@ -1,4 +1,5 @@
 import { openPage, seed, win, runCommand, rect } from "../lib/harness.js";
+import { tel } from "../lib/fixtures.js";
 
 export const name = "analytics: the visit reports";
 
@@ -169,8 +170,73 @@ export const run = async ({ browser, t }) => {
   await page.waitForTimeout(500);
   t.check("the range switches", await page.isVisible('.an-range button.on:text-is("7d")'));
 
+  // ---------- naming a visitor ----------
+  await page.click('.an-tabs button:text-is("People")');
+  await page.waitForTimeout(400);
+  const renamed = page.waitForRequest((req) => req.method() === "PATCH");
+  await page.hover(".an-list > li:first-child");
+  await page.click(".an-list > li:first-child .an-rename");
+  await page.keyboard.type("Alex from the career fair");
+  await page.keyboard.press("Enter");
+  const patch = await renamed;
+  t.check(
+    "a visitor can be named",
+    patch.url().endsWith("/api/tel/people/1204") && patch.postDataJSON().label === "Alex from the career fair",
+    `${patch.url()} ${patch.postData()}`
+  );
+  await page.waitForTimeout(300);
+  t.check("and the name shows at once", (await text(page, ".an-list > li:first-child")).includes("Alex from the career fair"));
+
+  // ---------- a reload keeps the window where it was ----------
+  await page.click('.an-tabs button:text-is("Traffic")');
+  await page.waitForTimeout(500);
+  await page.$eval(".an-body", (el) => el.scrollTo(0, 150));
+  await page.waitForTimeout(500);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.waitForSelector(".an-tabs button.on", { timeout: 5000 });
+  await page.waitForTimeout(800);
+  t.check("the tab survives a reload", (await text(page, ".an-tabs button.on")) === "Traffic");
+  t.check("so does the range", await page.isVisible('.an-range button.on:text-is("7d")'));
+  t.check("and the switch", (await page.getAttribute(".an-me", "aria-checked")) === "true");
+  const top = await page.$eval(".an-body", (el) => el.scrollTop);
+  t.check("and how far down it was", Math.abs(top - 150) <= 2, `scrolled ${top}`);
+
   t.check("no page errors", page.pageErrors.length === 0, page.pageErrors.join("\n"));
   await page.close();
+
+  // ---------- live ----------
+  const live = await openPage(browser, {
+    state: seed({ windows: { terminal: win({ zIndex: 1002 }) } }),
+  });
+  let release;
+  const recorded = new Promise((resolve) => (release = resolve));
+  await live.route("**/api/tel/stream", async (route) => {
+    await recorded;
+    await route.fulfill({
+      contentType: "text/event-stream",
+      body: 'retry: 600000\nevent: change\ndata: {"mine":false}\n\n',
+    });
+  });
+  let slow = false;
+  let overviews = 0;
+  await live.route("**/api/tel/overview*", async (route) => {
+    overviews += 1;
+    if (slow) await new Promise((resolve) => setTimeout(resolve, 800));
+    await route.fulfill({ json: tel.overview });
+  });
+
+  await runCommand(live, "open analytics", 1200);
+  const before = overviews;
+  slow = true;
+  release();
+  await live.waitForTimeout(400);
+  t.check("a new visit refetches the report on screen", overviews > before, `${before} then ${overviews}`);
+  t.check(
+    "keeping the old numbers up while it does",
+    (await text(live, ".an-body")).includes("260") && !(await text(live, ".an-body")).includes("reading")
+  );
+  t.check("no page errors live", live.pageErrors.length === 0, live.pageErrors.join("\n"));
+  await live.close();
 
   // ---------- signed out ----------
   const guest = await openPage(browser, {

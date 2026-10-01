@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   ChevronLeft,
@@ -9,6 +9,7 @@ import {
   Globe,
   LayoutGrid,
   MousePointerClick,
+  Pencil,
   Smartphone,
   Timer,
   Users,
@@ -19,7 +20,7 @@ import dayjs from "dayjs";
 import WindowWrapper from "#hoc/WindowWrapper.jsx";
 import { WindowControls } from "#components";
 import useAuthStore from "#store/auth.js";
-import useWindowStore from "#store/window.js";
+import useWindowStore, { useAppState } from "#store/window.js";
 
 const SECTIONS = [
   {
@@ -39,8 +40,13 @@ const SECTIONS = [
     ],
   },
 ];
+const TABS = SECTIONS.flatMap((section) => section.tabs.map((tab) => tab.name));
 const RANGES = [7, 30, 90];
-const LIVE_MS = 20000;
+// "here now" also changes when someone leaves, which nothing announces
+const LIVE_MS = 30000;
+// the heavier reports are not worth refetching more often than this
+const REFRESH_MS = 500;
+const LABEL_MAX = 60;
 
 const get = async (path) => {
   const res = await fetch(path, { credentials: "same-origin" });
@@ -48,22 +54,98 @@ const get = async (path) => {
   return res.json();
 };
 
-/** One report, fetched when its tab is on screen and dropped when it leaves. */
+/** Goes up by one each time the server says something was recorded. */
+const Changes = createContext(0);
+
+/**
+ * One report, fetched when its tab is on screen and dropped when it leaves. A
+ * change refetches it in place, keeping the old numbers until the new ones land.
+ */
 const useReport = (path) => {
-  const [state, setState] = useState({ data: null, error: "" });
+  const changes = useContext(Changes);
+  const [state, setState] = useState({ path: null, data: null, error: "" });
 
   useEffect(() => {
     let alive = true;
-    setState({ data: null, error: "" });
     get(path)
-      .then((data) => alive && setState({ data, error: "" }))
-      .catch(() => alive && setState({ data: null, error: "could not reach the server" }));
+      .then((data) => alive && setState({ path, data, error: "" }))
+      .catch(
+        () =>
+          alive &&
+          setState((last) =>
+            last.path === path && last.data ? last : { path, data: null, error: "could not reach the server" }
+          )
+      );
     return () => {
       alive = false;
     };
-  }, [path]);
+  }, [path, changes]);
 
-  return state;
+  return state.path === path ? state : { data: null, error: "" };
+};
+
+/**
+ * Listens for recorded visits while the window is open. My own clicks count
+ * only when my visits are shown, and changes that arrive while the window is
+ * out of sight are caught up on when it comes back.
+ */
+const useChanges = (open, visible, me) => {
+  const [count, setCount] = useState(0);
+  const seen = useRef({ visible, me, missed: false });
+  seen.current.visible = visible;
+  seen.current.me = me;
+
+  useEffect(() => {
+    if (!open) return;
+    let last = 0;
+    let timer = null;
+
+    const bump = () => {
+      timer = null;
+      if (!seen.current.visible || document.hidden) {
+        seen.current.missed = true;
+        return;
+      }
+      last = Date.now();
+      setCount((n) => n + 1);
+    };
+
+    const source = new EventSource("/api/tel/stream");
+    source.addEventListener("change", (event) => {
+      let mine = false;
+      try {
+        mine = JSON.parse(event.data).mine === true;
+      } catch {
+        // a change we cannot read is still a change
+      }
+      if (mine && !seen.current.me) return;
+      timer ??= setTimeout(bump, Math.max(0, last + REFRESH_MS - Date.now()));
+    });
+
+    const onVisible = () => {
+      if (!document.hidden && seen.current.missed) {
+        seen.current.missed = false;
+        bump();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      source.close();
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [open]);
+
+  // restored from the dock
+  useEffect(() => {
+    if (visible && seen.current.missed) {
+      seen.current.missed = false;
+      setCount((n) => n + 1);
+    }
+  }, [visible]);
+
+  return count;
 };
 
 /** Your own visits are left out of every report unless asked for. */
@@ -99,6 +181,74 @@ const Waiting = ({ error }) => <p className="an-empty">{error || "reading…"}</
 const Badge = ({ country }) => (
   <span className="an-badge">{country ?? <Globe className="size-3.5" />}</span>
 );
+
+/**
+ * What I have called a visitor, with a pencil to change it. The saved name
+ * shows at once, before the refetch that follows catches up.
+ */
+const Name = ({ visitorId, label, fallback, className = "an-who" }) => {
+  const [shown, setShown] = useState(label);
+  const [draft, setDraft] = useState(null);
+  useEffect(() => setShown(label), [label]);
+
+  const save = async () => {
+    if (draft === null) return;
+    const next = draft.trim() || null;
+    setDraft(null);
+    if (next === (shown ?? null)) return;
+
+    const before = shown;
+    setShown(next);
+    try {
+      const res = await fetch(`/api/tel/people/${visitorId}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ label: next }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      setShown((await res.json()).label);
+    } catch {
+      setShown(before);
+    }
+  };
+
+  if (draft !== null) {
+    return (
+      <input
+        className="an-label-input"
+        value={draft}
+        maxLength={LABEL_MAX}
+        placeholder={fallback}
+        aria-label="Name this visitor"
+        autoFocus
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          if (e.key === "Escape") setDraft(null);
+        }}
+      />
+    );
+  }
+
+  return (
+    <>
+      <span className={className}>{shown ?? fallback}</span>
+      {visitorId != null && (
+        <button
+          type="button"
+          className="an-rename"
+          aria-label="Name this visitor"
+          data-t="rename"
+          onClick={() => setDraft(shown ?? "")}
+        >
+          <Pencil />
+        </button>
+      )}
+    </>
+  );
+};
 
 const Figure = ({ icon: Icon, accent, label, value, note }) => (
   <div className="an-figure" style={{ "--accent": accent }}>
@@ -312,7 +462,14 @@ const Visit = ({ id }) => {
       <header className="an-hero">
         <Badge country={visit.country} />
         <div className="min-w-0">
-          <h3 className="an-title">{visit.org ?? visit.country ?? "unknown"}</h3>
+          <h3 className="an-title">
+            <Name
+              visitorId={visit.visitor_id}
+              label={visit.label}
+              fallback={visit.org ?? visit.country ?? "unknown"}
+              className="truncate"
+            />
+          </h3>
           <p className="an-note">
             {visit.visitor_id != null && `visitor #${visit.visitor_id} · `}
             {when(visit.started_at)} · stayed {spell(visit.duration_ms)} · {visit.events} events
@@ -359,13 +516,16 @@ const Visits = ({ me, onOpen }) => {
             <Badge country={visit.country} />
             <div className="an-row">
               <div className="an-visit-top">
-                <span className="an-who">{visit.org ?? visit.country ?? "unknown"}</span>
+                <span className="an-who">{visit.label ?? visit.org ?? visit.country ?? "unknown"}</span>
                 {visit.visitor_visits > 1 && <span className="an-tag">visit {visit.visitor_visits}</span>}
                 {visit.mine && <span className="an-tag">you</span>}
                 <span className="an-when">{when(visit.started_at)}</span>
               </div>
               <p className="an-note">
-                {[visit.browser, visit.os, visit.surface].filter(Boolean).join(" · ")} ·{" "}
+                {[visit.label && visit.org, visit.browser, visit.os, visit.surface]
+                  .filter(Boolean)
+                  .join(" · ")}{" "}
+                ·{" "}
                 {spell(visit.duration_ms)} · {visit.events} events
               </p>
               {(visit.utm_source || visit.referrer_host || visit.ref) && (
@@ -398,7 +558,11 @@ const People = ({ me }) => {
           <Badge country={person.country} />
           <div className="an-row">
             <div className="an-visit-top">
-              <span className="an-who">{person.org ?? person.country ?? "unknown"}</span>
+              <Name
+                visitorId={person.id}
+                label={person.label}
+                fallback={person.org ?? person.country ?? "unknown"}
+              />
               <span className="an-tag">#{person.id}</span>
               {person.mine && <span className="an-tag">you</span>}
               <span className="an-when">{when(person.last_seen)}</span>
@@ -409,6 +573,7 @@ const People = ({ me }) => {
             </p>
             <p className="an-note">
               {[
+                person.label && person.org,
                 [person.browser, person.os].filter(Boolean).join(" · "),
                 `first seen ${when(person.first_seen)}`,
               ]
@@ -588,6 +753,7 @@ const Heatmap = ({ days, me }) => {
 /* ---------------- the window ---------------- */
 
 const Live = ({ me }) => {
+  const changes = useContext(Changes);
   const [here, setHere] = useState([]);
 
   useEffect(() => {
@@ -603,9 +769,15 @@ const Live = ({ me }) => {
       alive = false;
       clearInterval(timer);
     };
-  }, [me]);
+  }, [me, changes]);
 
-  const doing = [...new Set(here.map((visit) => visit.doing).filter(Boolean))].slice(0, 3);
+  const doing = [
+    ...new Set(
+      here
+        .filter((visit) => visit.doing)
+        .map((visit) => (visit.label ? `${visit.label}: ${visit.doing}` : visit.doing))
+    ),
+  ].slice(0, 3);
 
   return (
     <div className={clsx("an-live", here.length && "on")}>
@@ -619,17 +791,59 @@ const Live = ({ me }) => {
 
 const Analytics = () => {
   const isOpen = useWindowStore((state) => state.windows.analytics.isOpen);
+  const isMinimized = useWindowStore((state) => state.windows.analytics.isMinimized);
   const signedIn = useAuthStore((state) => state.status === "authed");
-  const [tab, setTab] = useState("Overview");
-  const [days, setDays] = useState(30);
-  const [me, setMe] = useState(false);
-  const [visitId, setVisitId] = useState(null);
+  const [savedTab, setTab] = useAppState("analytics", "tab", "Overview");
+  const [savedDays, setDays] = useAppState("analytics", "days", 30);
+  const [me, setMe] = useAppState("analytics", "me", false);
+  const [visitId, setVisitId] = useAppState("analytics", "visit", null);
+  const [scroll, setScroll] = useAppState("analytics", "scroll", 0);
+  const tab = TABS.includes(savedTab) ? savedTab : "Overview";
+  const days = RANGES.includes(savedDays) ? savedDays : 30;
+  const ready = isOpen && signedIn;
+  const changes = useChanges(ready, !isMinimized, me);
   const bodyRef = useRef(null);
 
   // each report starts at the top, not wherever the last one was scrolled to
+  const opened = useRef(false);
   useEffect(() => {
-    bodyRef.current?.scrollTo(0, 0);
+    if (opened.current) bodyRef.current?.scrollTo(0, 0);
   }, [tab, visitId]);
+
+  // after a reload, back to where the list was once it is long enough to get there
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!ready || !body || opened.current) return;
+    opened.current = true;
+    if (!scroll) return;
+
+    const restore = () => {
+      if (body.scrollHeight - body.clientHeight < scroll) return false;
+      body.scrollTop = scroll;
+      return true;
+    };
+    if (restore()) return;
+
+    // wait for the report to render, and let a scroll by hand win
+    let giveUp = null;
+    const watcher = new MutationObserver(() => restore() && stop());
+    const stop = () => {
+      watcher.disconnect();
+      body.removeEventListener("wheel", stop);
+      clearTimeout(giveUp);
+    };
+    watcher.observe(body, { childList: true, subtree: true });
+    body.addEventListener("wheel", stop, { passive: true });
+    giveUp = setTimeout(stop, 5000);
+    return stop;
+  }, [ready]);
+
+  const saveScroll = useRef(null);
+  const onScroll = (e) => {
+    const top = Math.round(e.currentTarget.scrollTop);
+    clearTimeout(saveScroll.current);
+    saveScroll.current = setTimeout(() => setScroll(top), 250);
+  };
 
   const show = (name) => {
     setVisitId(null);
@@ -683,54 +897,56 @@ const Analytics = () => {
         </div>
       </div>
 
-      <div className="an-frame">
-        <div className="sidebar an-tabs">
-          {SECTIONS.map((section) => (
-            <div key={section.name}>
-              <h3>{section.name}</h3>
-              {section.tabs.map(({ name, icon: Icon }) => (
-                <button
-                  key={name}
-                  type="button"
-                  className={clsx(name === tab && "on")}
-                  onClick={() => show(name)}
-                >
-                  <Icon />
-                  {name}
-                </button>
-              ))}
-            </div>
-          ))}
-          <button
-            type="button"
-            role="switch"
-            aria-checked={me}
-            className="an-me"
-            onClick={() => setMe(!me)}
-          >
-            include my visits
-            <span className={clsx("cc-switch", me && "on")}>
-              <span />
-            </span>
-          </button>
-          <Live me={me} />
-        </div>
+      <Changes.Provider value={changes}>
+        <div className="an-frame">
+          <div className="sidebar an-tabs">
+            {SECTIONS.map((section) => (
+              <div key={section.name}>
+                <h3>{section.name}</h3>
+                {section.tabs.map(({ name, icon: Icon }) => (
+                  <button
+                    key={name}
+                    type="button"
+                    className={clsx(name === tab && "on")}
+                    onClick={() => show(name)}
+                  >
+                    <Icon />
+                    {name}
+                  </button>
+                ))}
+              </div>
+            ))}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={me}
+              className="an-me"
+              onClick={() => setMe(!me)}
+            >
+              include my visits
+              <span className={clsx("cc-switch", me && "on")}>
+                <span />
+              </span>
+            </button>
+            <Live me={me} />
+          </div>
 
-        <div className="an-body" ref={bodyRef}>
-          {visitId ? (
-            <Visit id={visitId} />
-          ) : (
-            <>
-              {tab === "Overview" && <Overview days={days} me={me} />}
-              {tab === "Traffic" && <Traffic days={days} me={me} />}
-              {tab === "Visits" && <Visits me={me} onOpen={setVisitId} />}
-              {tab === "People" && <People me={me} />}
-              {tab === "Events" && <Events days={days} me={me} />}
-              {tab === "Heatmap" && <Heatmap days={days} me={me} />}
-            </>
-          )}
+          <div className="an-body" ref={bodyRef} onScroll={onScroll}>
+            {visitId ? (
+              <Visit id={visitId} />
+            ) : (
+              <>
+                {tab === "Overview" && <Overview days={days} me={me} />}
+                {tab === "Traffic" && <Traffic days={days} me={me} />}
+                {tab === "Visits" && <Visits me={me} onOpen={setVisitId} />}
+                {tab === "People" && <People me={me} />}
+                {tab === "Events" && <Events days={days} me={me} />}
+                {tab === "Heatmap" && <Heatmap days={days} me={me} />}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </Changes.Provider>
     </>
   );
 };

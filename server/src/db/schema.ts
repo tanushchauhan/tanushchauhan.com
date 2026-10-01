@@ -100,6 +100,7 @@ export const visitors = pgTable("visitors", {
   firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
   visits: integer("visits").notNull().default(1),
+  label: text("label"), // a name given in the Analytics app
 });
 
 export type Visitor = typeof visitors.$inferSelect;

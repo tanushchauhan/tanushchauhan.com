@@ -1,12 +1,14 @@
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { streamSSE } from "hono/streaming";
 import { eq, sql } from "drizzle-orm";
 import { db } from "../db/index.ts";
-import { visitEvents, visitSessions } from "../db/schema.ts";
+import { visitEvents, visitSessions, visitors } from "../db/schema.ts";
 import { isMyBrowser, readSession, requireAuth } from "../auth/session.ts";
 import { clientIp, hashIp, rateLimit } from "../lib/ratelimit.ts";
 import { onlyMine, visitorFor } from "../lib/visitors.ts";
 import { isBotAgent, lookupOrg, parseAgent } from "../lib/telemetry.ts";
+import { onVisitChange, visitChanged } from "../lib/changes.ts";
 
 /**
  * Event ingest. The browser batches and sends with sendBeacon, so a request
@@ -17,8 +19,13 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const BATCH_MAX = 60;
 const SESSION_EVENT_MAX = 2000;
 const PROP_KEYS_MAX = 12;
+const LABEL_MAX = 60;
+// under the idle limits of Cloudflare and the proxy in front of the app
+const STREAM_PING_MS = 25_000;
+const STREAM_BATCH_MS = 250;
 
-const limiter = rateLimit({ limit: 240, windowMs: 10 * 60 * 1000 });
+// a busy visitor sends a batch every 2 seconds, and a campus network shares one budget
+const limiter = rateLimit({ limit: 600, windowMs: 10 * 60 * 1000 });
 
 const str = (value: unknown, max: number) => {
   if (typeof value !== "string") return null;
@@ -168,7 +175,48 @@ telRoutes.post("/", async (c) => {
       .catch(() => null);
   }
 
+  visitChanged(session.mine);
   return c.body(null, 204);
+});
+
+/**
+ * Tells an open Analytics window that something was recorded, at most four
+ * times a second, and whether all of it came from my own browsers.
+ */
+telRoutes.get("/stream", requireAuth, (c) => {
+  // Bun closes a connection after 10 idle seconds, and this one mostly waits
+  (c.env as { timeout?: (req: Request, seconds: number) => void } | undefined)?.timeout?.(
+    c.req.raw,
+    0
+  );
+
+  return streamSSE(c, async (stream) => {
+    let pending: boolean | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const flush = () => {
+      timer = null;
+      const mine = pending;
+      pending = null;
+      stream.writeSSE({ event: "change", data: JSON.stringify({ mine }) }).catch(() => null);
+    };
+
+    const off = onVisitChange((mine) => {
+      pending = pending === null ? mine : pending && mine;
+      timer ??= setTimeout(flush, STREAM_BATCH_MS);
+    });
+    const ping = setInterval(
+      () => stream.writeSSE({ event: "ping", data: "" }).catch(() => null),
+      STREAM_PING_MS
+    );
+
+    await stream.writeSSE({ event: "ready", data: "" });
+    await new Promise<void>((resolve) => stream.onAbort(resolve));
+
+    off();
+    clearInterval(ping);
+    if (timer) clearTimeout(timer);
+  });
 });
 
 /* ---------- reports ---------- */
@@ -288,7 +336,7 @@ telRoutes.get("/sessions", requireAuth, async (c) => {
   const list = await rows<Record<string, unknown>>(sql`
     select s.id, s.visitor_id, s.duration_ms, s.events, s.country, s.org, s.rdns,
            s.browser, s.os, s.device, s.surface, s.referrer_host, s.utm_source, s.utm_campaign,
-           s.ref, s.authed, s.mine, v.visits as visitor_visits,
+           s.ref, s.authed, s.mine, v.visits as visitor_visits, v.label,
            to_char(s.started_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as started_at,
            (select string_agg(t.label, ' > ' order by t.seq)
               from (select coalesce(e.target, e.name) as label, e.seq
@@ -408,7 +456,7 @@ telRoutes.get("/people", requireAuth, async (c) => {
   const limit = Math.min(200, Math.max(1, Math.trunc(Number(c.req.query("limit"))) || 40));
 
   const people = await rows<Record<string, unknown>>(sql`
-    select v.id, v.visits, coalesce(bool_and(s.mine), false) as mine,
+    select v.id, v.visits, v.label, coalesce(bool_and(s.mine), false) as mine,
            ${utc("v.first_seen_at")} as first_seen,
            ${utc("v.last_seen_at")} as last_seen,
            count(s.id)::int as sessions,
@@ -431,14 +479,39 @@ telRoutes.get("/people", requireAuth, async (c) => {
   return c.json({ people });
 });
 
+/**
+ * A name for a visitor. It belongs to the address, so on a shared network it
+ * names everyone there. An empty name takes it away.
+ */
+telRoutes.patch("/people/:id", requireAuth, async (c) => {
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id < 1) return c.json({ error: "not found" }, 404);
+
+  const body = await c.req.json().catch(() => null);
+  if (typeof body?.label !== "string" && body?.label !== null) {
+    return c.json({ error: "label must be text or null" }, 400);
+  }
+
+  const [row] = await db
+    .update(visitors)
+    .set({ label: str(body.label, LABEL_MAX) })
+    .where(eq(visitors.id, id))
+    .returning({ id: visitors.id, label: visitors.label });
+  if (!row) return c.json({ error: "not found" }, 404);
+
+  visitChanged(false);
+  return c.json(row);
+});
+
 /** One visit in full: its context, and every event in order. */
 telRoutes.get("/visit/:id", requireAuth, async (c) => {
   const id = c.req.param("id");
   if (!UUID.test(id)) return c.json({ error: "not found" }, 404);
 
   const [visit] = await rows<Record<string, unknown>>(sql`
-    select s.*, ${utc("s.started_at")} as started_at, ${utc("s.last_seen_at")} as last_seen_at
-    from visit_sessions s where s.id = ${id}
+    select s.*, v.label, ${utc("s.started_at")} as started_at, ${utc("s.last_seen_at")} as last_seen_at
+    from visit_sessions s left join visitors v on v.id = s.visitor_id
+    where s.id = ${id}
   `);
   if (!visit) return c.json({ error: "not found" }, 404);
 
@@ -453,11 +526,12 @@ telRoutes.get("/visit/:id", requireAuth, async (c) => {
 /** Who is on the site now, for the value of "now" that a page load can prove. */
 telRoutes.get("/live", requireAuth, async (c) => {
   const here = await rows<Record<string, unknown>>(sql`
-    select s.id, s.visitor_id, s.country, s.org, s.browser, s.os, s.surface, s.events,
+    select s.id, s.visitor_id, v.label, s.country, s.org, s.browser, s.os, s.surface, s.events,
            s.utm_source, s.referrer_host, ${utc("s.last_seen_at")} as last_seen_at,
            (select coalesce(e.target, e.name) from visit_events e
              where e.session_id = s.id order by e.seq desc limit 1) as doing
     from visit_sessions s
+    left join visitors v on v.id = s.visitor_id
     where s.is_bot = false and s.last_seen_at >= now() - interval '5 minutes' ${others(c)}
     order by s.last_seen_at desc
     limit 20
