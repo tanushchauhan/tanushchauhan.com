@@ -528,16 +528,19 @@ const useSystemData = (enabled) => {
     }
 
     let cancelled = false;
+    let latest = 0;
 
     const load = async () => {
       if (document.hidden) return;
+      // a poll and a refresh can overlap, and the older answer must not land last
+      const call = ++latest;
       try {
         const res = await fetch("/api/moontower/fleet", {
           credentials: "same-origin",
         });
         if (!res.ok) return;
         const body = await res.json();
-        if (!cancelled) setSystem(body);
+        if (!cancelled && call === latest) setSystem(body);
       } catch {
       }
     };
@@ -545,10 +548,12 @@ const useSystemData = (enabled) => {
     load();
     const timer = setInterval(load, SYSTEM_POLL_MS);
     document.addEventListener("visibilitychange", load);
+    const stopListening = onRefreshWidgets(load);
     return () => {
       cancelled = true;
       clearInterval(timer);
       document.removeEventListener("visibilitychange", load);
+      stopListening();
     };
   }, [enabled]);
 

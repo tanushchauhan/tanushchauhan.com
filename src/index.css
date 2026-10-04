@@ -2395,8 +2395,11 @@ body.resizing * {
   outline-offset: -1px;
 }
 
-.widget-slot:hover .widget {
-  outline-color: color-mix(in srgb, var(--accent) 45%, transparent);
+/* a touch screen keeps :hover on whatever was last touched */
+@media (hover: hover) {
+  .widget-slot:hover .widget {
+    outline-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
 }
 
 .widget header {

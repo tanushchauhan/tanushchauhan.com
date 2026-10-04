@@ -843,6 +843,7 @@ export const TerminalBody = () => {
             credentials: "same-origin",
           });
           const data = await res.json();
+          if (res.ok) refreshWidgets();
           return print([
             res.ok
               ? `removed '${data.removed}'. its key no longer works.`
@@ -901,6 +902,7 @@ export const TerminalBody = () => {
           });
           const data = await res.json();
           if (!res.ok) return print([`services: ${data.error}`]);
+          refreshWidgets();
           return print([
             `watching '${data.slug}'.`,
             data.ok
@@ -921,6 +923,7 @@ export const TerminalBody = () => {
             credentials: "same-origin",
           });
           const data = await res.json();
+          if (res.ok) refreshWidgets();
           return print([res.ok ? `stopped watching '${data.removed}'.` : `services: ${data.error}`]);
         } catch {
           return print(["services: could not reach the server."]);

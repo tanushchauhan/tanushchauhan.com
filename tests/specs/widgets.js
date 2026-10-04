@@ -116,6 +116,44 @@ export const run = async ({ browser, t }) => {
   t.check("a rejected write leaves the card alone", (await card()) === stable);
   await page.close();
 
+  // ---------- editing the fleet refreshes its cards ----------
+  const live = structuredClone(fleet);
+  const fp = await openPage(browser, { state: seed({ windows: { terminal: win() } }) });
+  await fp.route("**/api/moontower/fleet", (r) => r.fulfill({ json: live }));
+  await fp.route("**/api/moontower/services", (r) => {
+    const { name, url } = JSON.parse(r.request().postData());
+    const added = service({ slug: "status", name, url });
+    live.services.push(added);
+    return r.fulfill({ status: 201, json: added });
+  });
+  await fp.route("**/api/moontower/services/*", (r) => {
+    const slug = r.request().url().split("/").pop();
+    live.services = live.services.filter((s) => s.slug !== slug);
+    return r.fulfill({ json: { removed: slug } });
+  });
+  await fp.route("**/api/moontower/servers/*", (r) => {
+    const slug = r.request().url().split("/").pop();
+    live.servers = live.servers.filter((s) => s.slug !== slug);
+    return r.fulfill({ json: { removed: slug } });
+  });
+  await fp.reload({ waitUntil: "domcontentloaded" });
+  await settled(fp);
+
+  const services = () => fp.$eval(".w-services", (el) => el.innerText);
+  const tabs = () => fp.$$eval(".w-system .tabs button", (els) => els.map((el) => el.innerText.trim()));
+
+  await runCommand(fp, "services add Status Page https://status.example.com", 1000);
+  t.check("a service added in the terminal shows without a reload", (await services()).includes("Status Page"));
+  await runCommand(fp, "services rm webmail", 1000);
+  t.check("and one removed goes", !(await services()).includes("Webmail"));
+  t.check("the fleet card starts with both machines", (await tabs()).includes("VPS"));
+  await runCommand(fp, "moontower remove vps", 1000);
+  t.check(
+    "a removed machine leaves the fleet card",
+    !(await fp.$eval(".w-system", (el) => el.innerText)).includes("VPS")
+  );
+  await fp.close();
+
   // ---------- stale readings ----------
   const withServices = async (services) => {
     const p = await openPage(browser, { state: seed({ windows: { terminal: win() } }) });
